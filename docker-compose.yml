@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:18.2-alpine
+    container_name: harmonie-postgres
+    environment:
+      POSTGRES_USER: harmonie_user
+      POSTGRES_PASSWORD: harmonie_password
+      POSTGRES_DB: harmonie
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - harmonie-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U harmonie_user -d harmonie"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Harmonie API (uncomment when ready to run in Docker)
+  # harmonie-api:
+  #   build:
+  #     context: .
+  #     dockerfile: src/Harmonie.API/Dockerfile
+  #   container_name: harmonie-api
+  #   environment:
+  #     - ASPNETCORE_ENVIRONMENT=Development
+  #     - ASPNETCORE_URLS=https://+:443;http://+:80
+  #     - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=harmonie;Username=harmonie_user;Password=harmonie_password
+  #   ports:
+  #     - "5001:80"
+  #     - "7001:443"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   networks:
+  #     - harmonie-network
+
+volumes:
+  postgres-data:
+    driver: local
+
+networks:
+  harmonie-network:
+    driver: bridge
