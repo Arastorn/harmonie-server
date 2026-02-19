@@ -52,10 +52,10 @@ public sealed class GlobalExceptionHandler
                 new { error = duplicateUsernameEx.Message }),
             DomainException domainEx => (
                 HttpStatusCode.BadRequest,
-                new { error = domainEx.Message }),
+                (object)new { error = domainEx.Message }),
             _ => (
                 HttpStatusCode.InternalServerError,
-                new { error = "An unexpected error occurred" })
+                (object)new { error = "An unexpected error occurred" })
         };
 
         context.Response.ContentType = "application/json";
