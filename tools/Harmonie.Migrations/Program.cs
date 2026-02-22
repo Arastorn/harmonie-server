@@ -3,13 +3,20 @@ using Microsoft.Extensions.Configuration;
 using System.Reflection;
 
 var configuration = new ConfigurationBuilder()
-    .SetBasePath(Directory.GetCurrentDirectory())
+    .SetBasePath(AppContext.BaseDirectory)
     .AddJsonFile("appsettings.json", optional: true)
     .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")}.json", optional: true)
     .AddEnvironmentVariables()
     .Build();
 
 var connectionString = configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    Console.ForegroundColor = ConsoleColor.Red;
+    Console.WriteLine("Connection string 'DefaultConnection' was not found.");
+    Console.ResetColor();
+    return -1;
+}
 
 Console.WriteLine("Starting database migration...");
 
