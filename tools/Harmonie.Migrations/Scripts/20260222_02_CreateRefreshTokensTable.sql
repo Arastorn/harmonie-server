@@ -14,7 +14,6 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
 -- Indexes for lookup and cleanup
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id);
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires_at_utc ON refresh_tokens(expires_at_utc);
-CREATE INDEX IF NOT EXISTS idx_refresh_tokens_cleanup ON refresh_tokens(expires_at_utc) WHERE revoked_at_utc IS NOT NULL;
 
 -- Comments for documentation
 COMMENT ON TABLE refresh_tokens IS 'Persistent refresh tokens used for session continuation';
@@ -28,8 +27,7 @@ RETURNS void
 LANGUAGE sql
 AS $$
     DELETE FROM refresh_tokens
-    WHERE revoked_at_utc IS NOT NULL
-      AND expires_at_utc < (NOW() AT TIME ZONE 'UTC') - INTERVAL '12 hours';
+    WHERE expires_at_utc < (NOW() AT TIME ZONE 'UTC') - INTERVAL '12 hours';
 $$;
 
 -- Try to install pg_cron when available; ignore if unavailable on this PostgreSQL instance
