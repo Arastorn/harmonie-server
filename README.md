@@ -8,9 +8,9 @@
 
 ## 🌟 Features
 
-- ✅ **Self-hosted**: Full control over your data
-- ✅ **Multi-server**: Connect to multiple Harmonie instances from one client
-- ✅ **Real-time**: Powered by SignalR
+- 🚧 **Self-hosted**: Full control over your data
+- 🚧 **Multi-server**: Connect to multiple Harmonie instances from one client
+- 🚧 **Real-time**: Powered by SignalR
 - 🚧 **Voice & Video**: Coming soon with LiveKit integration
 - ✅ **Open-source**: AGPL-3.0 licensed
 

@@ -466,7 +466,6 @@ chore: update dependencies
 ### .NET
 - [ASP.NET Core Best Practices](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/best-practices)
 - [Dapper Documentation](https://github.com/DapperLib/Dapper)
-- [MediatR Wiki](https://github.com/jbogard/MediatR/wiki)
 
 ### Domain-Driven Design
 - [Domain-Driven Design by Eric Evans](https://www.domainlanguage.com/ddd/)
@@ -494,9 +493,9 @@ chore: update dependencies
 **Sprint 1: Foundation & Authentication** ✅ IN PROGRESS
 - [x] Project structure setup
 - [x] Clean Architecture scaffolding
-- [ ] User entity and value objects
-- [ ] Registration command/handler
-- [ ] Login command/handler
+- [x] User entity and value objects
+- [x] Registration command/handler
+- [x] Login command/handler
 - [ ] JWT generation/validation
 - [ ] Refresh token flow
 - [ ] Basic API endpoints
