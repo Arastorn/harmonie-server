@@ -3,6 +3,8 @@ using FluentValidation;
 using Harmonie.Application.Features.Auth.Login;
 using Harmonie.Application.Features.Auth.RefreshToken;
 using Harmonie.Application.Features.Auth.Register;
+using Harmonie.Application.Features.Channels.GetMessages;
+using Harmonie.Application.Features.Channels.SendMessage;
 using Harmonie.Application.Features.Guilds.CreateGuild;
 using Harmonie.Application.Features.Guilds.GetGuildChannels;
 using Harmonie.Application.Features.Guilds.InviteMember;
@@ -30,6 +32,8 @@ public static class DependencyInjection
         services.AddScoped<CreateGuildHandler>();
         services.AddScoped<InviteMemberHandler>();
         services.AddScoped<GetGuildChannelsHandler>();
+        services.AddScoped<SendMessageHandler>();
+        services.AddScoped<GetMessagesHandler>();
         // Add more handlers as features are created
 
         return services;

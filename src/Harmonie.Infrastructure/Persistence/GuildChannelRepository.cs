@@ -16,6 +16,34 @@ public sealed class GuildChannelRepository : IGuildChannelRepository
         _dbSession = dbSession;
     }
 
+    public async Task<GuildChannel?> GetByIdAsync(
+        GuildChannelId channelId,
+        CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+                           SELECT id AS "Id",
+                                  guild_id AS "GuildId",
+                                  name AS "Name",
+                                  type AS "Type",
+                                  is_default AS "IsDefault",
+                                  position AS "Position",
+                                  created_at_utc AS "CreatedAtUtc"
+                           FROM guild_channels
+                           WHERE id = @ChannelId
+                           LIMIT 1
+                           """;
+
+        var connection = await _dbSession.GetOpenConnectionAsync(cancellationToken);
+        var command = new CommandDefinition(
+            sql,
+            new { ChannelId = channelId.Value },
+            transaction: _dbSession.Transaction,
+            cancellationToken: cancellationToken);
+
+        var row = await connection.QueryFirstOrDefaultAsync<GuildChannelDto>(command);
+        return row is null ? null : MapToGuildChannel(row);
+    }
+
     public async Task AddAsync(
         GuildChannel channel,
         CancellationToken cancellationToken = default)

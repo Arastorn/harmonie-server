@@ -3,6 +3,8 @@ using Harmonie.Application;
 using Harmonie.Application.Features.Auth.Login;
 using Harmonie.Application.Features.Auth.RefreshToken;
 using Harmonie.Application.Features.Auth.Register;
+using Harmonie.Application.Features.Channels.GetMessages;
+using Harmonie.Application.Features.Channels.SendMessage;
 using Harmonie.Application.Features.Guilds.CreateGuild;
 using Harmonie.Application.Features.Guilds.GetGuildChannels;
 using Harmonie.Application.Features.Guilds.InviteMember;
@@ -115,6 +117,8 @@ RefreshTokenEndpoint.Map(app);
 CreateGuildEndpoint.Map(app);
 InviteMemberEndpoint.Map(app);
 GetGuildChannelsEndpoint.Map(app);
+SendMessageEndpoint.Map(app);
+GetMessagesEndpoint.Map(app);
 
 // Future endpoints will be added here as features are developed
 // Example:
