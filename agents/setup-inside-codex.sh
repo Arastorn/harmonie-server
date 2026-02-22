@@ -1,14 +1,32 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DB_USER="${DB_USER:-harmonie_user}"
-DB_PASSWORD="${DB_PASSWORD:-harmonie_password}"
-DB_NAME="${DB_NAME:-harmonie_test}"
+DEFAULT_CONNECTION_STRING="Host=localhost;Port=5432;Database=harmonie;Username=harmonie_user;Password=harmonie_password"
+CONNECTION_STRING="${ConnectionStrings__DefaultConnection:-$DEFAULT_CONNECTION_STRING}"
 
-CONNECTION_STRING="${ConnectionStrings__DefaultConnection:-Host=localhost;Port=5432;Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD}}"
+get_connection_value() {
+  local key="$1"
+  local segment
+  IFS=';' read -ra segments <<< "$CONNECTION_STRING"
+  for segment in "${segments[@]}"; do
+    segment="${segment#"${segment%%[![:space:]]*}"}"
+    segment="${segment%"${segment##*[![:space:]]}"}"
+    if [[ "$segment" == "$key="* ]]; then
+      echo "${segment#*=}"
+      return 0
+    fi
+  done
+  return 1
+}
+
+DB_NAME="${DB_NAME:-$(get_connection_value "Database" || echo "harmonie")}"
+DB_USER="${DB_USER:-$(get_connection_value "Username" || echo "harmonie_user")}"
+DB_PASSWORD="${DB_PASSWORD:-$(get_connection_value "Password" || echo "harmonie_password")}"
 
 # Start PostgreSQL from the image.
-pg_ctlcluster 16 main start
+if ! pg_ctlcluster 16 main status >/dev/null 2>&1; then
+  pg_ctlcluster 16 main start
+fi
 
 # Ensure role exists (or reset its password to expected value).
 if ! runuser -u postgres -- psql -tAc "SELECT 1 FROM pg_roles WHERE rolname = '${DB_USER}'" | grep -q 1; then
