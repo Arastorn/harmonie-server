@@ -58,6 +58,17 @@ public sealed class InvalidPasswordException : DomainException
 }
 
 /// <summary>
+/// Thrown when refresh token validation fails.
+/// </summary>
+public sealed class InvalidRefreshTokenException : DomainException
+{
+    public InvalidRefreshTokenException(string message)
+        : base(message)
+    {
+    }
+}
+
+/// <summary>
 /// Thrown when attempting to perform an operation on an inactive user
 /// </summary>
 public sealed class UserInactiveException : DomainException

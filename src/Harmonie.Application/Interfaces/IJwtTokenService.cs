@@ -24,6 +24,23 @@ public interface IJwtTokenService
     string GenerateRefreshToken();
 
     /// <summary>
+    /// Hash a refresh token before persistence.
+    /// </summary>
+    /// <param name="refreshToken">Refresh token in plain text</param>
+    /// <returns>Deterministic hash representation of the refresh token</returns>
+    string HashRefreshToken(string refreshToken);
+
+    /// <summary>
+    /// Get access token expiration timestamp in UTC.
+    /// </summary>
+    DateTime GetAccessTokenExpirationUtc();
+
+    /// <summary>
+    /// Get refresh token expiration timestamp in UTC.
+    /// </summary>
+    DateTime GetRefreshTokenExpirationUtc();
+
+    /// <summary>
     /// Validate an access token and extract the user ID
     /// </summary>
     /// <param name="token">JWT token to validate</param>

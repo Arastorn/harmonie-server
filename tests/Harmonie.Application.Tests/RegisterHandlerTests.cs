@@ -15,6 +15,7 @@ namespace Harmonie.Application.Tests;
 public sealed class RegisterHandlerTests
 {
     private readonly Mock<IUserRepository> _userRepositoryMock;
+    private readonly Mock<IRefreshTokenRepository> _refreshTokenRepositoryMock;
     private readonly Mock<IPasswordHasher> _passwordHasherMock;
     private readonly Mock<IJwtTokenService> _jwtTokenServiceMock;
     private readonly RegisterHandler _handler;
@@ -22,11 +23,13 @@ public sealed class RegisterHandlerTests
     public RegisterHandlerTests()
     {
         _userRepositoryMock = new Mock<IUserRepository>();
+        _refreshTokenRepositoryMock = new Mock<IRefreshTokenRepository>();
         _passwordHasherMock = new Mock<IPasswordHasher>();
         _jwtTokenServiceMock = new Mock<IJwtTokenService>();
         
         _handler = new RegisterHandler(
             _userRepositoryMock.Object,
+            _refreshTokenRepositoryMock.Object,
             _passwordHasherMock.Object,
             _jwtTokenServiceMock.Object);
     }
@@ -59,6 +62,18 @@ public sealed class RegisterHandlerTests
         _jwtTokenServiceMock
             .Setup(x => x.GenerateRefreshToken())
             .Returns("refresh_token");
+        
+        _jwtTokenServiceMock
+            .Setup(x => x.HashRefreshToken(It.IsAny<string>()))
+            .Returns("refresh_token_hash");
+
+        _jwtTokenServiceMock
+            .Setup(x => x.GetAccessTokenExpirationUtc())
+            .Returns(DateTime.UtcNow.AddMinutes(15));
+
+        _jwtTokenServiceMock
+            .Setup(x => x.GetRefreshTokenExpirationUtc())
+            .Returns(DateTime.UtcNow.AddDays(30));
 
         // Act
         var response = await _handler.HandleAsync(request);
@@ -72,6 +87,14 @@ public sealed class RegisterHandlerTests
 
         _userRepositoryMock.Verify(
             x => x.AddAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+
+        _refreshTokenRepositoryMock.Verify(
+            x => x.StoreAsync(
+                It.IsAny<UserId>(),
+                "refresh_token_hash",
+                It.IsAny<DateTime>(),
+                It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
