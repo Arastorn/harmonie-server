@@ -14,8 +14,15 @@ public static class DependencyInjection
         services.Configure<DatabaseSettings>(configuration.GetSection("Database"));
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
-        var connectionString = configuration.GetConnectionString("DefaultConnection")!;
-        services.AddScoped<IUserRepository>(_ => new UserRepository(connectionString));
+
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        if (string.IsNullOrWhiteSpace(connectionString))
+            throw new InvalidOperationException("Connection string 'DefaultConnection' is required.");
+
+        services.AddScoped(_ => new DbSession(connectionString));
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         return services;
     }
 }

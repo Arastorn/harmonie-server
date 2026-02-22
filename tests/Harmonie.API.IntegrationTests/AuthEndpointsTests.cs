@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
 using Harmonie.Application.Features.Auth.Login;
+using Harmonie.Application.Features.Auth.RefreshToken;
 using Harmonie.Application.Features.Auth.Register;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
@@ -37,7 +38,10 @@ public sealed class AuthEndpointsTests : IClassFixture<WebApplicationFactory<Pro
         
         var result = await response.Content.ReadFromJsonAsync<RegisterResponse>();
         result.Should().NotBeNull();
-        result!.Email.Should().Be(request.Email);
+        if (result is null)
+            throw new InvalidOperationException("Register response payload is null.");
+
+        result.Email.Should().Be(request.Email);
         result.Username.Should().Be(request.Username);
         result.AccessToken.Should().NotBeNullOrEmpty();
         result.RefreshToken.Should().NotBeNullOrEmpty();
@@ -82,7 +86,10 @@ public sealed class AuthEndpointsTests : IClassFixture<WebApplicationFactory<Pro
         
         var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
         result.Should().NotBeNull();
-        result!.Email.Should().Be(registerRequest.Email);
+        if (result is null)
+            throw new InvalidOperationException("Login response payload is null.");
+
+        result.Email.Should().Be(registerRequest.Email);
         result.AccessToken.Should().NotBeNullOrEmpty();
     }
 
@@ -109,8 +116,46 @@ public sealed class AuthEndpointsTests : IClassFixture<WebApplicationFactory<Pro
         
         var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
         result.Should().NotBeNull();
-        result!.Username.Should().Be(registerRequest.Username);
+        if (result is null)
+            throw new InvalidOperationException("Login response payload is null.");
+
+        result.Username.Should().Be(registerRequest.Username);
         result.AccessToken.Should().NotBeNullOrEmpty();
+    }
+
+    [Fact]
+    public async Task RefreshToken_WithValidToken_ReturnsNewTokens()
+    {
+        // Arrange - First register a user to get initial tokens
+        var registerRequest = new RegisterRequest(
+            Email: $"test{Guid.NewGuid()}@harmonie.chat",
+            Username: $"testuser{Guid.NewGuid():N}"[..20],
+            Password: "Test123!@#");
+
+        var registerResponse = await _client.PostAsJsonAsync("/api/auth/register", registerRequest);
+        registerResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var registerPayload = await registerResponse.Content.ReadFromJsonAsync<RegisterResponse>();
+        registerPayload.Should().NotBeNull();
+        if (registerPayload is null)
+            throw new InvalidOperationException("Register response payload is null.");
+
+        var refreshRequest = new RefreshTokenRequest(registerPayload.RefreshToken);
+
+        // Act
+        var response = await _client.PostAsJsonAsync("/api/auth/refresh", refreshRequest);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var result = await response.Content.ReadFromJsonAsync<RefreshTokenResponse>();
+        result.Should().NotBeNull();
+        if (result is null)
+            throw new InvalidOperationException("Refresh response payload is null.");
+
+        result.AccessToken.Should().NotBeNullOrEmpty();
+        result.RefreshToken.Should().NotBeNullOrEmpty();
+        result.RefreshToken.Should().NotBe(registerPayload.RefreshToken);
     }
 
     [Fact]

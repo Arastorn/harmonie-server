@@ -25,11 +25,12 @@ public sealed class JwtTokenService : IJwtTokenService
         };
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        var expiresAtUtc = GetAccessTokenExpirationUtc();
         var token = new JwtSecurityToken(
             issuer: _jwtSettings.Issuer,
             audience: _jwtSettings.Audience,
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes),
+            expires: expiresAtUtc,
             signingCredentials: creds);
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
@@ -41,6 +42,22 @@ public sealed class JwtTokenService : IJwtTokenService
         rng.GetBytes(randomNumber);
         return Convert.ToBase64String(randomNumber);
     }
+
+    public string HashRefreshToken(string refreshToken)
+    {
+        if (string.IsNullOrWhiteSpace(refreshToken))
+            throw new ArgumentException("Refresh token cannot be null or empty", nameof(refreshToken));
+
+        var tokenBytes = Encoding.UTF8.GetBytes(refreshToken);
+        var hashBytes = SHA256.HashData(tokenBytes);
+        return Convert.ToHexString(hashBytes);
+    }
+
+    public DateTime GetAccessTokenExpirationUtc() =>
+        DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes);
+
+    public DateTime GetRefreshTokenExpirationUtc() =>
+        DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpirationDays);
     
     public bool ValidateAccessToken(string token, out UserId? userId)
     {

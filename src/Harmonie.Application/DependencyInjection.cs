@@ -1,6 +1,7 @@
 using System.Reflection;
 using FluentValidation;
 using Harmonie.Application.Features.Auth.Login;
+using Harmonie.Application.Features.Auth.RefreshToken;
 using Harmonie.Application.Features.Auth.Register;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -22,6 +23,7 @@ public static class DependencyInjection
         // Auth features
         services.AddScoped<RegisterHandler>();
         services.AddScoped<LoginHandler>();
+        services.AddScoped<RefreshTokenHandler>();
         // Add more handlers as features are created
 
         return services;

@@ -7,7 +7,7 @@ Open-source, self-hosted communication platform backend.
 This repository currently provides:
 - User registration and login endpoints
 - JWT access token generation
-- Refresh token generation (persistence/rotation is not implemented yet)
+- Refresh token persistence and rotation
 - PostgreSQL persistence with Dapper
 - DbUp migrations
 - Unit and integration tests
@@ -48,6 +48,7 @@ dotnet run --project src/Harmonie.API
 - `GET /health`
 - `POST /api/auth/register`
 - `POST /api/auth/login`
+- `POST /api/auth/refresh`
 
 In Development, OpenAPI and Scalar are enabled.
 

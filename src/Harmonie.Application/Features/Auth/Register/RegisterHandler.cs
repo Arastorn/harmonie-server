@@ -11,15 +11,21 @@ namespace Harmonie.Application.Features.Auth.Register;
 public sealed class RegisterHandler
 {
     private readonly IUserRepository _userRepository;
+    private readonly IRefreshTokenRepository _refreshTokenRepository;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtTokenService _jwtTokenService;
 
     public RegisterHandler(
         IUserRepository userRepository,
+        IRefreshTokenRepository refreshTokenRepository,
+        IUnitOfWork unitOfWork,
         IPasswordHasher passwordHasher,
         IJwtTokenService jwtTokenService)
     {
         _userRepository = userRepository;
+        _refreshTokenRepository = refreshTokenRepository;
+        _unitOfWork = unitOfWork;
         _passwordHasher = passwordHasher;
         _jwtTokenService = jwtTokenService;
     }
@@ -58,9 +64,6 @@ public sealed class RegisterHandler
 
         var user = userResult.Value;
 
-        // Persist user
-        await _userRepository.AddAsync(user, cancellationToken);
-
         // Generate tokens
         var accessToken = _jwtTokenService.GenerateAccessToken(
             user.Id,
@@ -68,8 +71,18 @@ public sealed class RegisterHandler
             user.Username);
 
         var refreshToken = _jwtTokenService.GenerateRefreshToken();
+        var refreshTokenHash = _jwtTokenService.HashRefreshToken(refreshToken);
+        var refreshTokenExpiresAt = _jwtTokenService.GetRefreshTokenExpirationUtc();
+        var accessTokenExpiresAt = _jwtTokenService.GetAccessTokenExpirationUtc();
 
-        // TODO: Store refresh token in database with expiration
+        await using var transaction = await _unitOfWork.BeginAsync(cancellationToken);
+        await _userRepository.AddAsync(user, cancellationToken);
+        await _refreshTokenRepository.StoreAsync(
+            user.Id,
+            refreshTokenHash,
+            refreshTokenExpiresAt,
+            cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
 
         return new RegisterResponse(
             UserId: user.Id.ToString(),
@@ -77,7 +90,7 @@ public sealed class RegisterHandler
             Username: user.Username,
             AccessToken: accessToken,
             RefreshToken: refreshToken,
-            ExpiresAt: DateTime.UtcNow.AddMinutes(15)
+            ExpiresAt: accessTokenExpiresAt
         );
     }
 }

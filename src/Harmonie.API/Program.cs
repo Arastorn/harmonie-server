@@ -1,6 +1,7 @@
 using Harmonie.API.Middleware;
 using Harmonie.Application;
 using Harmonie.Application.Features.Auth.Login;
+using Harmonie.Application.Features.Auth.RefreshToken;
 using Harmonie.Application.Features.Auth.Register;
 using Harmonie.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -43,7 +44,10 @@ builder.Services.AddOpenApi(options =>
 });
 
 // Configure JWT Authentication
-var jwtSecret = builder.Configuration["Jwt:Secret"]!;
+var jwtSecret = builder.Configuration["Jwt:Secret"];
+if (string.IsNullOrWhiteSpace(jwtSecret))
+    throw new InvalidOperationException("Configuration value 'Jwt:Secret' is required.");
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -104,6 +108,7 @@ app.MapGet("/health", () => Results.Ok(new
 // Auth endpoints
 RegisterEndpoint.Map(app);
 LoginEndpoint.Map(app);
+RefreshTokenEndpoint.Map(app);
 
 // Future endpoints will be added here as features are developed
 // Example:

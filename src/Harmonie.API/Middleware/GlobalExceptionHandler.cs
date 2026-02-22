@@ -41,6 +41,9 @@ public sealed class GlobalExceptionHandler
             InvalidPasswordException invalidPasswordEx => (
                 HttpStatusCode.Unauthorized,
                 new { error = invalidPasswordEx.Message }),
+            InvalidRefreshTokenException invalidRefreshTokenEx => (
+                HttpStatusCode.Unauthorized,
+                new { error = invalidRefreshTokenEx.Message }),
             UserInactiveException userInactiveEx => (
                 HttpStatusCode.Forbidden,
                 new { error = userInactiveEx.Message }),
