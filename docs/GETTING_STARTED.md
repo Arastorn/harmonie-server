@@ -1,184 +1,68 @@
-# 🚀 Quick Start Guide
+# Getting Started
 
-Get Harmonie running locally in 5 minutes!
+This guide gets the Harmonie server running locally.
 
 ## Prerequisites
 
-✅ [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)  
-✅ [Docker](https://www.docker.com/get-started) (for PostgreSQL)  
-✅ Your favorite IDE (VS Code, Rider, Visual Studio)
+- .NET 10 SDK
+- Docker (for PostgreSQL)
 
-## Step 1: Clone & Setup
-
-```bash
-git clone https://github.com/harmonie-chat/harmonie.git
-cd harmonie
-```
-
-## Step 2: Start PostgreSQL
+## 1. Start PostgreSQL
 
 ```bash
 docker-compose up -d postgres
 ```
 
-Wait ~10 seconds for PostgreSQL to be ready. Verify with:
+Optional checks:
+
 ```bash
 docker-compose ps
-```
-
-You should see `harmonie-postgres` with status `Up (healthy)`.
-
-## Step 3: Run Database Migrations
-
-```bash
-cd tools/Harmonie.Migrations
-dotnet run
-```
-
-Expected output:
-```
-✅ Success!
-```
-
-## Step 4: Run the API
-
-```bash
-cd ../../src/Harmonie.API
-dotnet run
-```
-
-The API will start on:
-- **HTTPS**: `https://localhost:7001`
-- **HTTP**: `http://localhost:5001`
-
-## Step 5: Test the API
-
-### Open Swagger UI
-
-Navigate to: `https://localhost:7001/swagger`
-
-### Register a User
-
-**POST** `/api/auth/register`
-
-```json
-{
-  "email": "test@harmonie.chat",
-  "username": "testuser",
-  "password": "Test123!@#"
-}
-```
-
-**Response** (201 Created):
-```json
-{
-  "userId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-  "email": "test@harmonie.chat",
-  "username": "testuser",
-  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "base64encodedtoken",
-  "expiresAt": "2026-02-15T15:30:00Z"
-}
-```
-
-### Login
-
-**POST** `/api/auth/login`
-
-```json
-{
-  "emailOrUsername": "testuser",
-  "password": "Test123!@#"
-}
-```
-
-### Use Protected Endpoints (Future)
-
-Copy the `accessToken` from login response, then:
-
-1. Click **Authorize** button in Swagger
-2. Enter: `Bearer {your_access_token}`
-3. Click **Authorize**
-
-Now you can access protected endpoints! 🎉
-
-## 🧪 Run Tests
-
-```bash
-# From project root
-dotnet test
-
-# With coverage
-dotnet test /p:CollectCoverage=true
-```
-
-## 🐛 Troubleshooting
-
-### PostgreSQL connection fails
-
-```bash
-# Check if PostgreSQL is running
-docker-compose ps
-
-# View logs
 docker-compose logs postgres
-
-# Restart if needed
-docker-compose restart postgres
 ```
 
-### Port already in use
-
-If ports 5001/7001 are taken, edit `src/Harmonie.API/Properties/launchSettings.json`:
-
-```json
-{
-  "applicationUrl": "https://localhost:YOUR_PORT;http://localhost:YOUR_PORT"
-}
-```
-
-### Migration fails
+## 2. Apply Database Migrations
 
 ```bash
-# Reset database
-docker-compose down -v
-docker-compose up -d postgres
-
-# Wait 10 seconds, then retry migration
-cd tools/Harmonie.Migrations
-dotnet run
+dotnet run --project tools/Harmonie.Migrations
 ```
 
-## 📚 Next Steps
+The migration runner executes embedded SQL scripts from `tools/Harmonie.Migrations/Scripts`.
 
-- Read the [Architecture Documentation](agent.md)
-- Check [Contributing Guidelines](CONTRIBUTING.md)
-- Join our [Discord Community](#)
-- Report issues on [GitHub](https://github.com/harmonie-chat/harmonie/issues)
+## 3. Run the API
 
-## 🔑 Default Configuration
+Set Development environment (required for local connection string and JWT settings in `appsettings.Development.json`).
+
+PowerShell:
+
+```powershell
+$env:ASPNETCORE_ENVIRONMENT = "Development"
+dotnet run --project src/Harmonie.API
+```
+
+## 4. Verify the API
+
+- Health: `GET /health`
+- Register: `POST /api/auth/register`
+- Login: `POST /api/auth/login`
+
+Example register payload:
 
 ```json
 {
-  "ConnectionString": "Host=localhost;Port=5432;Database=harmonie;Username=harmonie_user;Password=harmonie_password",
-  "JWT": {
-    "AccessTokenExpiration": "15 minutes",
-    "RefreshTokenExpiration": "30 days"
-  }
+  "email": "test@harmonie.chat",
+  "username": "testuser",
+  "password": "Test123!@#"
 }
 ```
 
-⚠️ **Change these values in production!**
+## 5. Run Tests
 
-## 💡 Pro Tips
+```bash
+dotnet test
+```
 
-1. **Hot Reload**: Use `dotnet watch run` for automatic restarts on code changes
-2. **Database GUI**: Connect with pgAdmin or DBeaver using credentials above
-3. **Logs**: Check console output for detailed request/response logs
-4. **API Testing**: Use Bruno as alternatives to Swagger
+## Notes
 
----
-
-**Happy coding! 🎵**
-
-Need help? Open an issue or ask in Discussions!
+- OpenAPI and Scalar API reference are enabled only in Development.
+- Refresh tokens are generated but not yet persisted/rotated in storage.
+- If the API cannot connect to PostgreSQL, confirm `docker-compose` is running and port `5432` is available.
