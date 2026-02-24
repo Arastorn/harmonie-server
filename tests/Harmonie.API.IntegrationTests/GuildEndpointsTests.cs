@@ -8,6 +8,7 @@ using Harmonie.Application.Features.Channels.GetMessages;
 using Harmonie.Application.Features.Channels.SendMessage;
 using Harmonie.Application.Features.Guilds.CreateGuild;
 using Harmonie.Application.Features.Guilds.GetGuildChannels;
+using Harmonie.Application.Features.Guilds.GetGuildMembers;
 using Harmonie.Application.Features.Guilds.InviteMember;
 using Harmonie.Application.Features.Guilds.ListUserGuilds;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -137,6 +138,41 @@ public sealed class GuildEndpointsTests : IClassFixture<WebApplicationFactory<Pr
         listPayload.Guilds.Should().Contain(guild => guild.GuildId == ownerGuildOne!.GuildId && guild.Role == "Admin");
         listPayload.Guilds.Should().Contain(guild => guild.GuildId == ownerGuildTwo!.GuildId && guild.Role == "Admin");
         listPayload.Guilds.Should().Contain(guild => guild.GuildId == inviterGuild.GuildId && guild.Role == "Member");
+    }
+
+    [Fact]
+    public async Task GetGuildMembers_WhenRequesterIsMember_ShouldReturnGuildMembers()
+    {
+        var owner = await RegisterAsync();
+        var member = await RegisterAsync();
+
+        var createGuildResponse = await SendAuthorizedPostAsync(
+            "/api/guilds",
+            new CreateGuildRequest("Members Guild"),
+            owner.AccessToken);
+        createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        createGuildPayload.Should().NotBeNull();
+
+        var inviteResponse = await SendAuthorizedPostAsync(
+            $"/api/guilds/{createGuildPayload!.GuildId}/members/invite",
+            new InviteMemberRequest(member.UserId),
+            owner.AccessToken);
+        inviteResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var membersResponse = await SendAuthorizedGetAsync(
+            $"/api/guilds/{createGuildPayload.GuildId}/members",
+            member.AccessToken);
+        membersResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var membersPayload = await membersResponse.Content.ReadFromJsonAsync<GetGuildMembersResponse>();
+        membersPayload.Should().NotBeNull();
+
+        membersPayload!.GuildId.Should().Be(createGuildPayload.GuildId);
+        membersPayload.Members.Should().HaveCount(2);
+        membersPayload.Members.Should().Contain(x => x.UserId == owner.UserId && x.Role == "Admin");
+        membersPayload.Members.Should().Contain(x => x.UserId == member.UserId && x.Role == "Member");
     }
 
     [Fact]

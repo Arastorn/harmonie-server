@@ -151,6 +151,36 @@ public sealed class GuildMemberRepository : IGuildMemberRepository
         return rows.Select(MapToUserGuildMembership).ToArray();
     }
 
+    public async Task<IReadOnlyList<GuildMemberUser>> GetGuildMembersAsync(
+        GuildId guildId,
+        CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+                           SELECT gm.user_id AS "UserId",
+                                  u.username AS "Username",
+                                  u.display_name AS "DisplayName",
+                                  u.avatar_url AS "AvatarUrl",
+                                  u.is_active AS "IsActive",
+                                  gm.role AS "Role",
+                                  gm.joined_at_utc AS "JoinedAtUtc"
+                           FROM guild_members gm
+                           INNER JOIN users u ON u.id = gm.user_id
+                           WHERE gm.guild_id = @GuildId
+                             AND u.deleted_at IS NULL
+                           ORDER BY gm.joined_at_utc ASC, gm.user_id ASC
+                           """;
+
+        var connection = await _dbSession.GetOpenConnectionAsync(cancellationToken);
+        var command = new CommandDefinition(
+            sql,
+            new { GuildId = guildId.Value },
+            transaction: _dbSession.Transaction,
+            cancellationToken: cancellationToken);
+
+        var rows = await connection.QueryAsync<GuildMemberUserDto>(command);
+        return rows.Select(MapToGuildMemberUser).ToArray();
+    }
+
     private static UserGuildMembership MapToUserGuildMembership(UserGuildMembershipDto row)
     {
         if (!Enum.IsDefined(typeof(GuildRole), row.Role))
@@ -169,6 +199,25 @@ public sealed class GuildMemberRepository : IGuildMemberRepository
 
         return new UserGuildMembership(
             guild,
+            (GuildRole)row.Role,
+            row.JoinedAtUtc);
+    }
+
+    private static GuildMemberUser MapToGuildMemberUser(GuildMemberUserDto row)
+    {
+        if (!Enum.IsDefined(typeof(GuildRole), row.Role))
+            throw new InvalidOperationException("Stored guild role is invalid.");
+
+        var usernameResult = Username.Create(row.Username);
+        if (usernameResult.IsFailure || usernameResult.Value is null)
+            throw new InvalidOperationException("Stored username is invalid.");
+
+        return new GuildMemberUser(
+            UserId.From(row.UserId),
+            usernameResult.Value,
+            row.DisplayName,
+            row.AvatarUrl,
+            row.IsActive,
             (GuildRole)row.Role,
             row.JoinedAtUtc);
     }

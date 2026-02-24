@@ -23,9 +23,22 @@ public interface IGuildMemberRepository
     Task<IReadOnlyList<UserGuildMembership>> GetUserGuildMembershipsAsync(
         UserId userId,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<GuildMemberUser>> GetGuildMembersAsync(
+        GuildId guildId,
+        CancellationToken cancellationToken = default);
 }
 
 public sealed record UserGuildMembership(
     Guild Guild,
+    GuildRole Role,
+    DateTime JoinedAtUtc);
+
+public sealed record GuildMemberUser(
+    UserId UserId,
+    Username Username,
+    string? DisplayName,
+    string? AvatarUrl,
+    bool IsActive,
     GuildRole Role,
     DateTime JoinedAtUtc);
