@@ -50,6 +50,7 @@ dotnet run --project src/Harmonie.API
 - `POST /api/auth/login`
 - `POST /api/auth/refresh`
 - `GET /api/guilds`
+- `GET /api/guilds/{guildId}/members`
 
 In Development, OpenAPI and Scalar are enabled.
 
