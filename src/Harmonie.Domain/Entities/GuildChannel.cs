@@ -78,7 +78,7 @@ public sealed class GuildChannel : Entity<GuildChannelId>
     {
         ArgumentNullException.ThrowIfNull(id);
         ArgumentNullException.ThrowIfNull(guildId);
-        ArgumentException.ThrowIfNullOrWhiteSpace("Channel name is required.", nameof(name));
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
         if (!Enum.IsDefined(type))
             throw new ArgumentOutOfRangeException(nameof(type), "Channel type is invalid.");
         if (position < 0)
