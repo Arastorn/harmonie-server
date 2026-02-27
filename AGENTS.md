@@ -17,16 +17,25 @@ Scope: canonical instructions for AI coding agents working in this repository.
 3. Build must stay warning-clean for nullable correctness:
 - Fix nullable warnings by code changes, not suppression shortcuts.
 
+4. Feature alignment verification is mandatory:
+- For any new endpoint/feature or behavior change, compare implementation against at least 2 existing features before finalizing.
+- Match established conventions (endpoint flow, validator usage, handler error mapping, DI registration, Program mapping, and test style).
+- If misaligned, update the new code to align unless there is a documented reason not to.
+
 ## Project Snapshot
 
 Harmonie Server is a .NET 10 backend for a self-hosted communication platform.
 
 Current implemented scope:
-- Auth: register and login
+- Auth: register, login, and refresh
 - JWT access token generation
-- Refresh token generation (not persisted yet)
+- Refresh token persistence and rotation
+- Guild creation, invitation, membership listing
+- Guild channel listing
+- Channel messaging (send/read) with cursor pagination
+- SignalR real-time text channel delivery
 - Health endpoint
-- PostgreSQL persistence for users
+- PostgreSQL persistence for users, refresh tokens, guilds, memberships, channels, and messages
 
 ## Source Layout
 
@@ -42,6 +51,15 @@ Current implemented scope:
 - `GET /health`
 - `POST /api/auth/register`
 - `POST /api/auth/login`
+- `POST /api/auth/refresh`
+- `POST /api/guilds`
+- `GET /api/guilds`
+- `POST /api/guilds/{guildId}/members/invite`
+- `GET /api/guilds/{guildId}/members`
+- `GET /api/guilds/{guildId}/channels`
+- `POST /api/channels/{channelId}/messages`
+- `GET /api/channels/{channelId}/messages`
+- `GET /hubs/text-channels` (SignalR)
 
 ## Architecture Rules
 
@@ -66,6 +84,7 @@ Current implemented scope:
 4. Map endpoint in `src/Harmonie.API/Program.cs`.
 5. Add or update tests.
 6. Update docs if behavior changed.
+7. Compare against at least 2 existing features and align conventions before considering the work done.
 
 ## Testing
 
@@ -85,8 +104,11 @@ Current implemented scope:
 
 ## Known Gaps
 
-- Refresh token persistence, rotation, and revocation are TODO.
-- No guild/channel/message endpoints yet.
+- Session revocation endpoints and token reuse hardening.
+- User profile self-service endpoints.
+- Guild membership lifecycle completion (leave, kick, role changes, owner transfer).
+- Channel lifecycle management (create/rename/reorder/delete).
+- Message lifecycle management (edit/delete).
 
 ## Reference Docs
 
@@ -95,4 +117,4 @@ Current implemented scope:
 - `docs/ARCHITECTURE.md`
 - `docs/VERTICAL_SLICE_ARCHITECTURE.md`
 
-Last updated: 2026-02-22
+Last updated: 2026-02-27
