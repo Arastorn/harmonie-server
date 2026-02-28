@@ -3,6 +3,13 @@
 Scope: canonical instructions for AI coding agents working in this repository.
 For project scope, endpoints, and structure see `README.md` and `docs/`.
 
+## Issue Workflow
+
+When picking up a GitHub issue:
+
+1. **Start**: Create a new branch from `main` following the naming convention below before making any changes.
+2. **Finish**: Once the work is done and tests pass, commit all changes, push the branch, and open a Pull Request targeting `main`.
+
 ## Branch Naming Convention
 
 - Feature branches must follow: `feat/{issueNumber}-{FeatureName}`.
@@ -101,4 +108,4 @@ For project scope, endpoints, and structure see `README.md` and `docs/`.
 - `docs/ARCHITECTURE.md`
 - `docs/VERTICAL_SLICE_ARCHITECTURE.md`
 
-Last updated: 2026-02-28
+Last updated: 2026-03-01

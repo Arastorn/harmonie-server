@@ -105,6 +105,8 @@ public static class EndpointExtensions
             ApplicationErrorCodes.Guild.MemberAlreadyExists => HttpStatusCode.Conflict,
             ApplicationErrorCodes.Guild.NameConflict => HttpStatusCode.Conflict,
             ApplicationErrorCodes.Guild.OwnerCannotLeave => HttpStatusCode.Conflict,
+            ApplicationErrorCodes.Guild.MemberNotFound => HttpStatusCode.NotFound,
+            ApplicationErrorCodes.Guild.OwnerCannotBeRemoved => HttpStatusCode.Conflict,
             ApplicationErrorCodes.Channel.NotFound => HttpStatusCode.NotFound,
             ApplicationErrorCodes.Channel.AccessDenied => HttpStatusCode.Forbidden,
             ApplicationErrorCodes.Channel.NotText => HttpStatusCode.Conflict,
