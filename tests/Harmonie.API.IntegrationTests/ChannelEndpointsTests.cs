@@ -414,6 +414,125 @@ public sealed class ChannelEndpointsTests : IClassFixture<WebApplicationFactory<
         error!.Code.Should().Be(ApplicationErrorCodes.Message.ContentEmpty);
     }
 
+    // ─── DeleteMessage Tests ───────────────────────────────────────────────────
+
+    [Fact]
+    public async Task DeleteMessage_WhenAuthorDeletesOwnMessage_ShouldReturn204()
+    {
+        var author = await RegisterAsync();
+        var channelId = await CreateChannelAndGetIdAsync(author.AccessToken, "delete-message-channel");
+        var messageId = await SendMessageAndGetIdAsync(channelId, "message to delete", author.AccessToken);
+
+        var deleteResponse = await SendAuthorizedDeleteAsync(
+            $"/api/channels/{channelId}/messages/{messageId}",
+            author.AccessToken);
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task DeleteMessage_WhenAdminDeletesAnotherUsersMessage_ShouldReturn204()
+    {
+        var owner = await RegisterAsync();
+        var member = await RegisterAsync();
+
+        var guildId = await CreateGuildAndGetIdAsync(owner.AccessToken, "Admin Delete Message Guild");
+        await InviteMemberAsync(guildId, member.UserId, owner.AccessToken);
+
+        var channelId = await CreateChannelAndGetIdAsync(owner.AccessToken, "admin-delete-channel", guildId: guildId);
+        var messageId = await SendMessageAndGetIdAsync(channelId, "member's message", member.AccessToken);
+
+        var deleteResponse = await SendAuthorizedDeleteAsync(
+            $"/api/channels/{channelId}/messages/{messageId}",
+            owner.AccessToken);
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task DeleteMessage_WhenMemberTriesToDeleteAnotherUsersMessage_ShouldReturn403()
+    {
+        var owner = await RegisterAsync();
+        var member = await RegisterAsync();
+
+        var guildId = await CreateGuildAndGetIdAsync(owner.AccessToken, "Forbidden Delete Message Guild");
+        await InviteMemberAsync(guildId, member.UserId, owner.AccessToken);
+
+        var channelId = await CreateChannelAndGetIdAsync(owner.AccessToken, "member-delete-msg-channel", guildId: guildId);
+        var messageId = await SendMessageAndGetIdAsync(channelId, "owner's message", owner.AccessToken);
+
+        var deleteResponse = await SendAuthorizedDeleteAsync(
+            $"/api/channels/{channelId}/messages/{messageId}",
+            member.AccessToken);
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+        var error = await deleteResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        error.Should().NotBeNull();
+        error!.Code.Should().Be(ApplicationErrorCodes.Message.DeleteForbidden);
+    }
+
+    [Fact]
+    public async Task DeleteMessage_WhenNonMemberTriesToDelete_ShouldReturn403()
+    {
+        var owner = await RegisterAsync();
+        var outsider = await RegisterAsync();
+
+        var channelId = await CreateChannelAndGetIdAsync(owner.AccessToken, "outsider-delete-msg-channel");
+        var messageId = await SendMessageAndGetIdAsync(channelId, "owner's message", owner.AccessToken);
+
+        var deleteResponse = await SendAuthorizedDeleteAsync(
+            $"/api/channels/{channelId}/messages/{messageId}",
+            outsider.AccessToken);
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+        var error = await deleteResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        error.Should().NotBeNull();
+        error!.Code.Should().Be(ApplicationErrorCodes.Channel.AccessDenied);
+    }
+
+    [Fact]
+    public async Task DeleteMessage_WhenMessageNotFound_ShouldReturn404()
+    {
+        var author = await RegisterAsync();
+        var channelId = await CreateChannelAndGetIdAsync(author.AccessToken, "delete-notfound-channel");
+        var nonExistentMessageId = Guid.NewGuid();
+
+        var deleteResponse = await SendAuthorizedDeleteAsync(
+            $"/api/channels/{channelId}/messages/{nonExistentMessageId}",
+            author.AccessToken);
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+        var error = await deleteResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        error.Should().NotBeNull();
+        error!.Code.Should().Be(ApplicationErrorCodes.Message.NotFound);
+    }
+
+    [Fact]
+    public async Task DeleteMessage_WhenChannelNotFound_ShouldReturn404()
+    {
+        var author = await RegisterAsync();
+        var nonExistentChannelId = Guid.NewGuid();
+        var nonExistentMessageId = Guid.NewGuid();
+
+        var deleteResponse = await SendAuthorizedDeleteAsync(
+            $"/api/channels/{nonExistentChannelId}/messages/{nonExistentMessageId}",
+            author.AccessToken);
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+        var error = await deleteResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        error.Should().NotBeNull();
+        error!.Code.Should().Be(ApplicationErrorCodes.Channel.NotFound);
+    }
+
+    [Fact]
+    public async Task DeleteMessage_WhenNotAuthenticated_ShouldReturn401()
+    {
+        var channelId = Guid.NewGuid();
+        var messageId = Guid.NewGuid();
+
+        var deleteResponse = await _client.DeleteAsync(
+            $"/api/channels/{channelId}/messages/{messageId}");
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
     // ─── Helpers ───────────────────────────────────────────────────────────────
 
     private async Task<RegisterResponse> RegisterAsync()

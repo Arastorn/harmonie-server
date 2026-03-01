@@ -22,6 +22,10 @@ public interface IChannelMessageRepository
     Task UpdateAsync(
         ChannelMessage message,
         CancellationToken cancellationToken = default);
+
+    Task DeleteAsync(
+        ChannelMessageId messageId,
+        CancellationToken cancellationToken = default);
 }
 
 public sealed record ChannelMessageCursor(
