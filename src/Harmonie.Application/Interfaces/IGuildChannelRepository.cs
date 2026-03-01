@@ -21,6 +21,10 @@ public interface IGuildChannelRepository
         GuildChannel channel,
         CancellationToken cancellationToken = default);
 
+    Task DeleteAsync(
+        GuildChannelId channelId,
+        CancellationToken cancellationToken = default);
+
     Task<bool> ExistsByNameInGuildAsync(
         GuildId guildId,
         string name,
