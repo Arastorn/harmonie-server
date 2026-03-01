@@ -32,6 +32,8 @@ public static class ApplicationErrorCodes
         public const string MemberAlreadyExists = "GUILD_MEMBER_ALREADY_EXISTS";
         public const string NameConflict = "GUILD_NAME_CONFLICT";
         public const string OwnerCannotLeave = "GUILD_OWNER_CANNOT_LEAVE";
+        public const string MemberNotFound = "GUILD_MEMBER_NOT_FOUND";
+        public const string OwnerCannotBeRemoved = "GUILD_OWNER_CANNOT_BE_REMOVED";
     }
 
     public static class Channel
