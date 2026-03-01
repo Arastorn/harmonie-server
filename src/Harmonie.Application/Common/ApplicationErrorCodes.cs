@@ -44,6 +44,7 @@ public static class ApplicationErrorCodes
         public const string NotText = "CHANNEL_NOT_TEXT";
         public const string AccessDenied = "CHANNEL_ACCESS_DENIED";
         public const string NameConflict = "CHANNEL_NAME_CONFLICT";
+        public const string CannotDeleteDefault = "CHANNEL_CANNOT_DELETE_DEFAULT";
     }
 
     public static class Message

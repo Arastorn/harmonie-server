@@ -140,6 +140,21 @@ public sealed class GuildChannelRepository : IGuildChannelRepository
         await connection.ExecuteAsync(command);
     }
 
+    public async Task DeleteAsync(
+        GuildChannelId channelId,
+        CancellationToken cancellationToken = default)
+    {
+        const string sql = "DELETE FROM guild_channels WHERE id = @ChannelId";
+        var connection = await _dbSession.GetOpenConnectionAsync(cancellationToken);
+        var command = new CommandDefinition(
+            sql,
+            new { ChannelId = channelId.Value },
+            transaction: _dbSession.Transaction,
+            cancellationToken: cancellationToken);
+
+        await connection.ExecuteAsync(command);
+    }
+
     public async Task<bool> ExistsByNameInGuildAsync(
         GuildId guildId,
         string name,
