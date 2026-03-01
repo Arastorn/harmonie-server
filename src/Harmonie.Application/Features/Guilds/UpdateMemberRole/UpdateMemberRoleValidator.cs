@@ -10,7 +10,7 @@ public sealed class UpdateMemberRoleValidator : AbstractValidator<UpdateMemberRo
         RuleFor(x => x.Role)
             .NotEmpty()
             .WithMessage("Role is required")
-            .Must(role => Enum.TryParse<GuildRole>(role, ignoreCase: true, out _))
+            .Must(role => Enum.TryParse<GuildRole>(role, ignoreCase: true, out var parsed) && Enum.IsDefined(parsed))
             .WithMessage("Role must be 'Admin' or 'Member'");
     }
 }

@@ -63,7 +63,7 @@ public static class UpdateMemberRoleEndpoint
                 "Route validation succeeded but user ID parsing failed.").ToHttpResult();
         }
 
-        if (!Enum.TryParse<GuildRole>(request.Role, ignoreCase: true, out var parsedRole))
+        if (!Enum.TryParse<GuildRole>(request.Role, ignoreCase: true, out var parsedRole) || !Enum.IsDefined(parsedRole))
         {
             return ApplicationResponse<bool>.Fail(
                 ApplicationErrorCodes.Common.InvalidState,
