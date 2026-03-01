@@ -11,4 +11,6 @@ public sealed class ChannelMessageDto
     public string Content { get; init; } = string.Empty;
 
     public DateTime CreatedAtUtc { get; init; }
+
+    public DateTime? DeletedAtUtc { get; init; }
 }

@@ -75,6 +75,7 @@ public sealed class ChannelMessageRepository : IChannelMessageRepository
                          created_at_utc AS "CreatedAtUtc"
                   FROM channel_messages
                   WHERE channel_id = @ChannelId
+                    AND deleted_at_utc IS NULL
                   ORDER BY created_at_utc DESC, id DESC
                   LIMIT @Take
                   """;
@@ -95,6 +96,7 @@ public sealed class ChannelMessageRepository : IChannelMessageRepository
                          created_at_utc AS "CreatedAtUtc"
                   FROM channel_messages
                   WHERE channel_id = @ChannelId
+                    AND deleted_at_utc IS NULL
                     AND (created_at_utc, id) < (@BeforeCreatedAtUtc, @BeforeMessageId)
                   ORDER BY created_at_utc DESC, id DESC
                   LIMIT @Take
@@ -147,6 +149,7 @@ public sealed class ChannelMessageRepository : IChannelMessageRepository
                                   created_at_utc AS "CreatedAtUtc"
                            FROM channel_messages
                            WHERE id = @MessageId
+                             AND deleted_at_utc IS NULL
                            """;
 
         var connection = await _dbSession.GetOpenConnectionAsync(cancellationToken);
@@ -177,6 +180,30 @@ public sealed class ChannelMessageRepository : IChannelMessageRepository
             {
                 Content = message.Content.Value,
                 Id = message.Id.Value
+            },
+            transaction: _dbSession.Transaction,
+            cancellationToken: cancellationToken);
+
+        await connection.ExecuteAsync(command);
+    }
+
+    public async Task DeleteAsync(
+        ChannelMessageId messageId,
+        CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+                           UPDATE channel_messages
+                           SET deleted_at_utc = @DeletedAtUtc
+                           WHERE id = @Id
+                           """;
+
+        var connection = await _dbSession.GetOpenConnectionAsync(cancellationToken);
+        var command = new CommandDefinition(
+            sql,
+            new
+            {
+                DeletedAtUtc = DateTime.UtcNow,
+                Id = messageId.Value
             },
             transaction: _dbSession.Transaction,
             cancellationToken: cancellationToken);
