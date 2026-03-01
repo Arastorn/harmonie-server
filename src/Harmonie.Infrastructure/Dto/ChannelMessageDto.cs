@@ -12,5 +12,6 @@ public sealed class ChannelMessageDto
 
     public DateTime CreatedAtUtc { get; init; }
 
+    public DateTime? UpdatedAtUtc { get; init; }
     public DateTime? DeletedAtUtc { get; init; }
 }
