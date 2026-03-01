@@ -1,5 +1,4 @@
 using FluentValidation;
-using Harmonie.Domain.Enums;
 
 namespace Harmonie.Application.Features.Guilds.CreateChannel;
 
@@ -12,12 +11,6 @@ public sealed class CreateChannelValidator : AbstractValidator<CreateChannelRequ
             .WithMessage("Channel name is required")
             .MaximumLength(100)
             .WithMessage("Channel name cannot exceed 100 characters");
-
-        RuleFor(x => x.Type)
-            .NotEmpty()
-            .WithMessage("Channel type is required")
-            .Must(type => Enum.TryParse<GuildChannelType>(type, ignoreCase: true, out _))
-            .WithMessage("Channel type must be 'Text' or 'Voice'");
 
         RuleFor(x => x.Position)
             .GreaterThanOrEqualTo(0)

@@ -1,6 +1,5 @@
 using FluentValidation;
 using Harmonie.Application.Common;
-using Harmonie.Domain.Enums;
 using Harmonie.Domain.ValueObjects;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -53,13 +52,6 @@ public static class CreateChannelEndpoint
                 "Route validation succeeded but guild ID parsing failed.").ToHttpResult();
         }
 
-        if (!Enum.TryParse<GuildChannelType>(request.Type, ignoreCase: true, out var channelType))
-        {
-            return ApplicationResponse<CreateChannelResponse>.Fail(
-                ApplicationErrorCodes.Common.InvalidState,
-                "Body validation succeeded but channel type parsing failed.").ToHttpResult();
-        }
-
         if (!httpContext.TryGetAuthenticatedUserId(out var callerId) || callerId is null)
         {
             return ApplicationResponse<CreateChannelResponse>.Fail(
@@ -72,7 +64,7 @@ public static class CreateChannelEndpoint
             parsedGuildId,
             callerId,
             request.Name,
-            channelType,
+            request.Type.ToDomain(),
             request.Position,
             cancellationToken);
 

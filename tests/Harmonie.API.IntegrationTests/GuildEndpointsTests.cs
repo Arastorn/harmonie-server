@@ -1,6 +1,8 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using FluentAssertions;
 using Harmonie.Application.Common;
 using Harmonie.Application.Features.Auth.Register;
@@ -22,6 +24,10 @@ namespace Harmonie.API.IntegrationTests;
 public sealed class GuildEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
 {
     private readonly HttpClient _client;
+    private static readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        Converters = { new JsonStringEnumConverter() }
+    };
 
     public GuildEndpointsTests(WebApplicationFactory<Program> factory)
     {
@@ -419,7 +425,7 @@ public sealed class GuildEndpointsTests : IClassFixture<WebApplicationFactory<Pr
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, uri)
         {
-            Content = JsonContent.Create(payload)
+            Content = JsonContent.Create(payload, options: _jsonOptions)
         };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         return await _client.SendAsync(request);
@@ -439,6 +445,19 @@ public sealed class GuildEndpointsTests : IClassFixture<WebApplicationFactory<Pr
         string accessToken)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, uri);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        return await _client.SendAsync(request);
+    }
+
+    private async Task<HttpResponseMessage> SendAuthorizedPostRawAsync(
+        string uri,
+        string json,
+        string accessToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, uri)
+        {
+            Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json")
+        };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         return await _client.SendAsync(request);
     }
@@ -945,7 +964,7 @@ public sealed class GuildEndpointsTests : IClassFixture<WebApplicationFactory<Pr
 
         var createChannelResponse = await SendAuthorizedPostAsync(
             $"/api/guilds/{createGuildPayload!.GuildId}/channels",
-            new CreateChannelRequest("announcements", "Text", 2),
+            new CreateChannelRequest("announcements", ChannelTypeInput.Text, 2),
             owner.AccessToken);
         createChannelResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
@@ -975,7 +994,7 @@ public sealed class GuildEndpointsTests : IClassFixture<WebApplicationFactory<Pr
 
         var createChannelResponse = await SendAuthorizedPostAsync(
             $"/api/guilds/{createGuildPayload!.GuildId}/channels",
-            new CreateChannelRequest("Gaming", "Voice", 5),
+            new CreateChannelRequest("Gaming", ChannelTypeInput.Voice, 5),
             owner.AccessToken);
         createChannelResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
@@ -1007,7 +1026,7 @@ public sealed class GuildEndpointsTests : IClassFixture<WebApplicationFactory<Pr
 
         var createChannelResponse = await SendAuthorizedPostAsync(
             $"/api/guilds/{createGuildPayload.GuildId}/channels",
-            new CreateChannelRequest("member-channel", "Text", 3),
+            new CreateChannelRequest("member-channel", ChannelTypeInput.Text, 3),
             member.AccessToken);
         createChannelResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
@@ -1033,7 +1052,7 @@ public sealed class GuildEndpointsTests : IClassFixture<WebApplicationFactory<Pr
 
         var createChannelResponse = await SendAuthorizedPostAsync(
             $"/api/guilds/{createGuildPayload!.GuildId}/channels",
-            new CreateChannelRequest("outsider-channel", "Text", 3),
+            new CreateChannelRequest("outsider-channel", ChannelTypeInput.Text, 3),
             outsider.AccessToken);
         createChannelResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
@@ -1050,7 +1069,7 @@ public sealed class GuildEndpointsTests : IClassFixture<WebApplicationFactory<Pr
 
         var createChannelResponse = await SendAuthorizedPostAsync(
             $"/api/guilds/{nonExistentGuildId}/channels",
-            new CreateChannelRequest("lost-channel", "Text", 0),
+            new CreateChannelRequest("lost-channel", ChannelTypeInput.Text, 0),
             user.AccessToken);
         createChannelResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
@@ -1066,7 +1085,7 @@ public sealed class GuildEndpointsTests : IClassFixture<WebApplicationFactory<Pr
 
         var createChannelResponse = await _client.PostAsJsonAsync(
             $"/api/guilds/{nonExistentGuildId}/channels",
-            new CreateChannelRequest("anon-channel", "Text", 0));
+            new CreateChannelRequest("anon-channel", ChannelTypeInput.Text, 0));
         createChannelResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
@@ -1084,9 +1103,9 @@ public sealed class GuildEndpointsTests : IClassFixture<WebApplicationFactory<Pr
         var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
         createGuildPayload.Should().NotBeNull();
 
-        var createChannelResponse = await SendAuthorizedPostAsync(
+        var createChannelResponse = await SendAuthorizedPostRawAsync(
             $"/api/guilds/{createGuildPayload!.GuildId}/channels",
-            new CreateChannelRequest("bad-channel", "Video", 0),
+            """{"name":"bad-channel","type":"Video","position":0}""",
             owner.AccessToken);
         createChannelResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
@@ -1111,7 +1130,7 @@ public sealed class GuildEndpointsTests : IClassFixture<WebApplicationFactory<Pr
 
         var createChannelResponse = await SendAuthorizedPostAsync(
             $"/api/guilds/{createGuildPayload!.GuildId}/channels",
-            new CreateChannelRequest("bad-channel", "Text", -1),
+            new CreateChannelRequest("bad-channel", ChannelTypeInput.Text, -1),
             owner.AccessToken);
         createChannelResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
