@@ -97,6 +97,23 @@ public sealed class CreateChannelHandler
 
         var channel = channelResult.Value;
 
+        var nameConflict = await _guildChannelRepository.ExistsByNameInGuildAsync(
+            guildId,
+            channel.Name,
+            channel.Id,
+            cancellationToken);
+        if (nameConflict)
+        {
+            _logger.LogWarning(
+                "CreateChannel failed because a channel with the same name already exists. GuildId={GuildId}, Name={Name}",
+                guildId,
+                channel.Name);
+
+            return ApplicationResponse<CreateChannelResponse>.Fail(
+                ApplicationErrorCodes.Channel.NameConflict,
+                "A channel with this name already exists in this guild");
+        }
+
         await using var transaction = await _unitOfWork.BeginAsync(cancellationToken);
         await _guildChannelRepository.AddAsync(channel, cancellationToken);
         await transaction.CommitAsync(cancellationToken);

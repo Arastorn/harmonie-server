@@ -108,6 +108,35 @@ public sealed class CreateChannelHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsync_WhenNameAlreadyExistsInGuild_ShouldReturnNameConflict()
+    {
+        var guild = CreateGuild();
+        var adminId = UserId.New();
+
+        _guildRepositoryMock
+            .Setup(x => x.GetByIdAsync(guild.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(guild);
+
+        _guildMemberRepositoryMock
+            .Setup(x => x.GetRoleAsync(guild.Id, adminId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(GuildRole.Admin);
+
+        _guildChannelRepositoryMock
+            .Setup(x => x.ExistsByNameInGuildAsync(
+                guild.Id,
+                "announcements",
+                It.IsAny<GuildChannelId>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var response = await _handler.HandleAsync(guild.Id, adminId, "announcements", GuildChannelType.Text, 2);
+
+        response.Success.Should().BeFalse();
+        response.Error.Should().NotBeNull();
+        response.Error!.Code.Should().Be(ApplicationErrorCodes.Channel.NameConflict);
+    }
+
+    [Fact]
     public async Task HandleAsync_WhenAdminCreatesTextChannel_ShouldReturnCreatedChannel()
     {
         var guild = CreateGuild();
