@@ -11,6 +11,7 @@ using Harmonie.Application.Features.Guilds.GetGuildChannels;
 using Harmonie.Application.Features.Guilds.GetGuildMembers;
 using Harmonie.Application.Features.Guilds.InviteMember;
 using Harmonie.Application.Features.Guilds.ListUserGuilds;
+using Harmonie.Application.Features.Guilds.CreateChannel;
 using Harmonie.Application.Features.Guilds.TransferOwnership;
 using Harmonie.Application.Features.Guilds.UpdateMemberRole;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -924,6 +925,197 @@ public sealed class GuildEndpointsTests : IClassFixture<WebApplicationFactory<Pr
         updateRoleResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
         var error = await updateRoleResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        error.Should().NotBeNull();
+        error!.Code.Should().Be(ApplicationErrorCodes.Common.ValidationFailed);
+    }
+
+    [Fact]
+    public async Task CreateChannel_WhenAdminCreatesTextChannel_ShouldReturn201()
+    {
+        var owner = await RegisterAsync();
+
+        var createGuildResponse = await SendAuthorizedPostAsync(
+            "/api/guilds",
+            new CreateGuildRequest("Channel Text Guild"),
+            owner.AccessToken);
+        createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        createGuildPayload.Should().NotBeNull();
+
+        var createChannelResponse = await SendAuthorizedPostAsync(
+            $"/api/guilds/{createGuildPayload!.GuildId}/channels",
+            new CreateChannelRequest("announcements", "Text", 2),
+            owner.AccessToken);
+        createChannelResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var payload = await createChannelResponse.Content.ReadFromJsonAsync<CreateChannelResponse>();
+        payload.Should().NotBeNull();
+        payload!.GuildId.Should().Be(createGuildPayload.GuildId);
+        payload.Name.Should().Be("announcements");
+        payload.Type.Should().Be("Text");
+        payload.IsDefault.Should().BeFalse();
+        payload.Position.Should().Be(2);
+        payload.ChannelId.Should().NotBeNullOrEmpty();
+    }
+
+    [Fact]
+    public async Task CreateChannel_WhenAdminCreatesVoiceChannel_ShouldReturn201()
+    {
+        var owner = await RegisterAsync();
+
+        var createGuildResponse = await SendAuthorizedPostAsync(
+            "/api/guilds",
+            new CreateGuildRequest("Channel Voice Guild"),
+            owner.AccessToken);
+        createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        createGuildPayload.Should().NotBeNull();
+
+        var createChannelResponse = await SendAuthorizedPostAsync(
+            $"/api/guilds/{createGuildPayload!.GuildId}/channels",
+            new CreateChannelRequest("Gaming", "Voice", 5),
+            owner.AccessToken);
+        createChannelResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var payload = await createChannelResponse.Content.ReadFromJsonAsync<CreateChannelResponse>();
+        payload.Should().NotBeNull();
+        payload!.Type.Should().Be("Voice");
+        payload.Name.Should().Be("Gaming");
+    }
+
+    [Fact]
+    public async Task CreateChannel_WhenMemberTriesToCreate_ShouldReturn403()
+    {
+        var owner = await RegisterAsync();
+        var member = await RegisterAsync();
+
+        var createGuildResponse = await SendAuthorizedPostAsync(
+            "/api/guilds",
+            new CreateGuildRequest("Member Create Channel Guild"),
+            owner.AccessToken);
+        createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        createGuildPayload.Should().NotBeNull();
+
+        await SendAuthorizedPostAsync(
+            $"/api/guilds/{createGuildPayload!.GuildId}/members/invite",
+            new InviteMemberRequest(member.UserId),
+            owner.AccessToken);
+
+        var createChannelResponse = await SendAuthorizedPostAsync(
+            $"/api/guilds/{createGuildPayload.GuildId}/channels",
+            new CreateChannelRequest("member-channel", "Text", 3),
+            member.AccessToken);
+        createChannelResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+        var error = await createChannelResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        error.Should().NotBeNull();
+        error!.Code.Should().Be(ApplicationErrorCodes.Guild.AccessDenied);
+    }
+
+    [Fact]
+    public async Task CreateChannel_WhenNonMemberTriesToCreate_ShouldReturn403()
+    {
+        var owner = await RegisterAsync();
+        var outsider = await RegisterAsync();
+
+        var createGuildResponse = await SendAuthorizedPostAsync(
+            "/api/guilds",
+            new CreateGuildRequest("Non Member Create Channel Guild"),
+            owner.AccessToken);
+        createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        createGuildPayload.Should().NotBeNull();
+
+        var createChannelResponse = await SendAuthorizedPostAsync(
+            $"/api/guilds/{createGuildPayload!.GuildId}/channels",
+            new CreateChannelRequest("outsider-channel", "Text", 3),
+            outsider.AccessToken);
+        createChannelResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+        var error = await createChannelResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        error.Should().NotBeNull();
+        error!.Code.Should().Be(ApplicationErrorCodes.Guild.AccessDenied);
+    }
+
+    [Fact]
+    public async Task CreateChannel_WhenGuildNotFound_ShouldReturn404()
+    {
+        var user = await RegisterAsync();
+        var nonExistentGuildId = Guid.NewGuid();
+
+        var createChannelResponse = await SendAuthorizedPostAsync(
+            $"/api/guilds/{nonExistentGuildId}/channels",
+            new CreateChannelRequest("lost-channel", "Text", 0),
+            user.AccessToken);
+        createChannelResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+        var error = await createChannelResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        error.Should().NotBeNull();
+        error!.Code.Should().Be(ApplicationErrorCodes.Guild.NotFound);
+    }
+
+    [Fact]
+    public async Task CreateChannel_WhenNotAuthenticated_ShouldReturn401()
+    {
+        var nonExistentGuildId = Guid.NewGuid();
+
+        var createChannelResponse = await _client.PostAsJsonAsync(
+            $"/api/guilds/{nonExistentGuildId}/channels",
+            new CreateChannelRequest("anon-channel", "Text", 0));
+        createChannelResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task CreateChannel_WhenInvalidType_ShouldReturn400()
+    {
+        var owner = await RegisterAsync();
+
+        var createGuildResponse = await SendAuthorizedPostAsync(
+            "/api/guilds",
+            new CreateGuildRequest("Invalid Type Channel Guild"),
+            owner.AccessToken);
+        createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        createGuildPayload.Should().NotBeNull();
+
+        var createChannelResponse = await SendAuthorizedPostAsync(
+            $"/api/guilds/{createGuildPayload!.GuildId}/channels",
+            new CreateChannelRequest("bad-channel", "Video", 0),
+            owner.AccessToken);
+        createChannelResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var error = await createChannelResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        error.Should().NotBeNull();
+        error!.Code.Should().Be(ApplicationErrorCodes.Common.ValidationFailed);
+    }
+
+    [Fact]
+    public async Task CreateChannel_WhenNegativePosition_ShouldReturn400()
+    {
+        var owner = await RegisterAsync();
+
+        var createGuildResponse = await SendAuthorizedPostAsync(
+            "/api/guilds",
+            new CreateGuildRequest("Negative Position Channel Guild"),
+            owner.AccessToken);
+        createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        createGuildPayload.Should().NotBeNull();
+
+        var createChannelResponse = await SendAuthorizedPostAsync(
+            $"/api/guilds/{createGuildPayload!.GuildId}/channels",
+            new CreateChannelRequest("bad-channel", "Text", -1),
+            owner.AccessToken);
+        createChannelResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var error = await createChannelResponse.Content.ReadFromJsonAsync<ApplicationError>();
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Common.ValidationFailed);
     }
