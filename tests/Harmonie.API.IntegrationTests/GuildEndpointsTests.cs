@@ -955,6 +955,10 @@ public sealed class GuildEndpointsTests : IClassFixture<WebApplicationFactory<Pr
             """{"role":"Owner"}""",
             owner.AccessToken);
         updateRoleResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var error = await updateRoleResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        error.Should().NotBeNull();
+        error!.Code.Should().Be(ApplicationErrorCodes.Common.ValidationFailed);
     }
 
     [Fact]
