@@ -67,11 +67,15 @@ public sealed class GuildRepository : IGuildRepository
             cancellationToken: cancellationToken);
 
         var row = await connection.QueryFirstOrDefaultAsync<GuildWithRoleDto>(command);
-        return row is null
-            ? null
-            : new GuildAccessContext(
-                MapToGuild(row),
-                row.Role.HasValue ? (GuildRole)row.Role.Value : null);
+        if (row is null)
+            return null;
+
+        if (row.Role.HasValue && !Enum.IsDefined(typeof(GuildRole), row.Role.Value))
+            throw new InvalidOperationException("Stored guild role is invalid.");
+
+        return new GuildAccessContext(
+            MapToGuild(row),
+            row.Role.HasValue ? (GuildRole)row.Role.Value : null);
     }
 
     public async Task AddAsync(Guild guild, CancellationToken cancellationToken = default)
