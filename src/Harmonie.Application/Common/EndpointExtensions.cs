@@ -270,6 +270,8 @@ public static class EndpointExtensions
             ApplicationErrorCodes.Message.EditForbidden => HttpStatusCode.Forbidden,
             ApplicationErrorCodes.Message.DeleteForbidden => HttpStatusCode.Forbidden,
             ApplicationErrorCodes.User.NotFound => HttpStatusCode.NotFound,
+            ApplicationErrorCodes.Conversation.NotFound => HttpStatusCode.NotFound,
+            ApplicationErrorCodes.Conversation.CannotOpenSelf => HttpStatusCode.BadRequest,
             _ => HttpStatusCode.InternalServerError
         };
 }
