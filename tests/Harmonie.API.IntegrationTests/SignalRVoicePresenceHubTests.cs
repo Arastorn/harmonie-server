@@ -134,7 +134,7 @@ public sealed class SignalRVoicePresenceHubTests : IClassFixture<WebApplicationF
     private HubConnection CreateHubConnection(string accessToken)
     {
         var baseAddress = _client.BaseAddress ?? new Uri("http://localhost");
-        var hubUri = new Uri(baseAddress, "/hubs/voice-presence");
+        var hubUri = new Uri(baseAddress, "/hubs/realtime");
 
         return new HubConnectionBuilder()
             .WithUrl(hubUri, options =>

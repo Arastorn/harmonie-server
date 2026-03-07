@@ -9,17 +9,20 @@ using Microsoft.AspNetCore.SignalR;
 namespace Harmonie.API.RealTime;
 
 [Authorize]
-public sealed class TextChannelsHub : Hub
+public sealed class RealtimeHub : Hub
 {
     private readonly IGuildChannelRepository _guildChannelRepository;
     private readonly IGuildMemberRepository _guildMemberRepository;
+    private readonly IGuildRepository _guildRepository;
 
-    public TextChannelsHub(
+    public RealtimeHub(
         IGuildChannelRepository guildChannelRepository,
-        IGuildMemberRepository guildMemberRepository)
+        IGuildMemberRepository guildMemberRepository,
+        IGuildRepository guildRepository)
     {
         _guildChannelRepository = guildChannelRepository;
         _guildMemberRepository = guildMemberRepository;
+        _guildRepository = guildRepository;
     }
 
     public async Task JoinChannel(Guid channelId)
@@ -63,8 +66,49 @@ public sealed class TextChannelsHub : Hub
             Context.ConnectionAborted);
     }
 
+    public async Task JoinGuild(Guid guildId)
+    {
+        if (guildId == Guid.Empty)
+            throw new HubException(ApplicationErrorCodes.Common.ValidationFailed);
+
+        if (!TryGetAuthenticatedUserId(out var currentUserId) || currentUserId is null)
+            throw new HubException(ApplicationErrorCodes.Auth.InvalidCredentials);
+
+        var parsedGuildId = GuildId.From(guildId);
+        var guildAccess = await _guildRepository.GetWithCallerRoleAsync(
+            parsedGuildId,
+            currentUserId,
+            Context.ConnectionAborted);
+
+        if (guildAccess is null)
+            throw new HubException(ApplicationErrorCodes.Guild.NotFound);
+
+        if (guildAccess.CallerRole is null)
+            throw new HubException(ApplicationErrorCodes.Guild.AccessDenied);
+
+        await Groups.AddToGroupAsync(
+            Context.ConnectionId,
+            GetGuildGroupName(parsedGuildId),
+            Context.ConnectionAborted);
+    }
+
+    public async Task LeaveGuild(Guid guildId)
+    {
+        if (guildId == Guid.Empty)
+            throw new HubException(ApplicationErrorCodes.Common.ValidationFailed);
+
+        var parsedGuildId = GuildId.From(guildId);
+        await Groups.RemoveFromGroupAsync(
+            Context.ConnectionId,
+            GetGuildGroupName(parsedGuildId),
+            Context.ConnectionAborted);
+    }
+
     internal static string GetChannelGroupName(GuildChannelId channelId)
         => $"channel:{channelId}";
+
+    internal static string GetGuildGroupName(GuildId guildId)
+        => $"guild-voice:{guildId}";
 
     private bool TryGetAuthenticatedUserId(out UserId? userId)
     {

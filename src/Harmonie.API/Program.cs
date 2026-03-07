@@ -111,8 +111,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 var accessToken = context.Request.Query["access_token"];
                 var path = context.HttpContext.Request.Path;
                 if (!string.IsNullOrWhiteSpace(accessToken)
-                    && (path.StartsWithSegments("/hubs/text-channels")
-                        || path.StartsWithSegments("/hubs/voice-presence")))
+                    && path.StartsWithSegments("/hubs/realtime"))
                 {
                     context.Token = accessToken;
                 }
@@ -212,8 +211,7 @@ EditMessageEndpoint.Map(app);
 DeleteMessageEndpoint.Map(app);
 GetMyProfileEndpoint.Map(app);
 UpdateMyProfileEndpoint.Map(app);
-app.MapHub<TextChannelsHub>("/hubs/text-channels");
-app.MapHub<VoicePresenceHub>("/hubs/voice-presence");
+app.MapHub<RealtimeHub>("/hubs/realtime");
 
 // Future endpoints will be added here as features are developed
 // Example:

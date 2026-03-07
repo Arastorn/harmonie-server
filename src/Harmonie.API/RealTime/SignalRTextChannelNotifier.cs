@@ -5,9 +5,9 @@ namespace Harmonie.API.RealTime;
 
 public sealed class SignalRTextChannelNotifier : ITextChannelNotifier
 {
-    private readonly IHubContext<TextChannelsHub> _hubContext;
+    private readonly IHubContext<RealtimeHub> _hubContext;
 
-    public SignalRTextChannelNotifier(IHubContext<TextChannelsHub> hubContext)
+    public SignalRTextChannelNotifier(IHubContext<RealtimeHub> hubContext)
     {
         _hubContext = hubContext;
     }
@@ -26,7 +26,7 @@ public sealed class SignalRTextChannelNotifier : ITextChannelNotifier
             CreatedAtUtc: notification.CreatedAtUtc);
 
         await _hubContext.Clients
-            .Group(TextChannelsHub.GetChannelGroupName(notification.ChannelId))
+            .Group(RealtimeHub.GetChannelGroupName(notification.ChannelId))
             .SendAsync("MessageCreated", payload, cancellationToken);
     }
 
@@ -43,7 +43,7 @@ public sealed class SignalRTextChannelNotifier : ITextChannelNotifier
             UpdatedAtUtc: notification.UpdatedAtUtc);
 
         await _hubContext.Clients
-            .Group(TextChannelsHub.GetChannelGroupName(notification.ChannelId))
+            .Group(RealtimeHub.GetChannelGroupName(notification.ChannelId))
             .SendAsync("MessageUpdated", payload, cancellationToken);
     }
 
@@ -58,7 +58,7 @@ public sealed class SignalRTextChannelNotifier : ITextChannelNotifier
             ChannelId: notification.ChannelId.ToString());
 
         await _hubContext.Clients
-            .Group(TextChannelsHub.GetChannelGroupName(notification.ChannelId))
+            .Group(RealtimeHub.GetChannelGroupName(notification.ChannelId))
             .SendAsync("MessageDeleted", payload, cancellationToken);
     }
 }

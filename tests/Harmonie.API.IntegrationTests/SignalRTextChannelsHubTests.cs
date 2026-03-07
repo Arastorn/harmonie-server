@@ -272,7 +272,7 @@ public sealed class SignalRTextChannelsHubTests : IClassFixture<WebApplicationFa
     private HubConnection CreateHubConnection(string accessToken)
     {
         var baseAddress = _client.BaseAddress ?? new Uri("http://localhost");
-        var hubUri = new Uri(baseAddress, "/hubs/text-channels");
+        var hubUri = new Uri(baseAddress, "/hubs/realtime");
 
         return new HubConnectionBuilder()
             .WithUrl(hubUri, options =>

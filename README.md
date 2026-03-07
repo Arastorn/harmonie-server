@@ -69,8 +69,7 @@ dotnet run --project src/Harmonie.API
 - `POST /api/webhooks/livekit`
 - `GET /api/users/me`
 - `PUT /api/users/me`
-- `GET /hubs/text-channels` (SignalR negotiate/transport)
-- `GET /hubs/voice-presence` (SignalR negotiate/transport)
+- `GET /hubs/realtime` (SignalR negotiate/transport for text channels and voice presence)
 
 In Development, OpenAPI and Scalar are enabled.
 
