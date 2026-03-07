@@ -7,13 +7,15 @@ namespace Harmonie.Infrastructure.LiveKit;
 public sealed class LiveKitSdkRoomApiClient : ILiveKitRoomApiClient
 {
     private readonly LiveKitSettings _settings;
+    private readonly string _serverUrl;
 
     public LiveKitSdkRoomApiClient(IOptions<LiveKitSettings> settings)
     {
         _settings = settings.Value;
+        _serverUrl = _settings.GetServerUrl();
 
-        if (string.IsNullOrWhiteSpace(_settings.Url))
-            throw new InvalidOperationException("Configuration value 'LiveKit:Url' is required.");
+        if (string.IsNullOrWhiteSpace(_serverUrl))
+            throw new InvalidOperationException("Configuration value 'LiveKit:Url' or 'LiveKit:ServerUrl' is required.");
 
         if (string.IsNullOrWhiteSpace(_settings.ApiKey))
             throw new InvalidOperationException("Configuration value 'LiveKit:ApiKey' is required.");
@@ -26,7 +28,7 @@ public sealed class LiveKitSdkRoomApiClient : ILiveKitRoomApiClient
     {
         using var httpClient = new HttpClient();
         var roomServiceClient = new RoomServiceClient(
-            _settings.Url,
+            _serverUrl,
             _settings.ApiKey,
             _settings.ApiSecret,
             httpClient);
@@ -41,7 +43,7 @@ public sealed class LiveKitSdkRoomApiClient : ILiveKitRoomApiClient
     {
         using var httpClient = new HttpClient();
         var roomServiceClient = new RoomServiceClient(
-            _settings.Url,
+            _serverUrl,
             _settings.ApiKey,
             _settings.ApiSecret,
             httpClient);

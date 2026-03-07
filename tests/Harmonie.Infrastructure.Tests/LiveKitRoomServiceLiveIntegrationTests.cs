@@ -9,6 +9,7 @@ using Livekit.Server.Sdk.Dotnet;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
+using Xunit;
 
 namespace Harmonie.Infrastructure.Tests;
 
@@ -18,7 +19,7 @@ public sealed class LiveKitRoomServiceLiveIntegrationTests
     private const string DefaultApiKey = "devkey";
     private const string DefaultApiSecret = "devsecret-that-is-long-enough-for-hmac-signing";
 
-    [LiveKitIntegrationFact]
+    [Fact]
     public async Task GetGuildVoiceParticipantsAsync_WhenRealLiveKitRoomExists_ShouldQueryLiveServerAndReturnNoParticipants()
     {
         var settings = CreateSettings();
