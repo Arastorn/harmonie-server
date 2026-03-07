@@ -106,6 +106,40 @@ public sealed class ConversationRepository : IConversationRepository
         return new ConversationGetOrCreateResult(MapToConversation(row), row.WasCreated);
     }
 
+    public async Task<IReadOnlyList<UserConversationSummary>> GetUserConversationsAsync(
+        UserId userId,
+        CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+                           SELECT c.id AS "ConversationId",
+                                  CASE
+                                      WHEN c.user1_id = @UserId THEN c.user2_id
+                                      ELSE c.user1_id
+                                  END AS "OtherParticipantUserId",
+                                  u.username AS "OtherParticipantUsername",
+                                  c.created_at_utc AS "CreatedAtUtc"
+                           FROM conversations c
+                           INNER JOIN users u
+                                   ON u.id = CASE
+                                                 WHEN c.user1_id = @UserId THEN c.user2_id
+                                                 ELSE c.user1_id
+                                             END
+                           WHERE @UserId IN (c.user1_id, c.user2_id)
+                             AND u.deleted_at IS NULL
+                           ORDER BY c.created_at_utc DESC, c.id ASC
+                           """;
+
+        var connection = await _dbSession.GetOpenConnectionAsync(cancellationToken);
+        var command = new CommandDefinition(
+            sql,
+            new { UserId = userId.Value },
+            transaction: _dbSession.Transaction,
+            cancellationToken: cancellationToken);
+
+        var rows = await connection.QueryAsync<UserConversationSummaryRow>(command);
+        return rows.Select(MapToUserConversationSummary).ToArray();
+    }
+
     private static Conversation MapToConversation(ConversationRow row)
         => Conversation.Rehydrate(
             ConversationId.From(row.Id),
@@ -119,6 +153,19 @@ public sealed class ConversationRepository : IConversationRepository
             UserId.From(row.User1Id),
             UserId.From(row.User2Id),
             row.CreatedAtUtc);
+
+    private static UserConversationSummary MapToUserConversationSummary(UserConversationSummaryRow row)
+    {
+        var usernameResult = Username.Create(row.OtherParticipantUsername);
+        if (usernameResult.IsFailure || usernameResult.Value is null)
+            throw new InvalidOperationException("Stored conversation participant username is invalid.");
+
+        return new UserConversationSummary(
+            ConversationId.From(row.ConversationId),
+            UserId.From(row.OtherParticipantUserId),
+            usernameResult.Value,
+            row.CreatedAtUtc);
+    }
 
     private static (UserId User1Id, UserId User2Id) NormalizeParticipants(UserId firstUserId, UserId secondUserId)
         => firstUserId.Value.CompareTo(secondUserId.Value) <= 0

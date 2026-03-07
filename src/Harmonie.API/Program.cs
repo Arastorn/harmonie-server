@@ -14,6 +14,7 @@ using Harmonie.Application.Features.Channels.GetMessages;
 using Harmonie.Application.Features.Channels.JoinVoiceChannel;
 using Harmonie.Application.Features.Channels.SendMessage;
 using Harmonie.Application.Features.Channels.UpdateChannel;
+using Harmonie.Application.Features.Conversations.ListConversations;
 using Harmonie.Application.Features.Conversations.OpenConversation;
 using Harmonie.Application.Features.Guilds.CreateChannel;
 using Harmonie.Application.Features.Guilds.CreateGuild;
@@ -215,6 +216,7 @@ DeleteMessageEndpoint.Map(app);
 GetMyProfileEndpoint.Map(app);
 UpdateMyProfileEndpoint.Map(app);
 OpenConversationEndpoint.Map(app);
+ListConversationsEndpoint.Map(app);
 app.MapHub<RealtimeHub>("/hubs/realtime");
 
 // Future endpoints will be added here as features are developed
