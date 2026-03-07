@@ -18,6 +18,8 @@ public static class DependencyInjection
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<ILiveKitTokenService, LiveKitTokenService>();
         services.AddScoped<ILiveKitWebhookReceiver, LiveKitWebhookReceiver>();
+        services.AddScoped<ILiveKitRoomApiClient, LiveKitSdkRoomApiClient>();
+        services.AddScoped<ILiveKitRoomService, LiveKitRoomService>();
 
         var connectionString = configuration.GetConnectionString("DefaultConnection");
         if (string.IsNullOrWhiteSpace(connectionString))

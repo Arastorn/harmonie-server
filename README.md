@@ -30,10 +30,10 @@ This repository currently provides:
 
 ## Quick Start
 
-1. Start PostgreSQL:
+1. Start PostgreSQL and LiveKit:
 
 ```bash
-docker-compose up -d postgres
+docker-compose up -d postgres livekit
 ```
 
 2. Run migrations:
@@ -51,6 +51,12 @@ $env:ASPNETCORE_ENVIRONMENT = "Development"
 dotnet run --project src/Harmonie.API
 ```
 
+The default Development config uses:
+- `LiveKit:PublicUrl=ws://localhost:7880` for tokens returned to clients
+- `LiveKit:InternalUrl=http://localhost:7880` for server-to-server API calls
+
+In `docker-compose`, the API container overrides `LiveKit:InternalUrl` to `http://livekit:7880` while keeping `LiveKit:PublicUrl=ws://localhost:7880` so browser clients can still connect through the published host port.
+
 4. Check endpoints:
 - `GET /health`
 - `POST /api/auth/register`
@@ -63,6 +69,7 @@ dotnet run --project src/Harmonie.API
 - `POST /api/guilds/{guildId}/members/invite`
 - `GET /api/guilds/{guildId}/members`
 - `GET /api/guilds/{guildId}/channels`
+- `GET /api/guilds/{guildId}/voice/participants`
 - `POST /api/channels/{channelId}/messages`
 - `GET /api/channels/{channelId}/messages`
 - `POST /api/channels/{channelId}/voice/join`

@@ -39,9 +39,16 @@ services:
   livekit:
     image: livekit/livekit-server:latest
     container_name: harmonie-livekit
+    environment:
+      LIVEKIT_CONFIG: |
+        keys:
+          devkey: devsecret-that-is-long-enough-for-hmac-signing
+        webhook:
+          api_key: devkey
+          urls:
+            - http://harmonie-api:80/api/webhooks/livekit
     command:
       - --dev
-      - --webhook-urls=http://harmonie-api:80/api/webhooks/livekit
     ports:
       - "7880:7880"
       - "7881:7881"
@@ -59,6 +66,10 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=harmonie;Username=harmonie_user;Password=harmonie_password
+      - LiveKit__PublicUrl=ws://localhost:7880
+      - LiveKit__InternalUrl=http://livekit:7880
+      - LiveKit__ApiKey=devkey
+      - LiveKit__ApiSecret=devsecret-that-is-long-enough-for-hmac-signing
     ports:
       - "5001:80"
     depends_on:
@@ -66,6 +77,8 @@ services:
         condition: service_healthy
       harmonie-migrations:
         condition: service_completed_successfully
+      livekit:
+        condition: service_started
     networks:
       - harmonie-network
 

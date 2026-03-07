@@ -10,7 +10,7 @@ This guide gets the Harmonie server running locally.
 ## 1. Start PostgreSQL
 
 ```bash
-docker-compose up -d postgres
+docker-compose up -d postgres livekit
 ```
 
 Optional checks:
@@ -38,6 +38,12 @@ PowerShell:
 $env:ASPNETCORE_ENVIRONMENT = "Development"
 dotnet run --project src/Harmonie.API
 ```
+
+LiveKit defaults are split on purpose:
+- `LiveKit:PublicUrl` is the client-facing WebSocket URL returned by the API.
+- `LiveKit:InternalUrl` is the HTTP base URL used by the server SDK for room queries.
+
+When you run through `docker-compose`, the API container uses `http://livekit:7880` internally while clients still use `ws://localhost:7880`.
 
 ## 4. Verify the API
 
@@ -77,3 +83,4 @@ dotnet test
 - Refresh tokens are persisted and rotated in storage.
 - Message posting is rate-limited (`40` messages/minute per authenticated user).
 - If the API cannot connect to PostgreSQL, confirm `docker-compose` is running and port `5432` is available.
+- If the voice snapshot tests fail, confirm LiveKit is running on port `7880`.
