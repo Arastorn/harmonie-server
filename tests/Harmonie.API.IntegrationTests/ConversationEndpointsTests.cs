@@ -4,6 +4,7 @@ using System.Net.Http.Json;
 using FluentAssertions;
 using Harmonie.Application.Common;
 using Harmonie.Application.Features.Auth.Register;
+using Harmonie.Application.Features.Conversations.ListConversations;
 using Harmonie.Application.Features.Conversations.OpenConversation;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
@@ -111,6 +112,63 @@ public sealed class ConversationEndpointsTests : IClassFixture<WebApplicationFac
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
+    [Fact]
+    public async Task ListConversations_WhenUserHasConversations_ShouldReturnOtherParticipants()
+    {
+        var caller = await RegisterAsync();
+        var targetOne = await RegisterAsync();
+        var targetTwo = await RegisterAsync();
+
+        var openFirstResponse = await SendAuthorizedPostAsync(
+            "/api/conversations",
+            new OpenConversationRequest(targetOne.UserId),
+            caller.AccessToken);
+        openFirstResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var openSecondResponse = await SendAuthorizedPostAsync(
+            "/api/conversations",
+            new OpenConversationRequest(targetTwo.UserId),
+            caller.AccessToken);
+        openSecondResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var response = await SendAuthorizedGetAsync("/api/conversations", caller.AccessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var payload = await response.Content.ReadFromJsonAsync<ListConversationsResponse>();
+        payload.Should().NotBeNull();
+        payload!.Conversations.Should().HaveCount(2);
+        payload.Conversations.Should().Contain(x =>
+            x.OtherParticipantUserId == targetOne.UserId &&
+            x.OtherParticipantUsername == targetOne.Username);
+        payload.Conversations.Should().Contain(x =>
+            x.OtherParticipantUserId == targetTwo.UserId &&
+            x.OtherParticipantUsername == targetTwo.Username);
+        payload.Conversations.Should().OnlyContain(x => x.OtherParticipantUserId != caller.UserId);
+    }
+
+    [Fact]
+    public async Task ListConversations_WhenUserHasNoConversations_ShouldReturnEmptyArray()
+    {
+        var caller = await RegisterAsync();
+
+        var response = await SendAuthorizedGetAsync("/api/conversations", caller.AccessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var payload = await response.Content.ReadFromJsonAsync<ListConversationsResponse>();
+        payload.Should().NotBeNull();
+        payload!.Conversations.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ListConversations_WithoutAuthentication_ShouldReturnUnauthorized()
+    {
+        var response = await _client.GetAsync("/api/conversations");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
     private async Task<RegisterResponse> RegisterAsync()
     {
         var request = new RegisterRequest(
@@ -135,6 +193,15 @@ public sealed class ConversationEndpointsTests : IClassFixture<WebApplicationFac
         {
             Content = JsonContent.Create(payload)
         };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        return await _client.SendAsync(request);
+    }
+
+    private async Task<HttpResponseMessage> SendAuthorizedGetAsync(
+        string uri,
+        string accessToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, uri);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         return await _client.SendAsync(request);
     }
