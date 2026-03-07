@@ -10,6 +10,7 @@ This repository currently provides:
 - Refresh token reuse detection with family session revocation on security incident
 - Guild creation and membership management (invite + list members)
 - Guild channel listing with default text and voice channels
+- Direct conversation open/get by user pair
 - Voice channel join token issuance via LiveKit
 - Voice presence notifications via LiveKit webhooks and SignalR
 - Text messaging (send + read with cursor-based pagination)
@@ -72,6 +73,7 @@ In `docker-compose`, the API container overrides `LiveKit:InternalUrl` to `http:
 - `GET /api/guilds/{guildId}/voice/participants`
 - `POST /api/channels/{channelId}/messages`
 - `GET /api/channels/{channelId}/messages`
+- `POST /api/conversations`
 - `POST /api/channels/{channelId}/voice/join`
 - `POST /api/webhooks/livekit`
 - `GET /api/users/me`

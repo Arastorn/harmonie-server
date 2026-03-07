@@ -72,4 +72,10 @@ public static class ApplicationErrorCodes
     {
         public const string NotFound = "USER_NOT_FOUND";
     }
+
+    public static class Conversation
+    {
+        public const string NotFound = "CONVERSATION_NOT_FOUND";
+        public const string CannotOpenSelf = "CONVERSATION_CANNOT_OPEN_SELF";
+    }
 }
