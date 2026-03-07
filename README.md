@@ -63,6 +63,7 @@ dotnet run --project src/Harmonie.API
 - `POST /api/guilds/{guildId}/members/invite`
 - `GET /api/guilds/{guildId}/members`
 - `GET /api/guilds/{guildId}/channels`
+- `GET /api/guilds/{guildId}/voice/participants`
 - `POST /api/channels/{channelId}/messages`
 - `GET /api/channels/{channelId}/messages`
 - `POST /api/channels/{channelId}/voice/join`
