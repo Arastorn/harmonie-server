@@ -28,7 +28,7 @@ Current mapped endpoints:
 - `GET /api/channels/{channelId}/messages`
 - `GET /api/users/me`
 - `PUT /api/users/me`
-- `GET /hubs/text-channels` (SignalR)
+- `GET /hubs/realtime` (SignalR for text channels and voice presence)
 
 ## Application (`src/Harmonie.Application`)
 
