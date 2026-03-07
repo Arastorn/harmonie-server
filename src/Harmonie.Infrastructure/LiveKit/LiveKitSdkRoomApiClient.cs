@@ -4,7 +4,7 @@ using Microsoft.Extensions.Options;
 
 namespace Harmonie.Infrastructure.LiveKit;
 
-internal sealed class LiveKitSdkRoomApiClient : ILiveKitRoomApiClient
+public sealed class LiveKitSdkRoomApiClient : ILiveKitRoomApiClient
 {
     private readonly LiveKitSettings _settings;
 
