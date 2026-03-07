@@ -3,7 +3,7 @@ using Harmonie.Application.Interfaces;
 using Harmonie.Domain.Entities;
 using Harmonie.Domain.Enums;
 using Harmonie.Domain.ValueObjects;
-using Harmonie.Infrastructure.Dto;
+using Harmonie.Infrastructure.Rows;
 using Npgsql;
 
 namespace Harmonie.Infrastructure.Persistence;
@@ -180,7 +180,7 @@ public sealed class GuildMemberRepository : IGuildMemberRepository
             transaction: _dbSession.Transaction,
             cancellationToken: cancellationToken);
 
-        var rows = await connection.QueryAsync<UserGuildMembershipDto>(command);
+        var rows = await connection.QueryAsync<UserGuildMembershipRow>(command);
         return rows.Select(MapToUserGuildMembership).ToArray();
     }
 
@@ -210,7 +210,7 @@ public sealed class GuildMemberRepository : IGuildMemberRepository
             transaction: _dbSession.Transaction,
             cancellationToken: cancellationToken);
 
-        var rows = await connection.QueryAsync<GuildMemberUserDto>(command);
+        var rows = await connection.QueryAsync<GuildMemberUserRow>(command);
         return rows.Select(MapToGuildMemberUser).ToArray();
     }
 
@@ -267,7 +267,7 @@ public sealed class GuildMemberRepository : IGuildMemberRepository
         return await connection.ExecuteAsync(command);
     }
 
-    private static UserGuildMembership MapToUserGuildMembership(UserGuildMembershipDto row)
+    private static UserGuildMembership MapToUserGuildMembership(UserGuildMembershipRow row)
     {
         if (!Enum.IsDefined(typeof(GuildRole), row.Role))
             throw new InvalidOperationException("Stored guild role is invalid.");
@@ -289,7 +289,7 @@ public sealed class GuildMemberRepository : IGuildMemberRepository
             row.JoinedAtUtc);
     }
 
-    private static GuildMemberUser MapToGuildMemberUser(GuildMemberUserDto row)
+    private static GuildMemberUser MapToGuildMemberUser(GuildMemberUserRow row)
     {
         if (!Enum.IsDefined(typeof(GuildRole), row.Role))
             throw new InvalidOperationException("Stored guild role is invalid.");
