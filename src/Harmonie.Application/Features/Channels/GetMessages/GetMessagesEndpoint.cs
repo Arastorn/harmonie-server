@@ -19,9 +19,9 @@ public static class GetMessagesEndpoint
             .WithSummary("Get channel messages")
             .WithDescription("Returns channel messages with cursor pagination.")
             .Produces<GetMessagesResponse>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status401Unauthorized)
             .ProducesErrors(
                 ApplicationErrorCodes.Common.ValidationFailed,
+                ApplicationErrorCodes.Auth.InvalidCredentials,
                 ApplicationErrorCodes.Guild.AccessDenied,
                 ApplicationErrorCodes.Channel.NotFound,
                 ApplicationErrorCodes.Channel.NotText,

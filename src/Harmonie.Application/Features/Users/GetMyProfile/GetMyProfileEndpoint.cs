@@ -17,8 +17,8 @@ public static class GetMyProfileEndpoint
             .WithSummary("Get my profile")
             .WithDescription("Returns the authenticated user's profile.")
             .Produces<GetMyProfileResponse>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status401Unauthorized)
             .ProducesErrors(
+                ApplicationErrorCodes.Auth.InvalidCredentials,
                 ApplicationErrorCodes.User.NotFound);
     }
 

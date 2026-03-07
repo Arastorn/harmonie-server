@@ -19,9 +19,9 @@ public static class CreateChannelEndpoint
             .WithSummary("Create a guild channel")
             .WithDescription("Creates a new text or voice channel in the guild. Only guild admins can create channels.")
             .Produces<CreateChannelResponse>(StatusCodes.Status201Created)
-            .Produces(StatusCodes.Status401Unauthorized)
             .ProducesErrors(
                 ApplicationErrorCodes.Common.ValidationFailed,
+                ApplicationErrorCodes.Auth.InvalidCredentials,
                 ApplicationErrorCodes.Common.DomainRuleViolation,
                 ApplicationErrorCodes.Guild.NotFound,
                 ApplicationErrorCodes.Guild.AccessDenied,

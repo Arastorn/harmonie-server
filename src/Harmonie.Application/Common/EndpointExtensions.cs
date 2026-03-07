@@ -2,6 +2,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.OpenApi;
+using System.Diagnostics;
 using System.Net;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -29,7 +30,10 @@ public static class EndpointExtensions
                 .GroupBy(e => e.PropertyName)
                 .ToDictionary(
                     g => g.Key,
-                    g => g.Select(e => e.ErrorMessage).ToArray()
+                    g => g.Select(e => new ApplicationValidationError(
+                        NormalizeValidationErrorCode(e.ErrorCode),
+                        e.ErrorMessage))
+                        .ToArray()
                 );
 
             return new ApplicationError(
@@ -54,7 +58,12 @@ public static class EndpointExtensions
                     ApplicationErrorCodes.Common.InvalidState,
                     "Operation succeeded but no payload was returned.");
 
-                return Results.Json(failurePayload, statusCode: StatusCodes.Status500InternalServerError);
+                return Results.Json(
+                    EnrichError(
+                        failurePayload,
+                        StatusCodes.Status500InternalServerError,
+                        Activity.Current?.Id),
+                    statusCode: StatusCodes.Status500InternalServerError);
             }
 
             return Results.Ok(response.Data);
@@ -65,7 +74,9 @@ public static class EndpointExtensions
             "An unexpected error occurred");
 
         var statusCode = (int)MapStatusCode(error.Code);
-        return Results.Json(error, statusCode: statusCode);
+        return Results.Json(
+            EnrichError(error, statusCode, Activity.Current?.Id),
+            statusCode: statusCode);
     }
 
     /// <summary>
@@ -84,12 +95,36 @@ public static class EndpointExtensions
                 ApplicationErrorCodes.Common.InvalidState,
                 "Operation succeeded but no payload was returned.");
 
-            return Results.Json(payload, statusCode: StatusCodes.Status500InternalServerError);
+            return Results.Json(
+                EnrichError(
+                    payload,
+                    StatusCodes.Status500InternalServerError,
+                    Activity.Current?.Id),
+                statusCode: StatusCodes.Status500InternalServerError);
         }
 
         var location = locationFactory(response.Data);
         return Results.Created(location, response.Data);
     }
+
+    public static Task WriteErrorAsync(
+        HttpResponse response,
+        ApplicationError error)
+    {
+        var statusCode = (int)MapStatusCode(error.Code);
+        response.StatusCode = statusCode;
+        return response.WriteAsJsonAsync(
+            EnrichError(error, statusCode, response.HttpContext.TraceIdentifier));
+    }
+
+    public static IReadOnlyDictionary<string, ApplicationValidationError[]> SingleValidationError(
+        string propertyName,
+        string code,
+        string detail)
+        => new Dictionary<string, ApplicationValidationError[]>
+        {
+            [propertyName] = [new(code, detail)]
+        };
 
     private static readonly IReadOnlyDictionary<string, string> ErrorMessages =
         new Dictionary<string, string>
@@ -151,22 +186,77 @@ public static class EndpointExtensions
                 if (!responses.TryGetValue(statusKey, out var response) || response is null)
                     continue;
 
+                var responseDescription = string.Join(
+                    Environment.NewLine,
+                    codes.Select(code =>
+                    {
+                        var msg = ErrorMessages.GetValueOrDefault(code, code);
+                        return $"- `{code}`: {msg}";
+                    }));
+
+                response.Description = string.IsNullOrWhiteSpace(response.Description)
+                    ? $"Possible application error codes:{Environment.NewLine}{responseDescription}"
+                    : $"{response.Description}{Environment.NewLine}{Environment.NewLine}Possible application error codes:{Environment.NewLine}{responseDescription}";
+
                 if (response.Content is null || !response.Content.TryGetValue("application/json", out var mediaType))
+                {
                     continue;
+                }
 
                 mediaType.Examples ??= new Dictionary<string, IOpenApiExample>();
                 foreach (var code in codes)
                 {
                     var msg = ErrorMessages.GetValueOrDefault(code, code);
+                    var errors = code == ApplicationErrorCodes.Common.ValidationFailed
+                        ? SingleValidationError(
+                            "field",
+                            ApplicationErrorCodes.Validation.Required,
+                            "Field is required")
+                        : null;
+
                     mediaType.Examples[code] = new OpenApiExample
                     {
-                        Value = JsonNode.Parse(JsonSerializer.Serialize(new ApplicationError(code, msg)))
+                        Summary = code,
+                        Description = msg,
+                        Value = JsonNode.Parse(JsonSerializer.Serialize(
+                            EnrichError(
+                                new ApplicationError(code, msg, errors),
+                                status,
+                                "trace-id")))
                     };
                 }
             }
             return Task.CompletedTask;
         });
     }
+
+    private static ApplicationError EnrichError(
+        ApplicationError error,
+        int status,
+        string? traceId)
+        => error with
+        {
+            Status = status,
+            TraceId = string.IsNullOrWhiteSpace(traceId) ? error.TraceId : traceId
+        };
+
+    public static string NormalizeValidationErrorCode(string fluentValidationCode)
+        => fluentValidationCode switch
+        {
+            "NotNullValidator" or "NotEmptyValidator" => ApplicationErrorCodes.Validation.Required,
+            "EmailValidator" => ApplicationErrorCodes.Validation.Email,
+            "MinimumLengthValidator" => ApplicationErrorCodes.Validation.MinLength,
+            "MaximumLengthValidator" => ApplicationErrorCodes.Validation.MaxLength,
+            "InclusiveBetweenValidator"
+                or "ExclusiveBetweenValidator"
+                or "GreaterThanValidator"
+                or "GreaterThanOrEqualValidator"
+                or "LessThanValidator"
+                or "LessThanOrEqualValidator" => ApplicationErrorCodes.Validation.OutOfRange,
+            "RegularExpressionValidator" => ApplicationErrorCodes.Validation.InvalidFormat,
+            "PredicateValidator" => ApplicationErrorCodes.Validation.Invalid,
+            _ => ApplicationErrorCodes.Validation.Invalid
+        };
 
     public static HttpStatusCode MapStatusCode(string errorCode)
         => errorCode switch

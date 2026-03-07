@@ -19,8 +19,9 @@ public static class RemoveMemberEndpoint
             .WithSummary("Remove a member from a guild")
             .WithDescription("Removes the specified user from the guild. Only admins can remove members. The guild owner cannot be removed.")
             .Produces(StatusCodes.Status204NoContent)
-            .Produces(StatusCodes.Status401Unauthorized)
             .ProducesErrors(
+                ApplicationErrorCodes.Common.ValidationFailed,
+                ApplicationErrorCodes.Auth.InvalidCredentials,
                 ApplicationErrorCodes.Guild.NotFound,
                 ApplicationErrorCodes.Guild.AccessDenied,
                 ApplicationErrorCodes.Guild.MemberNotFound,

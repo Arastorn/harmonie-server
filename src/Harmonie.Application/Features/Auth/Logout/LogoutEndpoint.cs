@@ -21,8 +21,9 @@ public static class LogoutEndpoint
             .WithSummary("Logout current session")
             .WithDescription("Revokes the provided refresh token for the authenticated user.")
             .Produces(StatusCodes.Status204NoContent)
-            .Produces(StatusCodes.Status401Unauthorized)
             .ProducesErrors(
+                ApplicationErrorCodes.Common.ValidationFailed,
+                ApplicationErrorCodes.Auth.InvalidCredentials,
                 ApplicationErrorCodes.Auth.InvalidRefreshToken);
     }
 

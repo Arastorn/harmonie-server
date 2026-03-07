@@ -20,9 +20,10 @@ public static class SendMessageEndpoint
             .WithSummary("Send a message")
             .WithDescription("Posts a message in a text channel.")
             .Produces<SendMessageResponse>(StatusCodes.Status201Created)
-            .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status429TooManyRequests)
             .ProducesErrors(
+                ApplicationErrorCodes.Common.ValidationFailed,
+                ApplicationErrorCodes.Auth.InvalidCredentials,
                 ApplicationErrorCodes.Common.DomainRuleViolation,
                 ApplicationErrorCodes.Message.ContentEmpty,
                 ApplicationErrorCodes.Message.ContentTooLong,

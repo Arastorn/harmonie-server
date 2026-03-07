@@ -19,8 +19,9 @@ public static class GetGuildMembersEndpoint
             .WithSummary("List guild members")
             .WithDescription("Returns guild members for an authenticated guild member.")
             .Produces<GetGuildMembersResponse>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status401Unauthorized)
             .ProducesErrors(
+                ApplicationErrorCodes.Common.ValidationFailed,
+                ApplicationErrorCodes.Auth.InvalidCredentials,
                 ApplicationErrorCodes.Guild.NotFound,
                 ApplicationErrorCodes.Guild.AccessDenied);
     }

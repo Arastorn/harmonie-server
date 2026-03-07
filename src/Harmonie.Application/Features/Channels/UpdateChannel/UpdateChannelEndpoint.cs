@@ -19,9 +19,9 @@ public static class UpdateChannelEndpoint
             .WithSummary("Update a guild channel")
             .WithDescription("Updates the name and/or position of a channel. Only guild admins can update channels.")
             .Produces<UpdateChannelResponse>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status401Unauthorized)
             .ProducesErrors(
                 ApplicationErrorCodes.Common.ValidationFailed,
+                ApplicationErrorCodes.Auth.InvalidCredentials,
                 ApplicationErrorCodes.Common.DomainRuleViolation,
                 ApplicationErrorCodes.Guild.AccessDenied,
                 ApplicationErrorCodes.Channel.NotFound,

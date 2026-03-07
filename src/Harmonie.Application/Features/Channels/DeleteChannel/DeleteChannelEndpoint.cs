@@ -19,8 +19,9 @@ public static class DeleteChannelEndpoint
             .WithSummary("Delete a guild channel")
             .WithDescription("Deletes a guild channel. Only guild admins can delete channels. The default channel cannot be deleted.")
             .Produces(StatusCodes.Status204NoContent)
-            .Produces(StatusCodes.Status401Unauthorized)
             .ProducesErrors(
+                ApplicationErrorCodes.Common.ValidationFailed,
+                ApplicationErrorCodes.Auth.InvalidCredentials,
                 ApplicationErrorCodes.Guild.AccessDenied,
                 ApplicationErrorCodes.Channel.NotFound,
                 ApplicationErrorCodes.Channel.AccessDenied,

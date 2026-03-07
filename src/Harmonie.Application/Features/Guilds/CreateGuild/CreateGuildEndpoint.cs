@@ -18,9 +18,9 @@ public static class CreateGuildEndpoint
             .WithSummary("Create a guild")
             .WithDescription("Creates a guild, owner admin membership, and default channels.")
             .Produces<CreateGuildResponse>(StatusCodes.Status201Created)
-            .Produces(StatusCodes.Status401Unauthorized)
             .ProducesErrors(
                 ApplicationErrorCodes.Common.ValidationFailed,
+                ApplicationErrorCodes.Auth.InvalidCredentials,
                 ApplicationErrorCodes.Common.DomainRuleViolation);
     }
 

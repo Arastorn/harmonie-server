@@ -20,7 +20,8 @@ public static class LogoutAllEndpoint
             .WithSummary("Logout all sessions")
             .WithDescription("Revokes all active refresh tokens for the authenticated user.")
             .Produces(StatusCodes.Status204NoContent)
-            .Produces(StatusCodes.Status401Unauthorized);
+            .ProducesErrors(
+                ApplicationErrorCodes.Auth.InvalidCredentials);
     }
 
     private static async Task<IResult> HandleAsync(

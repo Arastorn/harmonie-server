@@ -18,9 +18,9 @@ public static class UpdateMyProfileEndpoint
             .WithSummary("Update my profile")
             .WithDescription("Updates display name, bio, and avatar URL for the authenticated user.")
             .Produces<UpdateMyProfileResponse>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status401Unauthorized)
             .ProducesErrors(
                 ApplicationErrorCodes.Common.ValidationFailed,
+                ApplicationErrorCodes.Auth.InvalidCredentials,
                 ApplicationErrorCodes.User.NotFound);
     }
 

@@ -19,8 +19,9 @@ public static class DeleteMessageEndpoint
             .WithSummary("Delete a message")
             .WithDescription("Soft-deletes a message. The message author can delete their own messages. Guild admins can delete any message.")
             .Produces(StatusCodes.Status204NoContent)
-            .Produces(StatusCodes.Status401Unauthorized)
             .ProducesErrors(
+                ApplicationErrorCodes.Common.ValidationFailed,
+                ApplicationErrorCodes.Auth.InvalidCredentials,
                 ApplicationErrorCodes.Guild.AccessDenied,
                 ApplicationErrorCodes.Channel.NotFound,
                 ApplicationErrorCodes.Channel.NotText,

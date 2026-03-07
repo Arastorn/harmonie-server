@@ -19,8 +19,9 @@ public static class TransferOwnershipEndpoint
             .WithSummary("Transfer guild ownership")
             .WithDescription("Transfers ownership of the guild to an existing member. Only the current owner can perform this action.")
             .Produces(StatusCodes.Status204NoContent)
-            .Produces(StatusCodes.Status401Unauthorized)
             .ProducesErrors(
+                ApplicationErrorCodes.Common.ValidationFailed,
+                ApplicationErrorCodes.Auth.InvalidCredentials,
                 ApplicationErrorCodes.Guild.NotFound,
                 ApplicationErrorCodes.Guild.AccessDenied,
                 ApplicationErrorCodes.Guild.MemberNotFound,

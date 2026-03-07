@@ -19,9 +19,9 @@ public static class InviteMemberEndpoint
             .WithSummary("Invite a guild member")
             .WithDescription("Invites an existing user in the guild with the Member role.")
             .Produces<InviteMemberResponse>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status401Unauthorized)
             .ProducesErrors(
                 ApplicationErrorCodes.Common.ValidationFailed,
+                ApplicationErrorCodes.Auth.InvalidCredentials,
                 ApplicationErrorCodes.Common.DomainRuleViolation,
                 ApplicationErrorCodes.Guild.NotFound,
                 ApplicationErrorCodes.Guild.InviteForbidden,

@@ -19,8 +19,9 @@ public static class UpdateMemberRoleEndpoint
             .WithSummary("Update a guild member's role")
             .WithDescription("Changes the role of the specified member. Only admins can change roles. The guild owner's role cannot be changed.")
             .Produces(StatusCodes.Status204NoContent)
-            .Produces(StatusCodes.Status401Unauthorized)
             .ProducesErrors(
+                ApplicationErrorCodes.Common.ValidationFailed,
+                ApplicationErrorCodes.Auth.InvalidCredentials,
                 ApplicationErrorCodes.Guild.NotFound,
                 ApplicationErrorCodes.Guild.AccessDenied,
                 ApplicationErrorCodes.Guild.MemberNotFound,

@@ -17,7 +17,8 @@ public static class ListUserGuildsEndpoint
             .WithSummary("List current user guilds")
             .WithDescription("Returns all guilds where the authenticated user is a member.")
             .Produces<ListUserGuildsResponse>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status401Unauthorized);
+            .ProducesErrors(
+                ApplicationErrorCodes.Auth.InvalidCredentials);
     }
 
     private static async Task<IResult> HandleAsync(

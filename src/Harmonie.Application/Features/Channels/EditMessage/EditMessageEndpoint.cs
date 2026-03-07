@@ -19,8 +19,9 @@ public static class EditMessageEndpoint
             .WithSummary("Edit a message")
             .WithDescription("Updates the content of a message. Only the message author can edit their own messages.")
             .Produces<EditMessageResponse>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status401Unauthorized)
             .ProducesErrors(
+                ApplicationErrorCodes.Common.ValidationFailed,
+                ApplicationErrorCodes.Auth.InvalidCredentials,
                 ApplicationErrorCodes.Common.DomainRuleViolation,
                 ApplicationErrorCodes.Message.ContentEmpty,
                 ApplicationErrorCodes.Message.ContentTooLong,

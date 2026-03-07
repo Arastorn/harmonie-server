@@ -19,8 +19,9 @@ public static class LeaveGuildEndpoint
             .WithSummary("Leave a guild")
             .WithDescription("Removes the authenticated user from the guild. The guild owner cannot leave.")
             .Produces(StatusCodes.Status204NoContent)
-            .Produces(StatusCodes.Status401Unauthorized)
             .ProducesErrors(
+                ApplicationErrorCodes.Common.ValidationFailed,
+                ApplicationErrorCodes.Auth.InvalidCredentials,
                 ApplicationErrorCodes.Guild.NotFound,
                 ApplicationErrorCodes.Guild.AccessDenied,
                 ApplicationErrorCodes.Guild.OwnerCannotLeave);
