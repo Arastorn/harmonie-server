@@ -143,13 +143,11 @@ jobs:
         exit 1
 
     - name: Start SeaweedFS
-      env:
-        WEED_S3_PORT: "4900"
       run: |
         docker compose up -d seaweedfs
 
         for i in {1..30}; do
-          if curl -s --connect-timeout 1 http://localhost:4900 > /dev/null 2>&1; then
+          if curl -s --connect-timeout 1 http://localhost:8333 > /dev/null 2>&1; then
             exit 0
           fi
           sleep 1
@@ -176,12 +174,9 @@ jobs:
       env:
         ASPNETCORE_ENVIRONMENT: Development
         ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=harmonie_test;Username=harmonie_user;Password=harmonie_password"
-        WEED_TEST_ENDPOINT: "http://127.0.0.1:4900"
 
     - name: Stop containers
       if: always()
-      env:
-        WEED_S3_PORT: "4900"
       run: |
         docker compose down -v || true
         docker stop harmonie-livekit || true

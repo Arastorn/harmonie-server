@@ -15,7 +15,7 @@ namespace Harmonie.API.IntegrationTests;
 public sealed class UploadsSeaweedFsE2ETests : IClassFixture<WebApplicationFactory<Program>>
 {
     private static readonly string Endpoint =
-        Environment.GetEnvironmentVariable("WEED_TEST_ENDPOINT") ?? "http://127.0.0.1:4900";
+        Environment.GetEnvironmentVariable("WEED_TEST_ENDPOINT") ?? "http://127.0.0.1:8333";
 
     private const string BucketName = "harmonie-uploads";
     private const string Region = "us-east-1";
