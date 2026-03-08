@@ -190,6 +190,41 @@ public static class EndpointExtensions
         });
     }
 
+    public static RouteHandlerBuilder WithJsonRequestBodyDocumentation(
+        this RouteHandlerBuilder builder,
+        string description,
+        params (string Name, string Summary, object Value)[] examples)
+    {
+        return builder.AddOpenApiOperationTransformer((operation, _, _) =>
+        {
+            if (operation?.RequestBody?.Content is null
+                || !operation.RequestBody.Content.TryGetValue("application/json", out var mediaType)
+                || mediaType is null)
+            {
+                return Task.CompletedTask;
+            }
+
+            operation.RequestBody.Description = description;
+
+            if (examples.Length == 0)
+                return Task.CompletedTask;
+
+            mediaType.Example = JsonNode.Parse(JsonSerializer.Serialize(examples[0].Value));
+            mediaType.Examples ??= new Dictionary<string, IOpenApiExample>();
+
+            foreach (var (name, summary, value) in examples)
+            {
+                mediaType.Examples[name] = new OpenApiExample
+                {
+                    Summary = summary,
+                    Value = JsonNode.Parse(JsonSerializer.Serialize(value))
+                };
+            }
+
+            return Task.CompletedTask;
+        });
+    }
+
     private static string BuildExampleDetail(string errorCode)
     {
         var parts = errorCode.Split('_', StringSplitOptions.RemoveEmptyEntries);

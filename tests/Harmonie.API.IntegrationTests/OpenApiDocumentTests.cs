@@ -113,6 +113,22 @@ public sealed class OpenApiDocumentTests : IClassFixture<WebApplicationFactory<P
         updateChannelSchema["properties"]?["position"].Should().NotBeNull();
         updateChannelSchema["properties"]?["nameIsSet"].Should().BeNull();
         updateChannelSchema["properties"]?["positionIsSet"].Should().BeNull();
+
+        var updateMyProfileRequestBody = document["paths"]?["/api/users/me"]?["put"]?["requestBody"];
+        updateMyProfileRequestBody.Should().NotBeNull();
+        updateMyProfileRequestBody!["description"]?.GetValue<string>()
+            .Should().Contain("Omit a field to keep its current value");
+        updateMyProfileRequestBody["content"]?["application/json"]?["example"]?["displayName"]?.GetValue<string>()
+            .Should().Be("Alice Harmonie");
+        updateMyProfileRequestBody["content"]?["application/json"]?["examples"]?["clearProfileFields"]?["value"]?
+            .ToJsonString().Should().Contain("\"bio\":null");
+
+        var updateChannelRequestBody = document["paths"]?["/api/channels/{channelId}"]?["patch"]?["requestBody"];
+        updateChannelRequestBody.Should().NotBeNull();
+        updateChannelRequestBody!["description"]?.GetValue<string>()
+            .Should().Contain("send it as null");
+        updateChannelRequestBody["content"]?["application/json"]?["example"]?["name"]?.GetValue<string>()
+            .Should().Be("announcements");
     }
 
     private static JsonNode? ResolveRequestBodySchema(JsonNode document, string path, string method)
