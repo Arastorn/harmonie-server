@@ -22,7 +22,7 @@ This repository currently provides:
 - Text messaging (send + read with cursor-based pagination)
 - Guild message full-text search with optional filters and cursor pagination
 - User search by username/display name with optional guild scoping
-- File upload with persisted metadata and S3-compatible object storage integration
+- File upload with persisted metadata and local filesystem storage
 - SignalR real-time delivery for text channel messages
 - Rate limiting for message posting
 - Unit and integration tests for auth, guild flows, messaging, and real-time delivery
@@ -36,15 +36,14 @@ This repository currently provides:
 - Serilog
 - SignalR
 - LiveKit
-- SeaweedFS (local S3-compatible object storage)
 - OpenAPI + Scalar API reference
 
 ## Quick Start
 
-1. Start PostgreSQL, LiveKit, and SeaweedFS:
+1. Start PostgreSQL and LiveKit:
 
 ```bash
-podman compose up -d postgres livekit seaweedfs
+podman compose up -d postgres livekit
 ```
 
 2. Run migrations:
@@ -65,25 +64,27 @@ dotnet run --project src/Harmonie.API
 The default Development config uses:
 - `LiveKit:PublicUrl=ws://localhost:7880` for tokens returned to clients
 - `LiveKit:InternalUrl=http://localhost:7880` for server-to-server API calls
-- `ObjectStorage:Endpoint=http://localhost:8333` for S3-compatible object storage (SeaweedFS)
+- `ObjectStorage:LocalBasePath=uploads` for uploaded files on disk
+- `ObjectStorage:LocalBaseUrl=http://localhost:5000/files` for public file URLs returned by the API
 
-`docker-compose.yml` embeds a minimal SeaweedFS S3 credentials config for local development. The credentials in `appsettings.Development.json` already match.
+The API serves uploaded files itself from `/files/*`. In `docker-compose`, the
+API container stores them in `/app/uploads`, backed by the `uploads-data`
+volume.
 
 In `docker-compose`, the API container overrides `LiveKit:InternalUrl` to `http://livekit:7880` while keeping `LiveKit:PublicUrl=ws://localhost:7880` so browser clients can still connect through the published host port.
 
-### Using local filesystem storage (no external service)
-
-Set `ObjectStorage:Provider=local` in your configuration. Files are written to `ObjectStorage:LocalBasePath` and served at `ObjectStorage:LocalBaseUrl` via a `/files` static endpoint built into the API.
+### Upload Storage
 
 ```json
 "ObjectStorage": {
-  "Provider": "local",
   "LocalBasePath": "/var/harmonie/uploads",
   "LocalBaseUrl": "http://localhost:5001/files"
 }
 ```
 
-No object storage service is required in this mode.
+No external object storage service is required right now. If upload volume or
+deployment topology eventually justifies it, the storage abstraction can later
+be backed by an S3-compatible service.
 
 4. Check endpoints:
 - `GET /health`
@@ -118,12 +119,8 @@ No object storage service is required in this mode.
 
 In Development, OpenAPI and Scalar are enabled.
 
-`dotnet test` includes a SeaweedFS-backed upload E2E test. Start SeaweedFS
-before running the suite:
-
-```bash
-podman compose up -d seaweedfs
-```
+`dotnet test` includes a local-filesystem upload E2E test. No external object
+storage service is required for the current suite.
 
 ## API Response Model
 

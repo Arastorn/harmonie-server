@@ -3,13 +3,9 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Harmonie.Application.Features.Auth.Register;
 using Harmonie.Application.Features.Uploads.UploadFile;
-using Harmonie.Application.Interfaces;
-using Harmonie.Infrastructure.ObjectStorage;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 
 namespace Harmonie.API.IntegrationTests;
@@ -112,17 +108,9 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<WebApplicatio
             {
                 configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
                 {
-                    ["ObjectStorage:Provider"] = "local",
                     ["ObjectStorage:LocalBasePath"] = _tempDir,
                     ["ObjectStorage:LocalBaseUrl"] = "http://localhost/files"
                 });
-            });
-            builder.ConfigureServices(services =>
-            {
-                // DependencyInjection.cs reads Provider at registration time before config
-                // overrides are applied, so we replace the service explicitly here.
-                services.RemoveAll<IObjectStorageService>();
-                services.AddScoped<IObjectStorageService, LocalFileSystemObjectStorageService>();
             });
         });
 

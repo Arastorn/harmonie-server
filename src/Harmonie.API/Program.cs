@@ -185,19 +185,15 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
 
-var storageProvider = app.Configuration["ObjectStorage:Provider"] ?? "s3";
-if (string.Equals(storageProvider, "local", StringComparison.OrdinalIgnoreCase))
+var localBasePath = app.Configuration["ObjectStorage:LocalBasePath"] ?? "uploads";
+if (!Path.IsPathRooted(localBasePath))
+    localBasePath = Path.GetFullPath(localBasePath);
+Directory.CreateDirectory(localBasePath);
+app.UseStaticFiles(new StaticFileOptions
 {
-    var localBasePath = app.Configuration["ObjectStorage:LocalBasePath"] ?? "uploads";
-    if (!Path.IsPathRooted(localBasePath))
-        localBasePath = Path.GetFullPath(localBasePath);
-    Directory.CreateDirectory(localBasePath);
-    app.UseStaticFiles(new StaticFileOptions
-    {
-        FileProvider = new PhysicalFileProvider(localBasePath),
-        RequestPath = "/files"
-    });
-}
+    FileProvider = new PhysicalFileProvider(localBasePath),
+    RequestPath = "/files"
+});
 
 // ============================================================
 // MAP ENDPOINTS - Vertical Slice Architecture

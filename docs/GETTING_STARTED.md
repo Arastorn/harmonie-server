@@ -5,12 +5,12 @@ This guide gets the Harmonie server running locally.
 ## Prerequisites
 
 - .NET 10 SDK
-- Docker (for PostgreSQL)
+- Podman with `podman compose`
 
 ## 1. Start Local Services
 
 ```bash
-podman compose up -d postgres livekit seaweedfs
+podman compose up -d postgres livekit
 ```
 
 Optional checks:
@@ -18,7 +18,6 @@ Optional checks:
 ```bash
 podman compose ps
 podman compose logs postgres
-podman compose logs seaweedfs
 ```
 
 ## 2. Apply Database Migrations
@@ -45,6 +44,9 @@ LiveKit defaults are split on purpose:
 - `LiveKit:InternalUrl` is the HTTP base URL used by the server SDK for room queries.
 
 When you run through `docker-compose`, the API container uses `http://livekit:7880` internally while clients still use `ws://localhost:7880`.
+
+Uploads are stored on the local filesystem and served by the API from `/files/*`.
+In `docker-compose`, the API stores them in the `uploads-data` volume.
 
 ## 4. Verify the API
 
@@ -84,13 +86,7 @@ Example register payload:
 dotnet test
 ```
 
-The E2E upload test connects to a running SeaweedFS instance. Start it before running the suite:
-
-```bash
-podman compose up -d seaweedfs
-```
-
-The repository `docker-compose.yml` embeds the minimal SeaweedFS S3 credentials config used by the test.
+The upload tests use the local filesystem provider. No external object storage service is required.
 
 ## Notes
 
@@ -99,3 +95,4 @@ The repository `docker-compose.yml` embeds the minimal SeaweedFS S3 credentials 
 - Message posting is rate-limited (`40` messages/minute per authenticated user).
 - If the API cannot connect to PostgreSQL, confirm `podman compose` is running and port `5432` is available.
 - If the voice snapshot tests fail, confirm LiveKit is running on port `7880`.
+- If you later need multi-node or externalized file storage, an S3-compatible backend can be introduced behind `IObjectStorageService`.

@@ -63,7 +63,6 @@ public sealed class LocalFileSystemObjectStorageServiceTests : IDisposable
         => new(
             Options.Create(new ObjectStorageSettings
             {
-                Provider = "local",
                 LocalBasePath = _tempDirectory,
                 LocalBaseUrl = "http://localhost/files"
             }),
