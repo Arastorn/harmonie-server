@@ -36,6 +36,7 @@ using Harmonie.Application.Features.Guilds.UpdateMemberRole;
 using Harmonie.Application.Features.Users.GetMyProfile;
 using Harmonie.Application.Features.Users.SearchUsers;
 using Harmonie.Application.Features.Users.UpdateMyProfile;
+using Harmonie.Application.Features.Uploads.UploadFile;
 using Harmonie.Application.Features.Voice.HandleLiveKitWebhook;
 using Harmonie.Application.Interfaces;
 using Harmonie.Infrastructure;
@@ -62,6 +63,7 @@ builder.Host.UseSerilog();
 
 // Add layers
 builder.Services.AddApplication();
+builder.Services.Configure<UploadOptions>(builder.Configuration.GetSection("Uploads"));
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false));
@@ -225,6 +227,7 @@ DeleteMessageEndpoint.Map(app);
 GetMyProfileEndpoint.Map(app);
 SearchUsersEndpoint.Map(app);
 UpdateMyProfileEndpoint.Map(app);
+UploadFileEndpoint.Map(app);
 OpenConversationEndpoint.Map(app);
 ListConversationsEndpoint.Map(app);
 GetDirectMessagesEndpoint.Map(app);

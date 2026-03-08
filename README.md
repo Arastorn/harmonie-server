@@ -22,6 +22,7 @@ This repository currently provides:
 - Text messaging (send + read with cursor-based pagination)
 - Guild message full-text search with optional filters and cursor pagination
 - User search by username/display name with optional guild scoping
+- File upload with persisted metadata and S3-compatible object storage integration
 - SignalR real-time delivery for text channel messages
 - Rate limiting for message posting
 - Unit and integration tests for auth, guild flows, messaging, and real-time delivery
@@ -35,14 +36,15 @@ This repository currently provides:
 - Serilog
 - SignalR
 - LiveKit
+- Garage (local S3-compatible object storage)
 - OpenAPI + Scalar API reference
 
 ## Quick Start
 
-1. Start PostgreSQL and LiveKit:
+1. Start PostgreSQL, LiveKit, and Garage:
 
 ```bash
-docker-compose up -d postgres livekit
+docker compose up -d postgres livekit garage
 ```
 
 2. Run migrations:
@@ -63,6 +65,9 @@ dotnet run --project src/Harmonie.API
 The default Development config uses:
 - `LiveKit:PublicUrl=ws://localhost:7880` for tokens returned to clients
 - `LiveKit:InternalUrl=http://localhost:7880` for server-to-server API calls
+- `ObjectStorage:Endpoint=http://localhost:3900` for S3-compatible object storage
+
+Before using uploads locally, initialize Garage and create an S3 key + bucket as described in `ops/garage/README.md`.
 
 In `docker-compose`, the API container overrides `LiveKit:InternalUrl` to `http://livekit:7880` while keeping `LiveKit:PublicUrl=ws://localhost:7880` so browser clients can still connect through the published host port.
 
@@ -89,6 +94,7 @@ In `docker-compose`, the API container overrides `LiveKit:InternalUrl` to `http:
 - `PUT /api/conversations/{conversationId}/messages/{messageId}`
 - `DELETE /api/conversations/{conversationId}/messages/{messageId}`
 - `POST /api/conversations/{conversationId}/messages`
+- `POST /api/uploads`
 - `POST /api/channels/{channelId}/voice/join`
 - `POST /api/webhooks/livekit`
 - `GET /api/users/me`
