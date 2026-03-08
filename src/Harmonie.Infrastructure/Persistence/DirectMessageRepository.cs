@@ -197,7 +197,7 @@ public sealed class DirectMessageRepository : IDirectMessageRepository
 
     private static DirectMessage MapToDirectMessage(DirectMessageRow row)
     {
-        var contentResult = ChannelMessageContent.Create(row.Content);
+        var contentResult = MessageContent.Create(row.Content);
         if (contentResult.IsFailure || contentResult.Value is null)
             throw new InvalidOperationException("Stored direct message content is invalid.");
 

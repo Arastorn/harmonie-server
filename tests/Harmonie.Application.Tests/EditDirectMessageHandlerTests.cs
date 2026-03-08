@@ -318,7 +318,7 @@ public sealed class EditDirectMessageHandlerTests
 
     private static DirectMessage CreateDirectMessage(ConversationId conversationId, UserId authorUserId)
     {
-        var contentResult = ChannelMessageContent.Create("original content");
+        var contentResult = MessageContent.Create("original content");
         if (contentResult.IsFailure || contentResult.Value is null)
             throw new InvalidOperationException("Failed to create test direct message.");
 
