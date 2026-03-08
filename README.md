@@ -22,6 +22,7 @@ This repository currently provides:
 - Text messaging (send + read with cursor-based pagination)
 - Guild message full-text search with optional filters and cursor pagination
 - User search by username/display name with optional guild scoping
+- File upload with persisted metadata and S3-compatible object storage integration
 - SignalR real-time delivery for text channel messages
 - Rate limiting for message posting
 - Unit and integration tests for auth, guild flows, messaging, and real-time delivery
@@ -35,14 +36,15 @@ This repository currently provides:
 - Serilog
 - SignalR
 - LiveKit
+- SeaweedFS (local S3-compatible object storage)
 - OpenAPI + Scalar API reference
 
 ## Quick Start
 
-1. Start PostgreSQL and LiveKit:
+1. Start PostgreSQL, LiveKit, and SeaweedFS:
 
 ```bash
-docker-compose up -d postgres livekit
+podman compose up -d postgres livekit seaweedfs
 ```
 
 2. Run migrations:
@@ -63,8 +65,25 @@ dotnet run --project src/Harmonie.API
 The default Development config uses:
 - `LiveKit:PublicUrl=ws://localhost:7880` for tokens returned to clients
 - `LiveKit:InternalUrl=http://localhost:7880` for server-to-server API calls
+- `ObjectStorage:Endpoint=http://localhost:8333` for S3-compatible object storage (SeaweedFS)
+
+`docker-compose.yml` embeds a minimal SeaweedFS S3 credentials config for local development. The credentials in `appsettings.Development.json` already match.
 
 In `docker-compose`, the API container overrides `LiveKit:InternalUrl` to `http://livekit:7880` while keeping `LiveKit:PublicUrl=ws://localhost:7880` so browser clients can still connect through the published host port.
+
+### Using local filesystem storage (no external service)
+
+Set `ObjectStorage:Provider=local` in your configuration. Files are written to `ObjectStorage:LocalBasePath` and served at `ObjectStorage:LocalBaseUrl` via a `/files` static endpoint built into the API.
+
+```json
+"ObjectStorage": {
+  "Provider": "local",
+  "LocalBasePath": "/var/harmonie/uploads",
+  "LocalBaseUrl": "http://localhost:5001/files"
+}
+```
+
+No object storage service is required in this mode.
 
 4. Check endpoints:
 - `GET /health`
@@ -89,6 +108,7 @@ In `docker-compose`, the API container overrides `LiveKit:InternalUrl` to `http:
 - `PUT /api/conversations/{conversationId}/messages/{messageId}`
 - `DELETE /api/conversations/{conversationId}/messages/{messageId}`
 - `POST /api/conversations/{conversationId}/messages`
+- `POST /api/uploads`
 - `POST /api/channels/{channelId}/voice/join`
 - `POST /api/webhooks/livekit`
 - `GET /api/users/me`
@@ -97,6 +117,13 @@ In `docker-compose`, the API container overrides `LiveKit:InternalUrl` to `http:
 - `GET /hubs/realtime` (SignalR negotiate/transport for text channels and voice presence)
 
 In Development, OpenAPI and Scalar are enabled.
+
+`dotnet test` includes a SeaweedFS-backed upload E2E test. Start SeaweedFS
+before running the suite:
+
+```bash
+podman compose up -d seaweedfs
+```
 
 ## API Response Model
 
@@ -157,7 +184,7 @@ All agent-specific tooling is grouped under `agents/`.
 1. Build the agent image:
 
 ```bash
-docker build -f agents/Dockerfile.codex -t harmonie-codex .
+podman build -f agents/Dockerfile.codex -t harmonie-codex .
 ```
 
 2. Start an interactive shell with the repository mounted:
@@ -165,7 +192,7 @@ docker build -f agents/Dockerfile.codex -t harmonie-codex .
 PowerShell:
 
 ```powershell
-docker run --rm -it `
+podman run --rm -it `
   --entrypoint bash `
   -v "${PWD}:/workspace" `
   -v "${env:USERPROFILE}\.codex:/root/.codex" `

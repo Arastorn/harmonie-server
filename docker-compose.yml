@@ -56,6 +56,20 @@ services:
     networks:
       - harmonie-network
 
+  # SeaweedFS S3-compatible object storage
+  seaweedfs:
+    image: chrislusf/seaweedfs:latest
+    command: server -s3 -s3.config=/etc/s3.config.json
+    ports:
+      - "${WEED_S3_PORT:-8333}:8333"
+    volumes:
+      - seaweedfs-data:/data
+    configs:
+      - source: seaweedfs-s3-config
+        target: /etc/s3.config.json
+    networks:
+      - harmonie-network
+
   # Harmonie API
   harmonie-api:
     build:
@@ -70,6 +84,16 @@ services:
       - LiveKit__InternalUrl=http://livekit:7880
       - LiveKit__ApiKey=devkey
       - LiveKit__ApiSecret=devsecret-that-is-long-enough-for-hmac-signing
+      - Uploads__MaxFileSizeBytes=26214400
+      - ObjectStorage__Provider=s3
+      - ObjectStorage__Endpoint=http://seaweedfs:8333
+      - ObjectStorage__PublicBaseUrl=http://localhost:8333/harmonie-uploads
+      - ObjectStorage__BucketName=harmonie-uploads
+      - ObjectStorage__Region=us-east-1
+      - ObjectStorage__AccessKeyId=harmonie-key
+      - ObjectStorage__SecretAccessKey=harmonie-secret-key-for-dev
+      - ObjectStorage__ForcePathStyle=true
+      - ObjectStorage__CreateBucketIfMissing=true
     ports:
       - "5001:80"
     depends_on:
@@ -79,13 +103,30 @@ services:
         condition: service_completed_successfully
       livekit:
         condition: service_started
+      seaweedfs:
+        condition: service_started
     networks:
       - harmonie-network
 
 volumes:
   postgres-data:
     driver: local
+  seaweedfs-data:
+    driver: local
 
 networks:
   harmonie-network:
     driver: bridge
+
+configs:
+  seaweedfs-s3-config:
+    content: |
+      {
+        "identities": [
+          {
+            "name": "harmonie",
+            "credentials": [{"accessKey": "harmonie-key", "secretKey": "harmonie-secret-key-for-dev"}],
+            "actions": ["Admin", "Read", "Write", "List"]
+          }
+        ]
+      }
