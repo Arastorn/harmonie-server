@@ -34,6 +34,7 @@ using Harmonie.Application.Features.Guilds.UpdateMemberRole;
 using Harmonie.Application.Features.Users.GetMyProfile;
 using Harmonie.Application.Features.Users.SearchUsers;
 using Harmonie.Application.Features.Users.UpdateMyProfile;
+using Harmonie.Application.Features.Users.UploadMyAvatar;
 using Harmonie.Application.Features.Uploads.UploadFile;
 using Harmonie.Application.Features.Voice.HandleLiveKitWebhook;
 using Microsoft.Extensions.DependencyInjection;
@@ -77,6 +78,7 @@ public static class DependencyInjection
         services.AddScoped<GetMyProfileHandler>();
         services.AddScoped<SearchUsersHandler>();
         services.AddScoped<UpdateMyProfileHandler>();
+        services.AddScoped<UploadMyAvatarHandler>();
         services.AddScoped<UploadFileHandler>();
         services.AddScoped<HandleLiveKitWebhookHandler>();
         services.AddScoped<UpdateChannelHandler>();
