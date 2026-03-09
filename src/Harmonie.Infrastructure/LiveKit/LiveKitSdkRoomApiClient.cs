@@ -6,34 +6,36 @@ namespace Harmonie.Infrastructure.LiveKit;
 
 public sealed class LiveKitSdkRoomApiClient : ILiveKitRoomApiClient
 {
-    private readonly LiveKitSettings _settings;
-    private readonly string _internalUrl;
+    private readonly RoomServiceClient _roomServiceClient;
 
-    public LiveKitSdkRoomApiClient(IOptions<LiveKitSettings> settings)
+    public LiveKitSdkRoomApiClient(HttpClient httpClient, IOptions<LiveKitSettings> settings)
     {
-        _settings = settings.Value;
-        _internalUrl = _settings.GetInternalUrl();
+        var liveKitSettings = settings.Value;
+        var internalUrl = liveKitSettings.GetInternalUrl();
 
-        if (string.IsNullOrWhiteSpace(_internalUrl))
+        if (string.IsNullOrWhiteSpace(internalUrl))
             throw new InvalidOperationException("Configuration value 'LiveKit:PublicUrl' or 'LiveKit:InternalUrl' is required.");
 
-        if (string.IsNullOrWhiteSpace(_settings.ApiKey))
+        if (string.IsNullOrWhiteSpace(liveKitSettings.ApiKey))
             throw new InvalidOperationException("Configuration value 'LiveKit:ApiKey' is required.");
 
-        if (string.IsNullOrWhiteSpace(_settings.ApiSecret))
+        if (string.IsNullOrWhiteSpace(liveKitSettings.ApiSecret))
             throw new InvalidOperationException("Configuration value 'LiveKit:ApiSecret' is required.");
+
+        httpClient.Timeout = TimeSpan.FromSeconds(liveKitSettings.RequestTimeoutSeconds);
+
+        _roomServiceClient = new RoomServiceClient(
+            internalUrl,
+            liveKitSettings.ApiKey,
+            liveKitSettings.ApiSecret,
+            httpClient);
     }
 
     public async Task<IReadOnlyList<Room>> ListRoomsAsync(CancellationToken cancellationToken)
     {
-        using var httpClient = new HttpClient();
-        var roomServiceClient = new RoomServiceClient(
-            _internalUrl,
-            _settings.ApiKey,
-            _settings.ApiSecret,
-            httpClient);
-
-        var response = await roomServiceClient.ListRooms(new ListRoomsRequest());
+        var response = await _roomServiceClient
+            .ListRooms(new ListRoomsRequest())
+            .WaitAsync(cancellationToken);
         return response.Rooms.ToArray();
     }
 
@@ -41,17 +43,12 @@ public sealed class LiveKitSdkRoomApiClient : ILiveKitRoomApiClient
         string roomName,
         CancellationToken cancellationToken)
     {
-        using var httpClient = new HttpClient();
-        var roomServiceClient = new RoomServiceClient(
-            _internalUrl,
-            _settings.ApiKey,
-            _settings.ApiSecret,
-            httpClient);
-
-        var response = await roomServiceClient.ListParticipants(new ListParticipantsRequest
-        {
-            Room = roomName
-        });
+        var response = await _roomServiceClient
+            .ListParticipants(new ListParticipantsRequest
+            {
+                Room = roomName
+            })
+            .WaitAsync(cancellationToken);
 
         return response.Participants.ToArray();
     }

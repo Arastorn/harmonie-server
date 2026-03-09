@@ -2,6 +2,7 @@ using Harmonie.API.Middleware;
 using Harmonie.API.RealTime;
 using Harmonie.Application;
 using Harmonie.Application.Common;
+using Harmonie.API.Configuration;
 using Harmonie.Application.Features.Auth.Login;
 using Harmonie.Application.Features.Auth.LogoutAll;
 using Harmonie.Application.Features.Auth.Logout;
@@ -41,7 +42,10 @@ using Harmonie.Application.Features.Uploads.UploadFile;
 using Harmonie.Application.Features.Voice.HandleLiveKitWebhook;
 using Harmonie.Application.Interfaces;
 using Harmonie.Infrastructure;
+using Harmonie.Infrastructure.Configuration;
+using Harmonie.Infrastructure.HealthChecks;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
@@ -51,6 +55,8 @@ using System.Threading.RateLimiting;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -65,6 +71,7 @@ builder.Host.UseSerilog();
 
 // Add layers
 builder.Services.AddApplication();
+builder.Services.Configure<CorsSettings>(builder.Configuration.GetSection("Cors"));
 builder.Services.Configure<UploadOptions>(builder.Configuration.GetSection("Uploads"));
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
@@ -75,6 +82,9 @@ builder.Services.AddSignalR();
 builder.Services.AddScoped<ITextChannelNotifier, SignalRTextChannelNotifier>();
 builder.Services.AddScoped<IVoicePresenceNotifier, SignalRVoicePresenceNotifier>();
 builder.Services.AddScoped<IDirectMessageNotifier, SignalRDirectMessageNotifier>();
+builder.Services.AddHealthChecks()
+    .AddCheck<PostgresHealthCheck>("postgres")
+    .AddCheck<LiveKitHealthCheck>("livekit");
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -161,11 +171,36 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 
 // CORS
+var corsSettings = builder.Configuration.GetSection("Cors").Get<CorsSettings>() ?? new CorsSettings();
+var allowedOrigins = corsSettings.AllowedOrigins
+    .Where(origin => !string.IsNullOrWhiteSpace(origin))
+    .Select(origin => origin.Trim())
+    .Distinct(StringComparer.OrdinalIgnoreCase)
+    .ToArray();
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("ApiCors", policy =>
     {
-        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+        if (builder.Environment.IsDevelopment()
+            && allowedOrigins.Contains("*", StringComparer.Ordinal))
+        {
+            policy.AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader();
+            return;
+        }
+
+        var configuredOrigins = allowedOrigins
+            .Where(origin => !string.Equals(origin, "*", StringComparison.Ordinal))
+            .ToArray();
+
+        if (configuredOrigins.Length > 0)
+        {
+            policy.WithOrigins(configuredOrigins)
+                .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .WithHeaders("Authorization", "Content-Type");
+        }
     });
 });
 
@@ -181,9 +216,10 @@ if (app.Environment.IsDevelopment())
 app.UseMiddleware<GlobalExceptionHandler>();
 app.UseSerilogRequestLogging();
 app.UseHttpsRedirection();
-app.UseCors("AllowAll");
+app.UseCors("ApiCors");
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<AuthenticatedUserContextMiddleware>();
 app.UseRateLimiter();
 
 var localBasePath = app.Configuration["ObjectStorage:LocalBasePath"] ?? "uploads";
@@ -200,15 +236,12 @@ app.UseStaticFiles(new StaticFileOptions
 // MAP ENDPOINTS - Vertical Slice Architecture
 // ============================================================
 
-// Health check endpoint
-app.MapGet("/health", () => Results.Ok(new
+app.MapHealthChecks("/health", new HealthCheckOptions
 {
-    status = "healthy",
-    timestamp = DateTime.UtcNow
-}))
+    ResponseWriter = WriteHealthCheckResponseAsync
+})
 .WithName("HealthCheck")
-.WithTags("System")
-.Produces(StatusCodes.Status200OK);
+.WithTags("System");
 
 // Auth endpoints
 RegisterEndpoint.Map(app);
@@ -267,6 +300,26 @@ static string ResolveMessagePostPartitionKey(HttpContext httpContext)
 
     var remoteIp = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
     return $"ip:{remoteIp}";
+}
+
+static Task WriteHealthCheckResponseAsync(HttpContext httpContext, HealthReport report)
+{
+    httpContext.Response.ContentType = "application/json";
+
+    var payload = new
+    {
+        status = report.Status.ToString(),
+        timestamp = DateTime.UtcNow,
+        checks = report.Entries.ToDictionary(
+            entry => entry.Key,
+            entry => new
+            {
+                status = entry.Value.Status.ToString(),
+                description = entry.Value.Description
+            })
+    };
+
+    return httpContext.Response.WriteAsync(JsonSerializer.Serialize(payload));
 }
 
 // Make Program class accessible to integration tests

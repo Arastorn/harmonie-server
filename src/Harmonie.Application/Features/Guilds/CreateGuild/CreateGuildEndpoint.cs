@@ -35,13 +35,7 @@ public static class CreateGuildEndpoint
         if (validationError is not null)
             return ApplicationResponse<CreateGuildResponse>.Fail(validationError).ToHttpResult();
 
-        if (!httpContext.TryGetAuthenticatedUserId(out var currentUserId) || currentUserId is null)
-        {
-            return ApplicationResponse<CreateGuildResponse>.Fail(
-                ApplicationErrorCodes.Auth.InvalidCredentials,
-                "Authenticated user identifier is missing.")
-                .ToHttpResult();
-        }
+        var currentUserId = httpContext.GetRequiredAuthenticatedUserId();
 
         var response = await handler.HandleAsync(request, currentUserId, cancellationToken);
         return response.ToCreatedHttpResult(data => $"/api/guilds/{data.GuildId}");

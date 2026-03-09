@@ -26,13 +26,7 @@ public static class ListUserGuildsEndpoint
         HttpContext httpContext,
         CancellationToken cancellationToken)
     {
-        if (!httpContext.TryGetAuthenticatedUserId(out var currentUserId) || currentUserId is null)
-        {
-            return ApplicationResponse<ListUserGuildsResponse>.Fail(
-                    ApplicationErrorCodes.Auth.InvalidCredentials,
-                    "Authenticated user identifier is missing.")
-                .ToHttpResult();
-        }
+        var currentUserId = httpContext.GetRequiredAuthenticatedUserId();
 
         var response = await handler.HandleAsync(currentUserId, cancellationToken);
         return response.ToHttpResult();
