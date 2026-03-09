@@ -48,13 +48,7 @@ public static class JoinVoiceChannelEndpoint
                 "Route validation succeeded but channel ID parsing failed.").ToHttpResult();
         }
 
-        if (!httpContext.TryGetAuthenticatedUserId(out var currentUserId) || currentUserId is null)
-        {
-            return ApplicationResponse<JoinVoiceChannelResponse>.Fail(
-                    ApplicationErrorCodes.Auth.InvalidCredentials,
-                    "Authenticated user identifier is missing.")
-                .ToHttpResult();
-        }
+        var currentUserId = httpContext.GetRequiredAuthenticatedUserId();
 
         var response = await handler.HandleAsync(parsedChannelId, currentUserId, cancellationToken);
         return response.ToHttpResult();

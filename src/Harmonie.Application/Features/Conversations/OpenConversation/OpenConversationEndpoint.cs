@@ -37,13 +37,7 @@ public static class OpenConversationEndpoint
         if (validationError is not null)
             return ApplicationResponse<OpenConversationResponse>.Fail(validationError).ToHttpResult();
 
-        if (!httpContext.TryGetAuthenticatedUserId(out var currentUserId) || currentUserId is null)
-        {
-            return ApplicationResponse<OpenConversationResponse>.Fail(
-                ApplicationErrorCodes.Auth.InvalidCredentials,
-                "Authenticated user identifier is missing.")
-                .ToHttpResult();
-        }
+        var currentUserId = httpContext.GetRequiredAuthenticatedUserId();
 
         var response = await handler.HandleAsync(request, currentUserId, cancellationToken);
         if (!response.Success)

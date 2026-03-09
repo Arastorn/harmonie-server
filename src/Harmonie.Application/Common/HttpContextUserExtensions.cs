@@ -6,6 +6,8 @@ namespace Harmonie.Application.Common;
 
 public static class HttpContextUserExtensions
 {
+    private const string AuthenticatedUserIdItemKey = "__authenticated_user_id";
+
     public static bool TryGetAuthenticatedUserId(
         this HttpContext httpContext,
         out UserId? userId)
@@ -30,6 +32,30 @@ public static class HttpContextUserExtensions
 
         userId = parsedUserId;
         return true;
+    }
+
+    public static void SetAuthenticatedUserId(this HttpContext httpContext, UserId userId)
+    {
+        ArgumentNullException.ThrowIfNull(httpContext);
+        ArgumentNullException.ThrowIfNull(userId);
+
+        httpContext.Items[AuthenticatedUserIdItemKey] = userId;
+    }
+
+    public static UserId GetRequiredAuthenticatedUserId(this HttpContext httpContext)
+    {
+        ArgumentNullException.ThrowIfNull(httpContext);
+
+        if (httpContext.Items.TryGetValue(AuthenticatedUserIdItemKey, out var storedUserId)
+            && storedUserId is UserId currentUserId)
+        {
+            return currentUserId;
+        }
+
+        if (httpContext.TryGetAuthenticatedUserId(out var parsedUserId) && parsedUserId is not null)
+            return parsedUserId;
+
+        throw new InvalidOperationException("Authenticated user identifier is missing from the current request.");
     }
 
     private static string? FindFirstValue(this ClaimsPrincipal principal, string claimType)

@@ -1,5 +1,9 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Harmonie.Infrastructure.Configuration;
+
 public sealed class DatabaseSettings
 {
-    public string ConnectionString { get; init; } = null!;
+    [Required(AllowEmptyStrings = false)]
+    public string ConnectionString { get; set; } = string.Empty;
 }

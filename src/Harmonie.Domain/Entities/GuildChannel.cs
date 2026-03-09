@@ -77,6 +77,7 @@ public sealed class GuildChannel : Entity<GuildChannelId>
             return Result.Failure("Channel name cannot exceed 100 characters");
 
         Name = normalized;
+        MarkAsUpdated();
         return Result.Success();
     }
 
@@ -86,6 +87,7 @@ public sealed class GuildChannel : Entity<GuildChannelId>
             return Result.Failure("Channel position cannot be negative");
 
         Position = position;
+        MarkAsUpdated();
         return Result.Success();
     }
 

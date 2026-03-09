@@ -59,13 +59,7 @@ public static class SendMessageEndpoint
                 "Route validation succeeded but channel ID parsing failed.").ToHttpResult();
         }
 
-        if (!httpContext.TryGetAuthenticatedUserId(out var currentUserId) || currentUserId is null)
-        {
-            return ApplicationResponse<SendMessageResponse>.Fail(
-                    ApplicationErrorCodes.Auth.InvalidCredentials,
-                    "Authenticated user identifier is missing.")
-                .ToHttpResult();
-        }
+        var currentUserId = httpContext.GetRequiredAuthenticatedUserId();
 
         var response = await handler.HandleAsync(parsedChannelId, request, currentUserId, cancellationToken);
         return response.ToCreatedHttpResult(data => $"/api/channels/{data.ChannelId}/messages/{data.MessageId}");

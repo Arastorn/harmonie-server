@@ -36,13 +36,7 @@ public static class SearchUsersEndpoint
         if (validationError is not null)
             return ApplicationResponse<SearchUsersResponse>.Fail(validationError).ToHttpResult();
 
-        if (!httpContext.TryGetAuthenticatedUserId(out var currentUserId) || currentUserId is null)
-        {
-            return ApplicationResponse<SearchUsersResponse>.Fail(
-                    ApplicationErrorCodes.Auth.InvalidCredentials,
-                    "Authenticated user identifier is missing.")
-                .ToHttpResult();
-        }
+        var currentUserId = httpContext.GetRequiredAuthenticatedUserId();
 
         var response = await handler.HandleAsync(request, currentUserId, cancellationToken);
         return response.ToHttpResult();

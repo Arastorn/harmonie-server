@@ -66,13 +66,7 @@ public static class EditDirectMessageEndpoint
                 "Route validation succeeded but message ID parsing failed.").ToHttpResult();
         }
 
-        if (!httpContext.TryGetAuthenticatedUserId(out var callerId) || callerId is null)
-        {
-            return ApplicationResponse<EditDirectMessageResponse>.Fail(
-                    ApplicationErrorCodes.Auth.InvalidCredentials,
-                    "Authenticated user identifier is missing.")
-                .ToHttpResult();
-        }
+        var callerId = httpContext.GetRequiredAuthenticatedUserId();
 
         var response = await handler.HandleAsync(parsedConversationId, parsedMessageId, request, callerId, cancellationToken);
         return response.ToHttpResult();

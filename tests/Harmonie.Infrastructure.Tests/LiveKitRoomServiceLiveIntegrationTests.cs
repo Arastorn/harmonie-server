@@ -33,7 +33,8 @@ public sealed class LiveKitRoomServiceLiveIntegrationTests
             .Setup(x => x.GetByGuildIdAsync(guildId, It.IsAny<CancellationToken>()))
             .ReturnsAsync([voiceChannel]);
 
-        var roomApiClient = new LiveKitSdkRoomApiClient(Options.Create(settings));
+        using var roomApiHttpClient = new HttpClient();
+        var roomApiClient = new LiveKitSdkRoomApiClient(roomApiHttpClient, Options.Create(settings));
         var service = new LiveKitRoomService(
             guildChannelRepositoryMock.Object,
             roomApiClient,

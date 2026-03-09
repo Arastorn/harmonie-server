@@ -42,15 +42,20 @@ dotnet run --project src/Harmonie.API
 LiveKit defaults are split on purpose:
 - `LiveKit:PublicUrl` is the client-facing WebSocket URL returned by the API.
 - `LiveKit:InternalUrl` is the HTTP base URL used by the server SDK for room queries.
+- `LiveKit:RequestTimeoutSeconds` controls the timeout applied to outbound LiveKit HTTP calls. The development default is `5`.
 
 When you run through `docker-compose`, the API container uses `http://livekit:7880` internally while clients still use `ws://localhost:7880`.
+
+CORS allowed origins are configured through `Cors:AllowedOrigins`.
+In `Development`, the default is `["*"]`.
+For non-development environments, set explicit origins in configuration or environment variables such as `Cors__AllowedOrigins__0=https://app.example.com`.
 
 Uploads are stored on the local filesystem and served by the API from `/files/*`.
 In `docker-compose`, the API stores them in the `uploads-data` volume.
 
 ## 4. Verify the API
 
-- Health: `GET /health`
+- Health: `GET /health` (checks both PostgreSQL and LiveKit reachability)
 - Register: `POST /api/auth/register`
 - Login: `POST /api/auth/login`
 - Logout current session: `POST /api/auth/logout`

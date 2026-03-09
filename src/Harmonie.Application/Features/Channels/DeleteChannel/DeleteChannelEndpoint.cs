@@ -48,13 +48,7 @@ public static class DeleteChannelEndpoint
                 "Route validation succeeded but channel ID parsing failed.").ToHttpResult();
         }
 
-        if (!httpContext.TryGetAuthenticatedUserId(out var callerId) || callerId is null)
-        {
-            return ApplicationResponse<bool>.Fail(
-                    ApplicationErrorCodes.Auth.InvalidCredentials,
-                    "Authenticated user identifier is missing.")
-                .ToHttpResult();
-        }
+        var callerId = httpContext.GetRequiredAuthenticatedUserId();
 
         var response = await handler.HandleAsync(parsedChannelId, callerId, cancellationToken);
 

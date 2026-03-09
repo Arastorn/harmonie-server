@@ -46,13 +46,7 @@ public static class GetGuildChannelsEndpoint
                 "Route validation succeeded but guild ID parsing failed.").ToHttpResult();
         }
 
-        if (!httpContext.TryGetAuthenticatedUserId(out var currentUserId) || currentUserId is null)
-        {
-            return ApplicationResponse<GetGuildChannelsResponse>.Fail(
-                    ApplicationErrorCodes.Auth.InvalidCredentials,
-                    "Authenticated user identifier is missing.")
-                .ToHttpResult();
-        }
+        var currentUserId = httpContext.GetRequiredAuthenticatedUserId();
 
         var response = await handler.HandleAsync(parsedGuildId, currentUserId, cancellationToken);
         return response.ToHttpResult();

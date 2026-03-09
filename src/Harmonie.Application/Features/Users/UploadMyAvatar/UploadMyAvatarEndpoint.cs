@@ -46,13 +46,7 @@ public static class UploadMyAvatarEndpoint
                 .ToHttpResult();
         }
 
-        if (!httpContext.TryGetAuthenticatedUserId(out var currentUserId) || currentUserId is null)
-        {
-            return ApplicationResponse<UploadMyAvatarResponse>.Fail(
-                    ApplicationErrorCodes.Auth.InvalidCredentials,
-                    "Authenticated user identifier is missing.")
-                .ToHttpResult();
-        }
+        var currentUserId = httpContext.GetRequiredAuthenticatedUserId();
 
         var fileName = Path.GetFileName(file.FileName);
         var contentType = file.ContentType?.Trim();
