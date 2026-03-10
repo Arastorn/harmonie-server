@@ -1,0 +1,5 @@
+ALTER TABLE guilds
+    ADD COLUMN icon_url VARCHAR(2048) NULL,
+    ADD COLUMN icon_color VARCHAR(50) NULL,
+    ADD COLUMN icon_name VARCHAR(50) NULL,
+    ADD COLUMN icon_bg VARCHAR(50) NULL;

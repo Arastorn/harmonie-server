@@ -1,4 +1,5 @@
 using Harmonie.Application.Common;
+using Harmonie.Application.Features.Guilds;
 using Harmonie.Application.Interfaces;
 using Harmonie.Domain.Entities;
 using Harmonie.Domain.Enums;
@@ -152,6 +153,8 @@ public sealed class CreateGuildHandler
             GuildId: guildResult.Value.Id.ToString(),
             Name: guildResult.Value.Name.Value,
             OwnerUserId: guildResult.Value.OwnerUserId.ToString(),
+            IconUrl: guildResult.Value.IconUrl,
+            Icon: null,
             DefaultTextChannelId: defaultTextChannelResult.Value.Id.ToString(),
             DefaultVoiceChannelId: defaultVoiceChannelResult.Value.Id.ToString(),
             CreatedAtUtc: guildResult.Value.CreatedAtUtc);

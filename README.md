@@ -8,7 +8,7 @@ This repository currently provides:
 - User registration, login, refresh token rotation, session logout, and logout-all session revocation
 - Refresh token persistence in PostgreSQL
 - Refresh token reuse detection with family session revocation on security incident
-- Guild creation and membership management (invite + list members)
+- Guild creation, membership management, and settings updates
 - Guild channel listing with default text and voice channels
 - Direct conversation open/get by user pair
 - Direct conversation listing for the current user
@@ -95,6 +95,7 @@ be backed by an S3-compatible service.
 - `POST /api/auth/refresh`
 - `POST /api/guilds`
 - `GET /api/guilds`
+- `PATCH /api/guilds/{guildId}`
 - `POST /api/guilds/{guildId}/members/invite`
 - `GET /api/guilds/{guildId}/members`
 - `GET /api/guilds/{guildId}/channels`
@@ -106,7 +107,7 @@ be backed by an S3-compatible service.
 - `GET /api/conversations`
 - `GET /api/conversations/{conversationId}/messages`
 - `GET /api/conversations/{conversationId}/messages/search`
-- `PUT /api/conversations/{conversationId}/messages/{messageId}`
+- `PATCH /api/conversations/{conversationId}/messages/{messageId}`
 - `DELETE /api/conversations/{conversationId}/messages/{messageId}`
 - `POST /api/conversations/{conversationId}/messages`
 - `POST /api/uploads`

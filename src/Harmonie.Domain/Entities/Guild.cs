@@ -9,16 +9,32 @@ public sealed class Guild : Entity<GuildId>
 
     public UserId OwnerUserId { get; private set; }
 
+    public string? IconUrl { get; private set; }
+
+    public string? IconColor { get; private set; }
+
+    public string? IconName { get; private set; }
+
+    public string? IconBg { get; private set; }
+
     private Guild(
         GuildId id,
         GuildName name,
         UserId ownerUserId,
+        string? iconUrl,
+        string? iconColor,
+        string? iconName,
+        string? iconBg,
         DateTime createdAtUtc,
         DateTime updatedAtUtc)
     {
         Id = id;
         Name = name;
         OwnerUserId = ownerUserId;
+        IconUrl = iconUrl;
+        IconColor = iconColor;
+        IconName = iconName;
+        IconBg = iconBg;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
     }
@@ -38,6 +54,10 @@ public sealed class Guild : Entity<GuildId>
             GuildId.New(),
             name,
             ownerUserId,
+            iconUrl: null,
+            iconColor: null,
+            iconName: null,
+            iconBg: null,
             now,
             now);
 
@@ -49,7 +69,11 @@ public sealed class Guild : Entity<GuildId>
         GuildName name,
         UserId ownerUserId,
         DateTime createdAtUtc,
-        DateTime updatedAtUtc)
+        DateTime updatedAtUtc,
+        string? iconUrl = null,
+        string? iconColor = null,
+        string? iconName = null,
+        string? iconBg = null)
     {
         ArgumentNullException.ThrowIfNull(id);
         ArgumentNullException.ThrowIfNull(name);
@@ -59,6 +83,10 @@ public sealed class Guild : Entity<GuildId>
             id,
             name,
             ownerUserId,
+            iconUrl,
+            iconColor,
+            iconName,
+            iconBg,
             createdAtUtc,
             updatedAtUtc);
     }
@@ -69,6 +97,50 @@ public sealed class Guild : Entity<GuildId>
             return Result.Success();
 
         Name = newName;
+        MarkAsUpdated();
+
+        return Result.Success();
+    }
+
+    public Result UpdateIconUrl(string? iconUrl)
+    {
+        if (iconUrl?.Length > 2048)
+            return Result.Failure("Guild icon URL is too long");
+
+        IconUrl = iconUrl;
+        MarkAsUpdated();
+
+        return Result.Success();
+    }
+
+    public Result UpdateIconColor(string? iconColor)
+    {
+        if (iconColor?.Length > 50)
+            return Result.Failure("Guild icon color is too long");
+
+        IconColor = iconColor;
+        MarkAsUpdated();
+
+        return Result.Success();
+    }
+
+    public Result UpdateIconName(string? iconName)
+    {
+        if (iconName?.Length > 50)
+            return Result.Failure("Guild icon name is too long");
+
+        IconName = iconName;
+        MarkAsUpdated();
+
+        return Result.Success();
+    }
+
+    public Result UpdateIconBg(string? iconBg)
+    {
+        if (iconBg?.Length > 50)
+            return Result.Failure("Guild icon background is too long");
+
+        IconBg = iconBg;
         MarkAsUpdated();
 
         return Result.Success();

@@ -15,6 +15,7 @@ using Harmonie.Application.Features.Guilds.InviteMember;
 using Harmonie.Application.Features.Guilds.ListUserGuilds;
 using Harmonie.Application.Features.Guilds.CreateChannel;
 using Harmonie.Application.Features.Guilds.TransferOwnership;
+using Harmonie.Application.Features.Guilds.UpdateGuild;
 using Harmonie.Application.Features.Guilds.UpdateMemberRole;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
@@ -48,6 +49,8 @@ public sealed class GuildEndpointsTests : IClassFixture<WebApplicationFactory<Pr
 
         var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
         createGuildPayload.Should().NotBeNull();
+        createGuildPayload!.IconUrl.Should().BeNull();
+        createGuildPayload.Icon.Should().BeNull();
 
         var inviteResponse = await SendAuthorizedPostAsync(
             $"/api/guilds/{createGuildPayload!.GuildId}/members/invite",
@@ -147,6 +150,154 @@ public sealed class GuildEndpointsTests : IClassFixture<WebApplicationFactory<Pr
         listPayload.Guilds.Should().Contain(guild => guild.GuildId == ownerGuildOne!.GuildId && guild.Role == "Admin");
         listPayload.Guilds.Should().Contain(guild => guild.GuildId == ownerGuildTwo!.GuildId && guild.Role == "Admin");
         listPayload.Guilds.Should().Contain(guild => guild.GuildId == inviterGuild.GuildId && guild.Role == "Member");
+        listPayload.Guilds.Should().OnlyContain(guild => guild.IconUrl == null && guild.Icon == null);
+    }
+
+    [Fact]
+    public async Task UpdateGuild_WithOwnerAndPartialIconUpdate_ShouldPersistAndKeepOmittedSubFields()
+    {
+        var owner = await RegisterAsync();
+
+        var createGuildResponse = await SendAuthorizedPostAsync(
+            "/api/guilds",
+            new CreateGuildRequest("Patchable Guild"),
+            owner.AccessToken);
+        createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        createGuildPayload.Should().NotBeNull();
+
+        var seedResponse = await SendAuthorizedPatchAsync(
+            $"/api/guilds/{createGuildPayload!.GuildId}",
+            new
+            {
+                icon = new { color = "#7C3AED", name = "sword", bg = "#1F2937" },
+                iconUrl = "https://cdn.harmonie.chat/guild-icon.png"
+            },
+            owner.AccessToken);
+        seedResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var response = await SendAuthorizedPatchAsync(
+            $"/api/guilds/{createGuildPayload.GuildId}",
+            new
+            {
+                name = "Renamed Guild",
+                icon = new { color = "#F59E0B" }
+            },
+            owner.AccessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var payload = await response.Content.ReadFromJsonAsync<UpdateGuildResponse>();
+        payload.Should().NotBeNull();
+        payload!.GuildId.Should().Be(createGuildPayload.GuildId);
+        payload.Name.Should().Be("Renamed Guild");
+        payload.IconUrl.Should().Be("https://cdn.harmonie.chat/guild-icon.png");
+        payload.Icon.Should().NotBeNull();
+        payload.Icon!.Color.Should().Be("#F59E0B");
+        payload.Icon.Name.Should().Be("sword");
+        payload.Icon.Bg.Should().Be("#1F2937");
+
+        var listResponse = await SendAuthorizedGetAsync("/api/guilds", owner.AccessToken);
+        listResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var listPayload = await listResponse.Content.ReadFromJsonAsync<ListUserGuildsResponse>();
+        listPayload.Should().NotBeNull();
+        listPayload!.Guilds.Should().Contain(guild =>
+            guild.GuildId == createGuildPayload.GuildId
+            && guild.Name == "Renamed Guild"
+            && guild.IconUrl == "https://cdn.harmonie.chat/guild-icon.png"
+            && guild.Icon != null
+            && guild.Icon.Color == "#F59E0B"
+            && guild.Icon.Name == "sword"
+            && guild.Icon.Bg == "#1F2937");
+    }
+
+    [Fact]
+    public async Task UpdateGuild_WithAdminAndNullIcon_ShouldClearIconFields()
+    {
+        var owner = await RegisterAsync();
+        var admin = await RegisterAsync();
+
+        var createGuildResponse = await SendAuthorizedPostAsync(
+            "/api/guilds",
+            new CreateGuildRequest("Admin Guild"),
+            owner.AccessToken);
+        createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        createGuildPayload.Should().NotBeNull();
+
+        var inviteResponse = await SendAuthorizedPostAsync(
+            $"/api/guilds/{createGuildPayload!.GuildId}/members/invite",
+            new InviteMemberRequest(admin.UserId),
+            owner.AccessToken);
+        inviteResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var promoteResponse = await SendAuthorizedPutAsync(
+            $"/api/guilds/{createGuildPayload.GuildId}/members/{admin.UserId}/role",
+            new UpdateMemberRoleRequest(GuildRoleInput.Admin),
+            owner.AccessToken);
+        promoteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var seedResponse = await SendAuthorizedPatchAsync(
+            $"/api/guilds/{createGuildPayload.GuildId}",
+            new
+            {
+                iconUrl = "https://cdn.harmonie.chat/admin-guild.png",
+                icon = new { color = "#7C3AED", name = "sword", bg = "#1F2937" }
+            },
+            owner.AccessToken);
+        seedResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var response = await SendAuthorizedPatchAsync(
+            $"/api/guilds/{createGuildPayload.GuildId}",
+            new
+            {
+                iconUrl = (string?)null,
+                icon = (object?)null
+            },
+            admin.AccessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var payload = await response.Content.ReadFromJsonAsync<UpdateGuildResponse>();
+        payload.Should().NotBeNull();
+        payload!.IconUrl.Should().BeNull();
+        payload.Icon.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task UpdateGuild_WhenCallerIsRegularMember_ShouldReturnForbidden()
+    {
+        var owner = await RegisterAsync();
+        var member = await RegisterAsync();
+
+        var createGuildResponse = await SendAuthorizedPostAsync(
+            "/api/guilds",
+            new CreateGuildRequest("Forbidden Guild"),
+            owner.AccessToken);
+        createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        createGuildPayload.Should().NotBeNull();
+
+        var inviteResponse = await SendAuthorizedPostAsync(
+            $"/api/guilds/{createGuildPayload!.GuildId}/members/invite",
+            new InviteMemberRequest(member.UserId),
+            owner.AccessToken);
+        inviteResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var response = await SendAuthorizedPatchAsync(
+            $"/api/guilds/{createGuildPayload.GuildId}",
+            new { name = "Should Fail" },
+            member.AccessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        error.Should().NotBeNull();
+        error!.Code.Should().Be(ApplicationErrorCodes.Guild.AccessDenied);
     }
 
     [Fact]
@@ -541,12 +692,38 @@ public sealed class GuildEndpointsTests : IClassFixture<WebApplicationFactory<Pr
         return await _client.SendAsync(request);
     }
 
+    private async Task<HttpResponseMessage> SendAuthorizedPutAsync<TRequest>(
+        string uri,
+        TRequest payload,
+        string accessToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Put, uri)
+        {
+            Content = JsonContent.Create(payload, options: _jsonOptions)
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        return await _client.SendAsync(request);
+    }
+
     private async Task<HttpResponseMessage> SendAuthorizedPatchRawAsync(
         string uri,
         string json,
         string accessToken)
     {
         using var request = new HttpRequestMessage(HttpMethod.Patch, uri)
+        {
+            Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json")
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        return await _client.SendAsync(request);
+    }
+
+    private async Task<HttpResponseMessage> SendAuthorizedPutRawAsync(
+        string uri,
+        string json,
+        string accessToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Put, uri)
         {
             Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json")
         };
@@ -856,7 +1033,7 @@ public sealed class GuildEndpointsTests : IClassFixture<WebApplicationFactory<Pr
             owner.AccessToken);
         inviteResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var updateRoleResponse = await SendAuthorizedPatchAsync(
+        var updateRoleResponse = await SendAuthorizedPutAsync(
             $"/api/guilds/{createGuildPayload.GuildId}/members/{member.UserId}/role",
             new UpdateMemberRoleRequest(GuildRoleInput.Admin),
             owner.AccessToken);
@@ -883,12 +1060,12 @@ public sealed class GuildEndpointsTests : IClassFixture<WebApplicationFactory<Pr
             new InviteMemberRequest(otherAdmin.UserId),
             owner.AccessToken);
 
-        await SendAuthorizedPatchAsync(
+        await SendAuthorizedPutAsync(
             $"/api/guilds/{createGuildPayload.GuildId}/members/{otherAdmin.UserId}/role",
             new UpdateMemberRoleRequest(GuildRoleInput.Admin),
             owner.AccessToken);
 
-        var demoteResponse = await SendAuthorizedPatchAsync(
+        var demoteResponse = await SendAuthorizedPutAsync(
             $"/api/guilds/{createGuildPayload.GuildId}/members/{otherAdmin.UserId}/role",
             new UpdateMemberRoleRequest(GuildRoleInput.Member),
             owner.AccessToken);
@@ -921,7 +1098,7 @@ public sealed class GuildEndpointsTests : IClassFixture<WebApplicationFactory<Pr
             new InviteMemberRequest(target.UserId),
             owner.AccessToken);
 
-        var updateRoleResponse = await SendAuthorizedPatchAsync(
+        var updateRoleResponse = await SendAuthorizedPutAsync(
             $"/api/guilds/{createGuildPayload.GuildId}/members/{target.UserId}/role",
             new UpdateMemberRoleRequest(GuildRoleInput.Admin),
             member.AccessToken);
@@ -946,7 +1123,7 @@ public sealed class GuildEndpointsTests : IClassFixture<WebApplicationFactory<Pr
         var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
         createGuildPayload.Should().NotBeNull();
 
-        var updateRoleResponse = await SendAuthorizedPatchAsync(
+        var updateRoleResponse = await SendAuthorizedPutAsync(
             $"/api/guilds/{createGuildPayload!.GuildId}/members/{owner.UserId}/role",
             new UpdateMemberRoleRequest(GuildRoleInput.Member),
             owner.AccessToken);
@@ -964,7 +1141,7 @@ public sealed class GuildEndpointsTests : IClassFixture<WebApplicationFactory<Pr
         var nonExistentGuildId = Guid.NewGuid();
         var targetId = Guid.NewGuid();
 
-        var updateRoleResponse = await SendAuthorizedPatchAsync(
+        var updateRoleResponse = await SendAuthorizedPutAsync(
             $"/api/guilds/{nonExistentGuildId}/members/{targetId}/role",
             new UpdateMemberRoleRequest(GuildRoleInput.Admin),
             user.AccessToken);
@@ -981,7 +1158,7 @@ public sealed class GuildEndpointsTests : IClassFixture<WebApplicationFactory<Pr
         var nonExistentGuildId = Guid.NewGuid();
         var targetId = Guid.NewGuid();
 
-        var updateRoleResponse = await _client.PatchAsJsonAsync(
+        var updateRoleResponse = await _client.PutAsJsonAsync(
             $"/api/guilds/{nonExistentGuildId}/members/{targetId}/role",
             new UpdateMemberRoleRequest(GuildRoleInput.Admin));
         updateRoleResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -1007,7 +1184,7 @@ public sealed class GuildEndpointsTests : IClassFixture<WebApplicationFactory<Pr
             new InviteMemberRequest(member.UserId),
             owner.AccessToken);
 
-        var updateRoleResponse = await SendAuthorizedPatchRawAsync(
+        var updateRoleResponse = await SendAuthorizedPutRawAsync(
             $"/api/guilds/{createGuildPayload.GuildId}/members/{member.UserId}/role",
             """{"role":"Owner"}""",
             owner.AccessToken);

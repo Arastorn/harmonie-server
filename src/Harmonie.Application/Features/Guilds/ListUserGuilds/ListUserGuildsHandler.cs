@@ -1,4 +1,5 @@
 using Harmonie.Application.Common;
+using Harmonie.Application.Features.Guilds;
 using Harmonie.Application.Interfaces;
 using Harmonie.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
@@ -35,6 +36,15 @@ public sealed class ListUserGuildsHandler
                     GuildId: membership.Guild.Id.ToString(),
                     Name: membership.Guild.Name.Value,
                     OwnerUserId: membership.Guild.OwnerUserId.ToString(),
+                    IconUrl: membership.Guild.IconUrl,
+                    Icon: membership.Guild.IconColor is not null
+                        || membership.Guild.IconName is not null
+                        || membership.Guild.IconBg is not null
+                        ? new GuildIconDto(
+                            membership.Guild.IconColor,
+                            membership.Guild.IconName,
+                            membership.Guild.IconBg)
+                        : null,
                     Role: membership.Role.ToString(),
                     JoinedAtUtc: membership.JoinedAtUtc))
                 .ToArray());
