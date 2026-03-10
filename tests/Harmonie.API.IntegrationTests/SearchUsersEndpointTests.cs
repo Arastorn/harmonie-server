@@ -98,15 +98,16 @@ public sealed class SearchUsersEndpointTests : IClassFixture<WebApplicationFacto
     public async Task SearchUsers_ShouldExcludeInactiveUsers()
     {
         var caller = await RegisterAsync();
-        var activeUser = await RegisterAsync(usernamePrefix: "inactivechecka");
-        var inactiveUser = await RegisterAsync(usernamePrefix: "inactivecheckb");
+        var token = Guid.NewGuid().ToString("N")[..8];
+        var activeUser = await RegisterAsync(usernamePrefix: $"{token}a");
+        var inactiveUser = await RegisterAsync(usernamePrefix: $"{token}b");
 
-        await UpdateDisplayNameAsync(activeUser.AccessToken, "Inactive Check Active");
-        await UpdateDisplayNameAsync(inactiveUser.AccessToken, "Inactive Check Blocked");
+        await UpdateDisplayNameAsync(activeUser.AccessToken, $"{token} Active");
+        await UpdateDisplayNameAsync(inactiveUser.AccessToken, $"{token} Blocked");
         await DeactivateUserAsync(inactiveUser.UserId);
 
         var response = await SendAuthorizedGetAsync(
-            "/api/users/search?q=inactivecheck",
+            $"/api/users/search?q={token}",
             caller.AccessToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
