@@ -147,7 +147,7 @@ public sealed class SearchUsersEndpointTests : IClassFixture<WebApplicationFacto
 
     private async Task UpdateDisplayNameAsync(string accessToken, string displayName)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Put, "/api/users/me")
+        using var request = new HttpRequestMessage(HttpMethod.Patch, "/api/users/me")
         {
             Content = JsonContent.Create(new { displayName })
         };
