@@ -22,6 +22,10 @@ public sealed class GuildRepository : IGuildRepository
                            SELECT id AS "Id",
                                   name AS "Name",
                                   owner_user_id AS "OwnerUserId",
+                                  icon_url AS "IconUrl",
+                                  icon_color AS "IconColor",
+                                  icon_name AS "IconName",
+                                  icon_bg AS "IconBg",
                                   created_at_utc AS "CreatedAtUtc",
                                   updated_at_utc AS "UpdatedAtUtc"
                            FROM guilds
@@ -48,6 +52,10 @@ public sealed class GuildRepository : IGuildRepository
                            SELECT g.id             AS "Id",
                                   g.name           AS "Name",
                                   g.owner_user_id  AS "OwnerUserId",
+                                  g.icon_url       AS "IconUrl",
+                                  g.icon_color     AS "IconColor",
+                                  g.icon_name      AS "IconName",
+                                  g.icon_bg        AS "IconBg",
                                   g.created_at_utc AS "CreatedAtUtc",
                                   g.updated_at_utc AS "UpdatedAtUtc",
                                   gm.role          AS "Role"
@@ -85,12 +93,20 @@ public sealed class GuildRepository : IGuildRepository
                                id,
                                name,
                                owner_user_id,
+                               icon_url,
+                               icon_color,
+                               icon_name,
+                               icon_bg,
                                created_at_utc,
                                updated_at_utc)
                            VALUES (
                                @Id,
                                @Name,
                                @OwnerUserId,
+                               @IconUrl,
+                               @IconColor,
+                               @IconName,
+                               @IconBg,
                                @CreatedAtUtc,
                                @UpdatedAtUtc)
                            """;
@@ -103,7 +119,43 @@ public sealed class GuildRepository : IGuildRepository
                 Id = guild.Id.Value,
                 Name = guild.Name.Value,
                 OwnerUserId = guild.OwnerUserId.Value,
+                guild.IconUrl,
+                guild.IconColor,
+                guild.IconName,
+                guild.IconBg,
                 guild.CreatedAtUtc,
+                UpdatedAtUtc = guild.UpdatedAtUtc ?? guild.CreatedAtUtc
+            },
+            transaction: _dbSession.Transaction,
+            cancellationToken: cancellationToken);
+
+        await connection.ExecuteAsync(command);
+    }
+
+    public async Task UpdateAsync(Guild guild, CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+                           UPDATE guilds
+                           SET name = @Name,
+                               icon_url = @IconUrl,
+                               icon_color = @IconColor,
+                               icon_name = @IconName,
+                               icon_bg = @IconBg,
+                               updated_at_utc = @UpdatedAtUtc
+                           WHERE id = @Id
+                           """;
+
+        var connection = await _dbSession.GetOpenConnectionAsync(cancellationToken);
+        var command = new CommandDefinition(
+            sql,
+            new
+            {
+                Id = guild.Id.Value,
+                Name = guild.Name.Value,
+                guild.IconUrl,
+                guild.IconColor,
+                guild.IconName,
+                guild.IconBg,
                 UpdatedAtUtc = guild.UpdatedAtUtc ?? guild.CreatedAtUtc
             },
             transaction: _dbSession.Transaction,
@@ -160,7 +212,11 @@ public sealed class GuildRepository : IGuildRepository
             nameResult.Value,
             UserId.From(row.OwnerUserId),
             row.CreatedAtUtc,
-            row.UpdatedAtUtc);
+            row.UpdatedAtUtc,
+            row.IconUrl,
+            row.IconColor,
+            row.IconName,
+            row.IconBg);
     }
 
     private static Guild MapToGuild(GuildWithRoleRow row)
@@ -174,7 +230,11 @@ public sealed class GuildRepository : IGuildRepository
             nameResult.Value,
             UserId.From(row.OwnerUserId),
             row.CreatedAtUtc,
-            row.UpdatedAtUtc);
+            row.UpdatedAtUtc,
+            row.IconUrl,
+            row.IconColor,
+            row.IconName,
+            row.IconBg);
     }
 
     private sealed class GuildWithRoleRow
@@ -182,6 +242,10 @@ public sealed class GuildRepository : IGuildRepository
         public Guid Id { get; init; }
         public string Name { get; init; } = string.Empty;
         public Guid OwnerUserId { get; init; }
+        public string? IconUrl { get; init; }
+        public string? IconColor { get; init; }
+        public string? IconName { get; init; }
+        public string? IconBg { get; init; }
         public DateTime CreatedAtUtc { get; init; }
         public DateTime UpdatedAtUtc { get; init; }
         public short? Role { get; init; }

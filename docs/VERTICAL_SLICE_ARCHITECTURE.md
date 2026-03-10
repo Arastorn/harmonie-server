@@ -21,6 +21,7 @@ Current auth slices:
 Current guild and channel slices:
 - `Features/Guilds/CreateGuild`
 - `Features/Guilds/ListUserGuilds`
+- `Features/Guilds/UpdateGuild`
 - `Features/Guilds/InviteMember`
 - `Features/Guilds/GetGuildMembers`
 - `Features/Guilds/GetGuildChannels`
@@ -51,6 +52,7 @@ Endpoints are mapped from `Program.cs`:
 - `RefreshTokenEndpoint.Map(app);`
 - `CreateGuildEndpoint.Map(app);`
 - `ListUserGuildsEndpoint.Map(app);`
+- `UpdateGuildEndpoint.Map(app);`
 - `InviteMemberEndpoint.Map(app);`
 - `GetGuildMembersEndpoint.Map(app);`
 - `GetGuildChannelsEndpoint.Map(app);`

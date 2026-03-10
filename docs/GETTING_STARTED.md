@@ -63,6 +63,7 @@ In `docker-compose`, the API stores them in the `uploads-data` volume.
 - Refresh token: `POST /api/auth/refresh`
 - Create guild: `POST /api/guilds`
 - List guilds: `GET /api/guilds`
+- Update guild: `PATCH /api/guilds/{guildId}`
 - List guild channels: `GET /api/guilds/{guildId}/channels`
 - Open direct conversation: `POST /api/conversations`
 - List direct conversations: `GET /api/conversations`

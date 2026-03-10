@@ -134,6 +134,24 @@ public sealed class OpenApiDocumentTests : IClassFixture<WebApplicationFactory<P
             .Should().Contain("send it as null");
         updateChannelRequestBody["content"]?["application/json"]?["example"]?["name"]?.GetValue<string>()
             .Should().Be("announcements");
+
+        var updateGuildSchema = ResolveRequestBodySchema(document, "/api/guilds/{guildId}", "patch");
+        updateGuildSchema.Should().NotBeNull();
+        updateGuildSchema!["properties"]?["name"].Should().NotBeNull();
+        updateGuildSchema["properties"]?["iconUrl"].Should().NotBeNull();
+        updateGuildSchema["properties"]?["icon"].Should().NotBeNull();
+        updateGuildSchema["properties"]?["nameIsSet"].Should().BeNull();
+        updateGuildSchema["properties"]?["iconUrlIsSet"].Should().BeNull();
+        updateGuildSchema["properties"]?["iconColorIsSet"].Should().BeNull();
+
+        var updateGuildRequestBody = document["paths"]?["/api/guilds/{guildId}"]?["patch"]?["requestBody"];
+        updateGuildRequestBody.Should().NotBeNull();
+        updateGuildRequestBody!["description"]?.GetValue<string>()
+            .Should().Contain("icon");
+        updateGuildRequestBody["content"]?["application/json"]?["example"]?["icon"]?["name"]?.GetValue<string>()
+            .Should().Be("sword");
+        updateGuildRequestBody["content"]?["application/json"]?["examples"]?["clearIcon"]?["value"]?
+            .ToJsonString().Should().Contain("\"icon\":null");
     }
 
     [Fact]

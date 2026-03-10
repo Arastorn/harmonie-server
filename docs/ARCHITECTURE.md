@@ -21,6 +21,7 @@ Current mapped endpoints:
 - `POST /api/auth/refresh`
 - `POST /api/guilds`
 - `GET /api/guilds`
+- `PATCH /api/guilds/{guildId}`
 - `POST /api/guilds/{guildId}/members/invite`
 - `GET /api/guilds/{guildId}/members`
 - `GET /api/guilds/{guildId}/channels`
@@ -49,6 +50,7 @@ Current features:
 - `Features/Auth/LogoutAll/*`
 - `Features/Guilds/CreateGuild/*`
 - `Features/Guilds/ListUserGuilds/*`
+- `Features/Guilds/UpdateGuild/*`
 - `Features/Guilds/InviteMember/*`
 - `Features/Guilds/GetGuildMembers/*`
 - `Features/Guilds/GetGuildChannels/*`

@@ -1,3 +1,5 @@
+using Harmonie.Application.Features.Guilds;
+
 namespace Harmonie.Application.Features.Guilds.ListUserGuilds;
 
 public sealed record ListUserGuildsResponse(
@@ -7,5 +9,7 @@ public sealed record ListUserGuildsItemResponse(
     string GuildId,
     string Name,
     string OwnerUserId,
+    string? IconUrl,
+    GuildIconDto? Icon,
     string Role,
     DateTime JoinedAtUtc);

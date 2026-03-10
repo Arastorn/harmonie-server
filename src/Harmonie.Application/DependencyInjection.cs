@@ -30,6 +30,7 @@ using Harmonie.Application.Features.Guilds.ListUserGuilds;
 using Harmonie.Application.Features.Guilds.RemoveMember;
 using Harmonie.Application.Features.Guilds.SearchMessages;
 using Harmonie.Application.Features.Guilds.TransferOwnership;
+using Harmonie.Application.Features.Guilds.UpdateGuild;
 using Harmonie.Application.Features.Guilds.UpdateMemberRole;
 using Harmonie.Application.Features.Users.GetMyProfile;
 using Harmonie.Application.Features.Users.SearchUsers;
@@ -68,6 +69,7 @@ public static class DependencyInjection
         services.AddScoped<RemoveMemberHandler>();
         services.AddScoped<UpdateMemberRoleHandler>();
         services.AddScoped<TransferOwnershipHandler>();
+        services.AddScoped<UpdateGuildHandler>();
         services.AddScoped<GetGuildChannelsHandler>();
         services.AddScoped<GetGuildVoiceParticipantsHandler>();
         services.AddScoped<GetGuildMembersHandler>();

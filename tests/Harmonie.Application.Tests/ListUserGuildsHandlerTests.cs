@@ -44,7 +44,14 @@ public sealed class ListUserGuildsHandlerTests
     public async Task HandleAsync_WhenUserHasGuildMemberships_ShouldReturnMappedGuilds()
     {
         var userId = UserId.New();
-        var guildOne = CreateMembership("Guild Alpha", GuildRole.Admin, DateTime.UtcNow.AddDays(-2));
+        var guildOne = CreateMembership(
+            "Guild Alpha",
+            GuildRole.Admin,
+            DateTime.UtcNow.AddDays(-2),
+            iconUrl: "https://cdn.harmonie.chat/guild-alpha.png",
+            iconColor: "#7C3AED",
+            iconName: "sword",
+            iconBg: "#1F2937");
         var guildTwo = CreateMembership("Guild Beta", GuildRole.Member, DateTime.UtcNow.AddDays(-1));
 
         _guildMemberRepositoryMock
@@ -58,15 +65,23 @@ public sealed class ListUserGuildsHandlerTests
         response.Data.Should().NotBeNull();
         response.Data!.Guilds.Should().HaveCount(2);
         response.Data.Guilds[0].Name.Should().Be("Guild Alpha");
+        response.Data.Guilds[0].IconUrl.Should().Be("https://cdn.harmonie.chat/guild-alpha.png");
+        response.Data.Guilds[0].Icon.Should().NotBeNull();
+        response.Data.Guilds[0].Icon!.Name.Should().Be("sword");
         response.Data.Guilds[0].Role.Should().Be("Admin");
         response.Data.Guilds[1].Name.Should().Be("Guild Beta");
+        response.Data.Guilds[1].Icon.Should().BeNull();
         response.Data.Guilds[1].Role.Should().Be("Member");
     }
 
     private static UserGuildMembership CreateMembership(
         string guildName,
         GuildRole role,
-        DateTime joinedAtUtc)
+        DateTime joinedAtUtc,
+        string? iconUrl = null,
+        string? iconColor = null,
+        string? iconName = null,
+        string? iconBg = null)
     {
         var guildNameResult = GuildName.Create(guildName);
         if (guildNameResult.IsFailure || guildNameResult.Value is null)
@@ -77,7 +92,11 @@ public sealed class ListUserGuildsHandlerTests
             guildNameResult.Value,
             UserId.New(),
             createdAtUtc: joinedAtUtc.AddHours(-1),
-            updatedAtUtc: joinedAtUtc.AddHours(-1));
+            updatedAtUtc: joinedAtUtc.AddHours(-1),
+            iconUrl: iconUrl,
+            iconColor: iconColor,
+            iconName: iconName,
+            iconBg: iconBg);
 
         return new UserGuildMembership(guild, role, joinedAtUtc);
     }

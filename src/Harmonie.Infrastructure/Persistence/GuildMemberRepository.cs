@@ -163,6 +163,10 @@ public sealed class GuildMemberRepository : IGuildMemberRepository
                            SELECT g.id AS "GuildId",
                                   g.name AS "GuildName",
                                   g.owner_user_id AS "OwnerUserId",
+                                  g.icon_url AS "IconUrl",
+                                  g.icon_color AS "IconColor",
+                                  g.icon_name AS "IconName",
+                                  g.icon_bg AS "IconBg",
                                   g.created_at_utc AS "GuildCreatedAtUtc",
                                   g.updated_at_utc AS "GuildUpdatedAtUtc",
                                   gm.role AS "Role",
@@ -281,7 +285,11 @@ public sealed class GuildMemberRepository : IGuildMemberRepository
             guildNameResult.Value,
             UserId.From(row.OwnerUserId),
             row.GuildCreatedAtUtc,
-            row.GuildUpdatedAtUtc);
+            row.GuildUpdatedAtUtc,
+            row.IconUrl,
+            row.IconColor,
+            row.IconName,
+            row.IconBg);
 
         return new UserGuildMembership(
             guild,

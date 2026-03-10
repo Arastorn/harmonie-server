@@ -36,4 +36,49 @@ public sealed class GuildTests
         result.IsSuccess.Should().BeTrue();
         guild.UpdatedAtUtc.Should().Be(initialUpdatedAtUtc);
     }
+
+    [Fact]
+    public void UpdateIconUrl_WithValidValue_ShouldSucceed()
+    {
+        var guild = Guild.Create(GuildName.Create("Icon Guild").Value!, UserId.New()).Value!;
+
+        var result = guild.UpdateIconUrl("https://cdn.harmonie.chat/guild-icon.png");
+
+        result.IsSuccess.Should().BeTrue();
+        guild.IconUrl.Should().Be("https://cdn.harmonie.chat/guild-icon.png");
+    }
+
+    [Fact]
+    public void UpdateIconColor_WithNull_ShouldClear()
+    {
+        var guild = Guild.Create(GuildName.Create("Color Guild").Value!, UserId.New()).Value!;
+        guild.UpdateIconColor("#7C3AED");
+
+        var result = guild.UpdateIconColor(null);
+
+        result.IsSuccess.Should().BeTrue();
+        guild.IconColor.Should().BeNull();
+    }
+
+    [Fact]
+    public void UpdateIconName_WithTooLongValue_ShouldFail()
+    {
+        var guild = Guild.Create(GuildName.Create("Icon Name Guild").Value!, UserId.New()).Value!;
+
+        var result = guild.UpdateIconName(new string('i', 51));
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be("Guild icon name is too long");
+    }
+
+    [Fact]
+    public void UpdateIconBg_WithTooLongValue_ShouldFail()
+    {
+        var guild = Guild.Create(GuildName.Create("Background Guild").Value!, UserId.New()).Value!;
+
+        var result = guild.UpdateIconBg(new string('b', 51));
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be("Guild icon background is too long");
+    }
 }

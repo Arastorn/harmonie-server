@@ -8,6 +8,14 @@ public sealed class GuildRow
 
     public Guid OwnerUserId { get; init; }
 
+    public string? IconUrl { get; init; }
+
+    public string? IconColor { get; init; }
+
+    public string? IconName { get; init; }
+
+    public string? IconBg { get; init; }
+
     public DateTime CreatedAtUtc { get; init; }
 
     public DateTime UpdatedAtUtc { get; init; }
