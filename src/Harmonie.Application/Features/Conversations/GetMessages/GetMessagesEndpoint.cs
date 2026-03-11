@@ -6,19 +6,19 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 
-namespace Harmonie.Application.Features.Conversations.SearchConversationMessages;
+namespace Harmonie.Application.Features.Conversations.GetMessages;
 
-public static class SearchConversationMessagesEndpoint
+public static class GetMessagesEndpoint
 {
     public static void Map(IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/conversations/{conversationId}/messages/search", HandleAsync)
-            .WithName("SearchConversationMessages")
+        app.MapGet("/api/conversations/{conversationId}/messages", HandleAsync)
+            .WithName("GetConversationMessages")
             .WithTags("Conversations")
             .RequireAuthorization()
-            .WithSummary("Search conversation messages")
-            .WithDescription("Returns conversation messages matching a full-text query with optional date filters and cursor pagination.")
-            .Produces<SearchConversationMessagesResponse>(StatusCodes.Status200OK)
+            .WithSummary("Get conversation messages")
+            .WithDescription("Returns messages in a conversation with cursor pagination.")
+            .Produces<GetMessagesResponse>(StatusCodes.Status200OK)
             .ProducesErrors(
                 ApplicationErrorCodes.Common.ValidationFailed,
                 ApplicationErrorCodes.Auth.InvalidCredentials,
@@ -27,27 +27,27 @@ public static class SearchConversationMessagesEndpoint
     }
 
     private static async Task<IResult> HandleAsync(
-        [AsParameters] SearchConversationMessagesRouteRequest routeRequest,
-        [AsParameters] SearchConversationMessagesRequest request,
-        [FromServices] SearchConversationMessagesHandler handler,
-        [FromServices] IValidator<SearchConversationMessagesRouteRequest> routeValidator,
-        [FromServices] IValidator<SearchConversationMessagesRequest> validator,
+        [AsParameters] GetMessagesRouteRequest routeRequest,
+        [AsParameters] GetMessagesRequest request,
+        [FromServices] GetMessagesHandler handler,
+        [FromServices] IValidator<GetMessagesRouteRequest> routeValidator,
+        [FromServices] IValidator<GetMessagesRequest> validator,
         HttpContext httpContext,
         CancellationToken cancellationToken)
     {
         var routeValidationError = await routeRequest.ValidateAsync(routeValidator, cancellationToken);
         if (routeValidationError is not null)
-            return ApplicationResponse<SearchConversationMessagesResponse>.Fail(routeValidationError).ToHttpResult();
+            return ApplicationResponse<GetMessagesResponse>.Fail(routeValidationError).ToHttpResult();
 
         var validationError = await request.ValidateAsync(validator, cancellationToken);
         if (validationError is not null)
-            return ApplicationResponse<SearchConversationMessagesResponse>.Fail(validationError).ToHttpResult();
+            return ApplicationResponse<GetMessagesResponse>.Fail(validationError).ToHttpResult();
 
         if (routeRequest.ConversationId is not string conversationId
             || !ConversationId.TryParse(conversationId, out var parsedConversationId)
             || parsedConversationId is null)
         {
-            return ApplicationResponse<SearchConversationMessagesResponse>.Fail(
+            return ApplicationResponse<GetMessagesResponse>.Fail(
                 ApplicationErrorCodes.Common.InvalidState,
                 "Route validation succeeded but conversation ID parsing failed.").ToHttpResult();
         }

@@ -1,6 +1,6 @@
 using FluentAssertions;
 using Harmonie.Application.Common;
-using Harmonie.Application.Features.Conversations.SearchConversationMessages;
+using Harmonie.Application.Features.Conversations.GetMessages;
 using Harmonie.Application.Interfaces;
 using Harmonie.Domain.Entities;
 using Harmonie.Domain.ValueObjects;
@@ -10,28 +10,41 @@ using Xunit;
 
 namespace Harmonie.Application.Tests;
 
-public sealed class SearchConversationMessagesHandlerTests
+public sealed class GetConversationMessagesHandlerTests
 {
     private readonly Mock<IConversationRepository> _conversationRepositoryMock;
     private readonly Mock<IMessageRepository> _directMessageRepositoryMock;
-    private readonly SearchConversationMessagesHandler _handler;
+    private readonly GetMessagesHandler _handler;
 
-    public SearchConversationMessagesHandlerTests()
+    public GetConversationMessagesHandlerTests()
     {
         _conversationRepositoryMock = new Mock<IConversationRepository>();
         _directMessageRepositoryMock = new Mock<IMessageRepository>();
 
-        _handler = new SearchConversationMessagesHandler(
+        _handler = new GetMessagesHandler(
             _conversationRepositoryMock.Object,
             _directMessageRepositoryMock.Object,
-            NullLogger<SearchConversationMessagesHandler>.Instance);
+            NullLogger<GetMessagesHandler>.Instance);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenCursorIsInvalid_ShouldReturnValidationFailure()
+    {
+        var response = await _handler.HandleAsync(
+            ConversationId.New(),
+            new GetMessagesRequest { Cursor = "invalid-cursor", Limit = 50 },
+            UserId.New());
+
+        response.Success.Should().BeFalse();
+        response.Error.Should().NotBeNull();
+        response.Error!.Code.Should().Be(ApplicationErrorCodes.Common.ValidationFailed);
     }
 
     [Fact]
     public async Task HandleAsync_WhenConversationDoesNotExist_ShouldReturnNotFound()
     {
         var conversationId = ConversationId.New();
-        var currentUserId = UserId.New();
+        var userId = UserId.New();
 
         _conversationRepositoryMock
             .Setup(x => x.GetByIdAsync(conversationId, It.IsAny<CancellationToken>()))
@@ -39,8 +52,8 @@ public sealed class SearchConversationMessagesHandlerTests
 
         var response = await _handler.HandleAsync(
             conversationId,
-            new SearchConversationMessagesRequest { Q = "deploy" },
-            currentUserId);
+            new GetMessagesRequest { Limit = 50 },
+            userId);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -50,10 +63,10 @@ public sealed class SearchConversationMessagesHandlerTests
     [Fact]
     public async Task HandleAsync_WhenUserIsNotParticipant_ShouldReturnAccessDenied()
     {
-        var user1 = UserId.New();
-        var user2 = UserId.New();
+        var participantOne = UserId.New();
+        var participantTwo = UserId.New();
         var outsider = UserId.New();
-        var conversation = CreateConversation(user1, user2);
+        var conversation = CreateConversation(participantOne, participantTwo);
 
         _conversationRepositoryMock
             .Setup(x => x.GetByIdAsync(conversation.Id, It.IsAny<CancellationToken>()))
@@ -61,7 +74,7 @@ public sealed class SearchConversationMessagesHandlerTests
 
         var response = await _handler.HandleAsync(
             conversation.Id,
-            new SearchConversationMessagesRequest { Q = "deploy" },
+            new GetMessagesRequest { Limit = 50 },
             outsider);
 
         response.Success.Should().BeFalse();
@@ -70,53 +83,39 @@ public sealed class SearchConversationMessagesHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WithValidRequest_ShouldReturnMappedItemsAndCursor()
+    public async Task HandleAsync_WithValidRequest_ShouldReturnMessagesAscending()
     {
-        var user1 = UserId.New();
-        var user2 = UserId.New();
-        var conversation = CreateConversation(user1, user2);
-        var before = new DateTime(2026, 3, 8, 12, 0, 0, DateTimeKind.Utc);
-        var after = before.AddHours(-2);
-        var item = CreateSearchItem(
-            authorUserId: user2,
-            content: "deploy succeeded",
-            createdAtUtc: after.AddMinutes(30));
-        var nextCursor = new MessageCursor(item.CreatedAtUtc, item.MessageId);
+        var participantOne = UserId.New();
+        var participantTwo = UserId.New();
+        var conversation = CreateConversation(participantOne, participantTwo);
+        var first = CreateConversationMessage(conversation.Id, participantOne, "First", DateTime.UtcNow.AddMinutes(-2));
+        var second = CreateConversationMessage(conversation.Id, participantTwo, "Second", DateTime.UtcNow.AddMinutes(-1));
+        var nextCursor = new MessageCursor(first.CreatedAtUtc, first.Id);
 
         _conversationRepositoryMock
             .Setup(x => x.GetByIdAsync(conversation.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(conversation);
 
         _directMessageRepositoryMock
-            .Setup(x => x.SearchConversationMessagesAsync(
-                It.Is<SearchConversationMessagesQuery>(query =>
-                    query.ConversationId == conversation.Id
-                    && query.SearchText == "deploy"
-                    && query.BeforeCreatedAtUtc == before
-                    && query.AfterCreatedAtUtc == after),
-                10,
+            .Setup(x => x.GetConversationPageAsync(
+                conversation.Id,
+                It.IsAny<MessageCursor?>(),
+                50,
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new SearchConversationMessagesPage([item], nextCursor));
+            .ReturnsAsync(new MessagePage([second, first], nextCursor));
 
         var response = await _handler.HandleAsync(
             conversation.Id,
-            new SearchConversationMessagesRequest
-            {
-                Q = " deploy ",
-                Before = before.ToString("O"),
-                After = after.ToString("O"),
-                Limit = 10
-            },
-            user1);
+            new GetMessagesRequest { Limit = 50 },
+            participantOne);
 
         response.Success.Should().BeTrue();
+        response.Error.Should().BeNull();
         response.Data.Should().NotBeNull();
-        response.Data!.ConversationId.Should().Be(conversation.Id.ToString());
-        response.Data.Items.Should().ContainSingle();
-        response.Data.Items[0].AuthorUserId.Should().Be(user2.ToString());
-        response.Data.Items[0].AuthorUsername.Should().Be("participant-two");
-        response.Data.Items[0].Content.Should().Be("deploy succeeded");
-        response.Data.NextCursor.Should().NotBeNullOrWhiteSpace();
+        response.Data!.Items.Should().HaveCount(2);
+        response.Data.Items[0].Content.Should().Be("First");
+        response.Data.Items[1].Content.Should().Be("Second");
+        response.Data.NextCursor.Should().NotBeNullOrEmpty();
     }
 
     private static Conversation CreateConversation(UserId user1Id, UserId user2Id)
@@ -128,7 +127,8 @@ public sealed class SearchConversationMessagesHandlerTests
         return result.Value;
     }
 
-    private static SearchConversationMessagesItem CreateSearchItem(
+    private static Message CreateConversationMessage(
+        ConversationId conversationId,
         UserId authorUserId,
         string content,
         DateTime createdAtUtc)
@@ -137,14 +137,14 @@ public sealed class SearchConversationMessagesHandlerTests
         if (contentResult.IsFailure || contentResult.Value is null)
             throw new InvalidOperationException("Failed to create test conversation message content.");
 
-        return new SearchConversationMessagesItem(
-            MessageId: MessageId.New(),
-            AuthorUserId: authorUserId,
-            AuthorUsername: "participant-two",
-            AuthorDisplayName: "Participant Two",
-            AuthorAvatarUrl: "https://cdn.harmonie.chat/avatar.png",
-            Content: contentResult.Value,
-            CreatedAtUtc: createdAtUtc,
-            UpdatedAtUtc: null);
+        return Message.Rehydrate(
+            id: MessageId.New(),
+            channelId: null,
+            conversationId: conversationId,
+            authorUserId: authorUserId,
+            content: contentResult.Value,
+            createdAtUtc: createdAtUtc,
+            updatedAtUtc: null,
+            deletedAtUtc: null);
     }
 }

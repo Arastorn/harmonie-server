@@ -418,7 +418,7 @@ public sealed class MessageRepository : IMessageRepository
             transaction: _dbSession.Transaction,
             cancellationToken: cancellationToken);
 
-        var rows = (await connection.QueryAsync<DirectMessageSearchRow>(command)).ToArray();
+        var rows = (await connection.QueryAsync<ConversationMessageSearchRow>(command)).ToArray();
         var hasMore = rows.Length > limit;
         var pageRows = hasMore ? rows.Take(limit).ToArray() : rows;
 
@@ -561,7 +561,7 @@ public sealed class MessageRepository : IMessageRepository
             UpdatedAtUtc: row.UpdatedAtUtc);
     }
 
-    private static SearchConversationMessagesItem MapToSearchConversationMessagesItem(DirectMessageSearchRow row)
+    private static SearchConversationMessagesItem MapToSearchConversationMessagesItem(ConversationMessageSearchRow row)
     {
         var contentResult = MessageContent.Create(row.Content);
         if (contentResult.IsFailure || contentResult.Value is null)
