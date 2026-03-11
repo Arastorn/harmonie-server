@@ -101,7 +101,7 @@ public sealed class UploadsEndpointsTests : IClassFixture<WebApplicationFactory<
 
         using var client = factory.CreateClient();
         using var content = CreateMultipartContent("icon.png", "image/png", [1, 2, 3, 4]);
-        content.Add(new StringContent("guild_icon"), "purpose");
+        content.Add(new StringContent("guildIcon"), "purpose");
 
         var response = await SendAuthorizedMultipartAsync(client, "/api/uploads", content, user.AccessToken);
 

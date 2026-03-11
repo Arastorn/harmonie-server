@@ -61,7 +61,7 @@ public static class UploadFileEndpoint
 
         var purpose = UploadPurpose.Attachment;
         if (!string.IsNullOrWhiteSpace(request.Purpose))
-            UploadFileValidator.TryParsePurpose(request.Purpose, out purpose);
+            Enum.TryParse(request.Purpose, ignoreCase: true, out purpose);
 
         await using var stream = file.OpenReadStream();
         var response = await handler.HandleAsync(
