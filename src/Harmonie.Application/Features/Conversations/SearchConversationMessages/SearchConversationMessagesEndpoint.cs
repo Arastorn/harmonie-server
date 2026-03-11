@@ -16,8 +16,8 @@ public static class SearchConversationMessagesEndpoint
             .WithName("SearchConversationMessages")
             .WithTags("Conversations")
             .RequireAuthorization()
-            .WithSummary("Search direct messages")
-            .WithDescription("Returns direct messages matching a full-text query with optional date filters and cursor pagination.")
+            .WithSummary("Search conversation messages")
+            .WithDescription("Returns conversation messages matching a full-text query with optional date filters and cursor pagination.")
             .Produces<SearchConversationMessagesResponse>(StatusCodes.Status200OK)
             .ProducesErrors(
                 ApplicationErrorCodes.Common.ValidationFailed,

@@ -6,7 +6,7 @@ using Harmonie.Application.Common;
 using Harmonie.Application.Features.Auth.Register;
 using Harmonie.Application.Features.Conversations.OpenConversation;
 using Harmonie.Application.Features.Conversations.SearchConversationMessages;
-using Harmonie.Application.Features.Conversations.SendDirectMessage;
+using Harmonie.Application.Features.Conversations.SendMessage;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
 
@@ -28,11 +28,11 @@ public sealed class SearchConversationMessagesEndpointTests : IClassFixture<WebA
         var target = await RegisterAsync();
         var conversationId = await OpenConversationAsync(caller.AccessToken, target.UserId);
 
-        await SendDirectMessageAsync(conversationId, "deploy alpha", caller.AccessToken);
+        await SendConversationMessageAsync(conversationId, "deploy alpha", caller.AccessToken);
         await Task.Delay(20);
-        await SendDirectMessageAsync(conversationId, "random chatter", caller.AccessToken);
+        await SendConversationMessageAsync(conversationId, "random chatter", caller.AccessToken);
         await Task.Delay(20);
-        await SendDirectMessageAsync(conversationId, "deploy beta", target.AccessToken);
+        await SendConversationMessageAsync(conversationId, "deploy beta", target.AccessToken);
 
         var response = await SendAuthorizedGetAsync(
             $"/api/conversations/{conversationId}/messages/search?q=deploy",
@@ -55,11 +55,11 @@ public sealed class SearchConversationMessagesEndpointTests : IClassFixture<WebA
         var target = await RegisterAsync();
         var conversationId = await OpenConversationAsync(caller.AccessToken, target.UserId);
 
-        await SendDirectMessageAsync(conversationId, "incident one", caller.AccessToken);
+        await SendConversationMessageAsync(conversationId, "incident one", caller.AccessToken);
         await Task.Delay(20);
-        await SendDirectMessageAsync(conversationId, "incident two", target.AccessToken);
+        await SendConversationMessageAsync(conversationId, "incident two", target.AccessToken);
         await Task.Delay(20);
-        await SendDirectMessageAsync(conversationId, "incident three", caller.AccessToken);
+        await SendConversationMessageAsync(conversationId, "incident three", caller.AccessToken);
 
         var firstResponse = await SendAuthorizedGetAsync(
             $"/api/conversations/{conversationId}/messages/search?q=incident&limit=2",
@@ -142,11 +142,11 @@ public sealed class SearchConversationMessagesEndpointTests : IClassFixture<WebA
         return payload!.ConversationId;
     }
 
-    private async Task SendDirectMessageAsync(string conversationId, string content, string accessToken)
+    private async Task SendConversationMessageAsync(string conversationId, string content, string accessToken)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/conversations/{conversationId}/messages")
         {
-            Content = JsonContent.Create(new SendDirectMessageRequest(content))
+            Content = JsonContent.Create(new SendMessageRequest(content))
         };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         var response = await _client.SendAsync(request);
