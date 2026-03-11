@@ -15,6 +15,7 @@ namespace Harmonie.Application.Tests;
 public sealed class UploadMyAvatarHandlerTests
 {
     private readonly Mock<IUserRepository> _userRepositoryMock;
+    private readonly Mock<IUploadedFileRepository> _uploadedFileRepositoryMock;
     private readonly Mock<IObjectStorageService> _objectStorageServiceMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly Mock<IUnitOfWorkTransaction> _transactionMock;
@@ -23,6 +24,7 @@ public sealed class UploadMyAvatarHandlerTests
     public UploadMyAvatarHandlerTests()
     {
         _userRepositoryMock = new Mock<IUserRepository>();
+        _uploadedFileRepositoryMock = new Mock<IUploadedFileRepository>();
         _objectStorageServiceMock = new Mock<IObjectStorageService>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _transactionMock = new Mock<IUnitOfWorkTransaction>();
@@ -41,6 +43,7 @@ public sealed class UploadMyAvatarHandlerTests
 
         _handler = new UploadMyAvatarHandler(
             _userRepositoryMock.Object,
+            _uploadedFileRepositoryMock.Object,
             _objectStorageServiceMock.Object,
             _unitOfWorkMock.Object,
             NullLogger<UploadMyAvatarHandler>.Instance);
@@ -122,7 +125,7 @@ public sealed class UploadMyAvatarHandlerTests
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();
-        response.Data!.AvatarUrl.Should().StartWith("https://files.test/avatars/");
+        response.Data!.AvatarUrl.Should().StartWith("/api/files/");
 
         capturedUploadRequest.Should().NotBeNull();
         capturedUploadRequest!.StorageKey.Should().StartWith($"avatars/{user.Id}/");
@@ -132,7 +135,7 @@ public sealed class UploadMyAvatarHandlerTests
             x => x.UpdateProfileAsync(
                 It.Is<ProfileUpdateParameters>(p =>
                     p.AvatarUrlIsSet == true &&
-                    p.AvatarUrl != null && p.AvatarUrl.StartsWith("https://files.test/avatars/") &&
+                    p.AvatarUrl != null && p.AvatarUrl.StartsWith("/api/files/") &&
                     p.DisplayNameIsSet == false &&
                     p.BioIsSet == false),
                 It.IsAny<CancellationToken>()),

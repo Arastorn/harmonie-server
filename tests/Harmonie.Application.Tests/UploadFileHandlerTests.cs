@@ -3,6 +3,7 @@ using Harmonie.Application.Common;
 using Harmonie.Application.Features.Uploads.UploadFile;
 using Harmonie.Application.Interfaces;
 using Harmonie.Domain.Entities;
+using Harmonie.Domain.Enums;
 using Harmonie.Domain.ValueObjects;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
@@ -63,7 +64,8 @@ public sealed class UploadFileHandlerTests
             "text/plain",
             stream.Length,
             stream,
-            userId);
+            userId,
+            UploadPurpose.Attachment);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -93,7 +95,8 @@ public sealed class UploadFileHandlerTests
             "text/plain",
             stream.Length,
             stream,
-            user.Id);
+            user.Id,
+            UploadPurpose.Attachment);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -127,14 +130,15 @@ public sealed class UploadFileHandlerTests
             "text/plain",
             stream.Length,
             stream,
-            user.Id);
+            user.Id,
+            UploadPurpose.Attachment);
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();
         response.Data!.Filename.Should().Be("hello.txt");
         response.Data.ContentType.Should().Be("text/plain");
         response.Data.SizeBytes.Should().Be(stream.Length);
-        response.Data.Url.Should().StartWith("https://files.test/uploads/");
+        response.Data.Url.Should().StartWith("/api/files/");
         persistedFile.Should().NotBeNull();
         persistedFile!.UploaderUserId.Should().Be(user.Id);
         _transactionMock.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -166,7 +170,8 @@ public sealed class UploadFileHandlerTests
             "text/plain",
             stream.Length,
             stream,
-            user.Id);
+            user.Id,
+            UploadPurpose.Attachment);
 
         await action.Should().ThrowAsync<InvalidOperationException>();
 

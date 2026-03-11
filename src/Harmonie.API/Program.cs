@@ -55,7 +55,7 @@ using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
-using Microsoft.Extensions.FileProviders;
+using Harmonie.Application.Features.Uploads.DownloadFile;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using System.Text.Json;
 
@@ -223,16 +223,6 @@ app.UseAuthorization();
 app.UseMiddleware<AuthenticatedUserContextMiddleware>();
 app.UseRateLimiter();
 
-var localBasePath = app.Configuration["ObjectStorage:LocalBasePath"] ?? "uploads";
-if (!Path.IsPathRooted(localBasePath))
-    localBasePath = Path.GetFullPath(localBasePath);
-Directory.CreateDirectory(localBasePath);
-app.UseStaticFiles(new StaticFileOptions
-{
-    FileProvider = new PhysicalFileProvider(localBasePath),
-    RequestPath = "/files"
-});
-
 // ============================================================
 // MAP ENDPOINTS - Vertical Slice Architecture
 // ============================================================
@@ -276,6 +266,7 @@ SearchUsersEndpoint.Map(app);
 UpdateMyProfileEndpoint.Map(app);
 UploadMyAvatarEndpoint.Map(app);
 UploadFileEndpoint.Map(app);
+DownloadFileEndpoint.Map(app);
 OpenConversationEndpoint.Map(app);
 ListConversationsEndpoint.Map(app);
 ConversationGetMessages.Map(app);

@@ -39,17 +39,18 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<WebApplicatio
         Assert.NotNull(payload);
         Assert.Equal("hello.txt", payload!.Filename);
         Assert.Equal("text/plain", payload.ContentType);
-        Assert.Contains("/files/", payload.Url);
+        Assert.StartsWith("/api/files/", payload.Url);
 
-        var diskPath = ResolveStoragePath(payload.Url);
-        Assert.True(File.Exists(diskPath), $"File not found on disk: {diskPath}");
+        // Verify file exists on disk by downloading through the authorized endpoint
+        var downloadResponse = await SendAuthorizedGetAsync(client, payload.Url, user.AccessToken);
+        Assert.Equal(HttpStatusCode.OK, downloadResponse.StatusCode);
 
-        var diskContent = await File.ReadAllTextAsync(diskPath);
+        var diskContent = await downloadResponse.Content.ReadAsStringAsync();
         Assert.Equal("hello from filesystem", diskContent);
     }
 
     [Fact]
-    public async Task UploadFile_WithLocalFileSystemProvider_ShouldServeFileViaHttp()
+    public async Task DownloadFile_WithLocalFileSystemProvider_ShouldServeFileViaAuthenticatedEndpoint()
     {
         using var factory = BuildFactory();
         using var client = factory.CreateClient();
@@ -63,14 +64,33 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<WebApplicatio
         var payload = await uploadResponse.Content.ReadFromJsonAsync<UploadFileResponse>();
         Assert.NotNull(payload);
 
-        var filePath = new Uri(payload!.Url).PathAndQuery;
-        var fileResponse = await client.GetAsync(filePath);
+        var fileResponse = await SendAuthorizedGetAsync(client, payload!.Url, user.AccessToken);
 
         Assert.Equal(HttpStatusCode.OK, fileResponse.StatusCode);
         Assert.Equal("image/png", fileResponse.Content.Headers.ContentType?.MediaType);
 
         var fileContent = await fileResponse.Content.ReadAsStringAsync();
         Assert.Equal("fake-png-content", fileContent);
+    }
+
+    [Fact]
+    public async Task DownloadFile_WithoutAuthentication_ShouldReturnUnauthorized()
+    {
+        using var factory = BuildFactory();
+        using var client = factory.CreateClient();
+
+        var user = await RegisterAsync(client);
+        using var multipart = CreateMultipartContent("secret.txt", "text/plain", "secret content");
+
+        var uploadResponse = await SendAuthorizedMultipartAsync(client, "/api/uploads", multipart, user.AccessToken);
+        Assert.Equal(HttpStatusCode.Created, uploadResponse.StatusCode);
+
+        var payload = await uploadResponse.Content.ReadFromJsonAsync<UploadFileResponse>();
+        Assert.NotNull(payload);
+
+        var fileResponse = await client.GetAsync(payload!.Url);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, fileResponse.StatusCode);
     }
 
     [Fact]
@@ -91,7 +111,7 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<WebApplicatio
         Assert.Equal("doc.txt", payload.Filename);
         Assert.Equal("text/plain", payload.ContentType);
         Assert.Equal(bytes.Length, payload.SizeBytes);
-        Assert.StartsWith("http://localhost/files/", payload.Url);
+        Assert.StartsWith("/api/files/", payload.Url);
     }
 
     public void Dispose()
@@ -113,15 +133,6 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<WebApplicatio
                 });
             });
         });
-
-    private string ResolveStoragePath(string url)
-    {
-        // url = "http://localhost/files/uploads/2026/03/{guid}.txt"
-        // strip base url prefix to get the storage key
-        const string baseUrl = "http://localhost/files/";
-        var storageKey = url[baseUrl.Length..];
-        return Path.Combine(_tempDir, storageKey.Replace('/', Path.DirectorySeparatorChar));
-    }
 
     private static async Task<RegisterResponse> RegisterAsync(HttpClient client)
     {
@@ -157,6 +168,16 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<WebApplicatio
         string accessToken)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, uri) { Content = content };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        return await client.SendAsync(request);
+    }
+
+    private static async Task<HttpResponseMessage> SendAuthorizedGetAsync(
+        HttpClient client,
+        string uri,
+        string accessToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, uri);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         return await client.SendAsync(request);
     }

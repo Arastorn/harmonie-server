@@ -25,5 +25,9 @@ public interface IObjectStorageService
         string storageKey,
         CancellationToken cancellationToken = default);
 
+    Task<Stream?> GetStreamAsync(
+        string storageKey,
+        CancellationToken cancellationToken = default);
+
     string BuildPublicUrl(string storageKey);
 }
