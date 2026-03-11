@@ -1,5 +1,7 @@
 using Harmonie.Application.Common;
 using Harmonie.Application.Interfaces;
+using Harmonie.Domain.Entities;
+using Harmonie.Domain.Enums;
 using Harmonie.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
 using SixLabors.ImageSharp;
@@ -12,17 +14,20 @@ public sealed class UploadMyAvatarHandler
     private const int AvatarSize = 256;
 
     private readonly IUserRepository _userRepository;
+    private readonly IUploadedFileRepository _uploadedFileRepository;
     private readonly IObjectStorageService _objectStorageService;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<UploadMyAvatarHandler> _logger;
 
     public UploadMyAvatarHandler(
         IUserRepository userRepository,
+        IUploadedFileRepository uploadedFileRepository,
         IObjectStorageService objectStorageService,
         IUnitOfWork unitOfWork,
         ILogger<UploadMyAvatarHandler> logger)
     {
         _userRepository = userRepository;
+        _uploadedFileRepository = uploadedFileRepository;
         _objectStorageService = objectStorageService;
         _unitOfWork = unitOfWork;
         _logger = logger;
@@ -56,6 +61,27 @@ public sealed class UploadMyAvatarHandler
         using var resizedStream = await ResizeImageAsync(content, contentType, cancellationToken);
         var storageKey = BuildStorageKey(currentUserId, fileName);
 
+        var uploadedFileResult = UploadedFile.Create(
+            currentUserId,
+            fileName,
+            contentType,
+            resizedStream.Length,
+            storageKey,
+            UploadPurpose.Avatar);
+
+        if (uploadedFileResult.IsFailure || uploadedFileResult.Value is null)
+        {
+            _logger.LogWarning(
+                "UploadMyAvatar domain validation failed. UserId={UserId}, FileName={FileName}, Error={Error}",
+                currentUserId,
+                fileName,
+                uploadedFileResult.Error);
+
+            return ApplicationResponse<UploadMyAvatarResponse>.Fail(
+                ApplicationErrorCodes.Common.DomainRuleViolation,
+                uploadedFileResult.Error ?? "Uploaded file metadata is invalid");
+        }
+
         var uploadResult = await _objectStorageService.UploadAsync(
             new ObjectStorageUploadRequest(
                 storageKey,
@@ -77,7 +103,7 @@ public sealed class UploadMyAvatarHandler
                 uploadResult.FailureReason ?? "Object storage upload failed");
         }
 
-        var avatarUrl = _objectStorageService.BuildPublicUrl(storageKey);
+        var avatarUrl = $"/api/files/{uploadedFileResult.Value.Id}";
 
         var avatarUpdateResult = user.UpdateAvatar(avatarUrl);
         if (avatarUpdateResult.IsFailure)
@@ -91,6 +117,7 @@ public sealed class UploadMyAvatarHandler
         try
         {
             await using var transaction = await _unitOfWork.BeginAsync(cancellationToken);
+            await _uploadedFileRepository.AddAsync(uploadedFileResult.Value, cancellationToken);
             await _userRepository.UpdateProfileAsync(
                 new ProfileUpdateParameters(
                     UserId: user.Id,

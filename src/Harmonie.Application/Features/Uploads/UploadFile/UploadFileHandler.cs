@@ -1,6 +1,7 @@
 using Harmonie.Application.Common;
 using Harmonie.Application.Interfaces;
 using Harmonie.Domain.Entities;
+using Harmonie.Domain.Enums;
 using Harmonie.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
 
@@ -34,6 +35,7 @@ public sealed class UploadFileHandler
         long sizeBytes,
         Stream content,
         UserId currentUserId,
+        UploadPurpose purpose,
         CancellationToken cancellationToken = default)
     {
         _logger.LogInformation(
@@ -61,7 +63,8 @@ public sealed class UploadFileHandler
             fileName,
             contentType,
             sizeBytes,
-            storageKey);
+            storageKey,
+            purpose);
 
         if (uploadFileResult.IsFailure || uploadFileResult.Value is null)
         {
@@ -113,7 +116,7 @@ public sealed class UploadFileHandler
 
         var payload = new UploadFileResponse(
             FileId: uploadFileResult.Value.Id.ToString(),
-            Url: _objectStorageService.BuildPublicUrl(uploadFileResult.Value.StorageKey),
+            Url: $"/api/files/{uploadFileResult.Value.Id}",
             Filename: uploadFileResult.Value.FileName,
             ContentType: uploadFileResult.Value.ContentType,
             SizeBytes: uploadFileResult.Value.SizeBytes);

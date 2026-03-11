@@ -89,6 +89,40 @@ public sealed class LocalFileSystemObjectStorageService : IObjectStorageService
         return Task.CompletedTask;
     }
 
+    public Task<Stream?> GetStreamAsync(
+        string storageKey,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(storageKey))
+            return Task.FromResult<Stream?>(null);
+
+        try
+        {
+            var fullPath = ResolveFullPath(storageKey);
+            if (!File.Exists(fullPath))
+                return Task.FromResult<Stream?>(null);
+
+            Stream stream = new FileStream(
+                fullPath,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read,
+                bufferSize: 81920,
+                useAsync: true);
+
+            return Task.FromResult<Stream?>(stream);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Local filesystem read failed. StorageKey={StorageKey}",
+                storageKey);
+
+            return Task.FromResult<Stream?>(null);
+        }
+    }
+
     public string BuildPublicUrl(string storageKey)
     {
         if (string.IsNullOrWhiteSpace(storageKey))

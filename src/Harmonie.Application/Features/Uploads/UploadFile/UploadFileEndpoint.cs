@@ -1,5 +1,6 @@
 using FluentValidation;
 using Harmonie.Application.Common;
+using Harmonie.Domain.Enums;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -65,6 +66,7 @@ public static class UploadFileEndpoint
             file.Length,
             stream,
             currentUserId,
+            UploadPurpose.Attachment,
             cancellationToken);
 
         return response.ToCreatedHttpResult(data => $"/api/uploads/{data.FileId}");

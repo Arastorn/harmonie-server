@@ -52,7 +52,7 @@ public sealed class UploadsEndpointsTests : IClassFixture<WebApplicationFactory<
         payload!.Filename.Should().Be("avatar.png");
         payload.ContentType.Should().Be("image/png");
         payload.SizeBytes.Should().Be(4);
-        payload.Url.Should().Contain("/uploads/");
+        payload.Url.Should().StartWith("/api/files/");
         fakeStorage.UploadedObjects.Should().ContainSingle();
     }
 
@@ -146,6 +146,14 @@ public sealed class UploadsEndpointsTests : IClassFixture<WebApplicationFactory<
         {
             UploadedObjects.TryRemove(storageKey, out _);
             return Task.CompletedTask;
+        }
+
+        public Task<Stream?> GetStreamAsync(string storageKey, CancellationToken cancellationToken = default)
+        {
+            if (UploadedObjects.TryGetValue(storageKey, out var bytes))
+                return Task.FromResult<Stream?>(new MemoryStream(bytes));
+
+            return Task.FromResult<Stream?>(null);
         }
 
         public async Task<ObjectStorageUploadResult> UploadAsync(

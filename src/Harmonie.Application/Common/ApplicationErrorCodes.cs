@@ -76,6 +76,8 @@ public static class ApplicationErrorCodes
     public static class Upload
     {
         public const string StorageUnavailable = "UPLOAD_STORAGE_UNAVAILABLE";
+        public const string NotFound = "UPLOAD_NOT_FOUND";
+        public const string AccessDenied = "UPLOAD_ACCESS_DENIED";
     }
 
     public static class Conversation

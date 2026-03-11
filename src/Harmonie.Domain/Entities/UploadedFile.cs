@@ -1,4 +1,5 @@
 using Harmonie.Domain.Common;
+using Harmonie.Domain.Enums;
 using Harmonie.Domain.ValueObjects;
 
 namespace Harmonie.Domain.Entities;
@@ -15,6 +16,8 @@ public sealed class UploadedFile : Entity<UploadedFileId>
 
     public string StorageKey { get; private set; }
 
+    public UploadPurpose Purpose { get; private set; }
+
     private UploadedFile(
         UploadedFileId id,
         UserId uploaderUserId,
@@ -22,6 +25,7 @@ public sealed class UploadedFile : Entity<UploadedFileId>
         string contentType,
         long sizeBytes,
         string storageKey,
+        UploadPurpose purpose,
         DateTime createdAtUtc)
     {
         Id = id;
@@ -30,6 +34,7 @@ public sealed class UploadedFile : Entity<UploadedFileId>
         ContentType = contentType;
         SizeBytes = sizeBytes;
         StorageKey = storageKey;
+        Purpose = purpose;
         CreatedAtUtc = createdAtUtc;
     }
 
@@ -38,7 +43,8 @@ public sealed class UploadedFile : Entity<UploadedFileId>
         string? fileName,
         string? contentType,
         long sizeBytes,
-        string? storageKey)
+        string? storageKey,
+        UploadPurpose purpose)
     {
         if (uploaderUserId is null)
             return Result.Failure<UploadedFile>("Uploader user ID is required");
@@ -67,6 +73,9 @@ public sealed class UploadedFile : Entity<UploadedFileId>
         if (normalizedStorageKey.Length > 1024)
             return Result.Failure<UploadedFile>("Storage key cannot exceed 1024 characters");
 
+        if (!Enum.IsDefined(purpose))
+            return Result.Failure<UploadedFile>("Upload purpose is invalid");
+
         return Result.Success(new UploadedFile(
             UploadedFileId.New(),
             uploaderUserId,
@@ -74,6 +83,7 @@ public sealed class UploadedFile : Entity<UploadedFileId>
             normalizedContentType,
             sizeBytes,
             normalizedStorageKey,
+            purpose,
             DateTime.UtcNow));
     }
 
@@ -84,6 +94,7 @@ public sealed class UploadedFile : Entity<UploadedFileId>
         string contentType,
         long sizeBytes,
         string storageKey,
+        UploadPurpose purpose,
         DateTime createdAtUtc)
     {
         ArgumentNullException.ThrowIfNull(id);
@@ -102,6 +113,7 @@ public sealed class UploadedFile : Entity<UploadedFileId>
             contentType,
             sizeBytes,
             storageKey,
+            purpose,
             createdAtUtc);
     }
 }
