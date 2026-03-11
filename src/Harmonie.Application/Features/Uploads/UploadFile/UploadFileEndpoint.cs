@@ -19,7 +19,7 @@ public static class UploadFileEndpoint
             .DisableAntiforgery()
             .Accepts<UploadFileRequest>("multipart/form-data")
             .WithSummary("Upload a file")
-            .WithDescription("Uploads a file to object storage and returns its metadata.")
+            .WithDescription("Uploads a file to object storage and returns its metadata. Optional `purpose` values are `attachment` and `guildIcon`. Use `/api/users/me/avatar` for avatar uploads.")
             .Produces<UploadFileResponse>(StatusCodes.Status201Created)
             .ProducesErrors(
                 ApplicationErrorCodes.Common.ValidationFailed,
