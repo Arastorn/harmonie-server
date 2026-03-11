@@ -24,6 +24,7 @@ using Harmonie.Application.Features.Conversations.SearchConversationMessages;
 using ConversationSendMessage = Harmonie.Application.Features.Conversations.SendMessage.SendMessageEndpoint;
 using Harmonie.Application.Features.Guilds.CreateChannel;
 using Harmonie.Application.Features.Guilds.CreateGuild;
+using Harmonie.Application.Features.Guilds.DeleteGuild;
 using Harmonie.Application.Features.Guilds.GetGuildChannels;
 using Harmonie.Application.Features.Guilds.GetGuildVoiceParticipants;
 using Harmonie.Application.Features.Guilds.GetGuildMembers;
@@ -81,6 +82,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddSignalR();
 builder.Services.AddScoped<ITextChannelNotifier, SignalRTextChannelNotifier>();
+builder.Services.AddScoped<IGuildNotifier, SignalRGuildNotifier>();
 builder.Services.AddScoped<IVoicePresenceNotifier, SignalRVoicePresenceNotifier>();
 builder.Services.AddScoped<IConversationMessageNotifier, SignalRConversationMessageNotifier>();
 builder.Services.AddHealthChecks()
@@ -242,6 +244,7 @@ LogoutAllEndpoint.Map(app);
 RefreshTokenEndpoint.Map(app);
 CreateChannelEndpoint.Map(app);
 CreateGuildEndpoint.Map(app);
+DeleteGuildEndpoint.Map(app);
 ListUserGuildsEndpoint.Map(app);
 InviteMemberEndpoint.Map(app);
 GetGuildChannelsEndpoint.Map(app);

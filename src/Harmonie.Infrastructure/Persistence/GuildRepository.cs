@@ -167,6 +167,20 @@ public sealed class GuildRepository : IGuildRepository
         await connection.ExecuteAsync(command);
     }
 
+    public async Task DeleteAsync(GuildId guildId, CancellationToken cancellationToken = default)
+    {
+        const string sql = "DELETE FROM guilds WHERE id = @GuildId";
+
+        var connection = await _dbSession.GetOpenConnectionAsync(cancellationToken);
+        var command = new CommandDefinition(
+            sql,
+            new { GuildId = guildId.Value },
+            transaction: _dbSession.Transaction,
+            cancellationToken: cancellationToken);
+
+        await connection.ExecuteAsync(command);
+    }
+
     public async Task<bool> ExistsAsync(GuildId guildId, CancellationToken cancellationToken = default)
     {
         const string sql = "SELECT EXISTS(SELECT 1 FROM guilds WHERE id = @GuildId)";

@@ -22,6 +22,7 @@ using Harmonie.Application.Features.Conversations.SearchConversationMessages;
 using ConversationSendMessageHandler = Harmonie.Application.Features.Conversations.SendMessage.SendMessageHandler;
 using Harmonie.Application.Features.Guilds.CreateChannel;
 using Harmonie.Application.Features.Guilds.CreateGuild;
+using Harmonie.Application.Features.Guilds.DeleteGuild;
 using Harmonie.Application.Features.Guilds.GetGuildChannels;
 using Harmonie.Application.Features.Guilds.GetGuildVoiceParticipants;
 using Harmonie.Application.Features.Guilds.GetGuildMembers;
@@ -66,6 +67,7 @@ public static class DependencyInjection
         services.AddScoped<RefreshTokenHandler>();
         services.AddScoped<CreateChannelHandler>();
         services.AddScoped<CreateGuildHandler>();
+        services.AddScoped<DeleteGuildHandler>();
         services.AddScoped<ListUserGuildsHandler>();
         services.AddScoped<InviteMemberHandler>();
         services.AddScoped<LeaveGuildHandler>();

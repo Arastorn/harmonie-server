@@ -212,6 +212,45 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<WebApplicatio
         Assert.Equal("replacement guild icon", newFileContent);
     }
 
+    [Fact]
+    public async Task DeleteGuild_WhenGuildHasUploadedIcon_ShouldDeleteStoredFile()
+    {
+        using var factory = BuildFactory();
+        using var client = factory.CreateClient();
+
+        var user = await RegisterAsync(client);
+        using var multipart = CreateMultipartContent("guild-icon-delete.txt", "text/plain", "guild icon to delete");
+
+        var uploadResponse = await SendAuthorizedMultipartAsync(client, "/api/files/uploads", multipart, user.AccessToken);
+        Assert.Equal(HttpStatusCode.Created, uploadResponse.StatusCode);
+
+        var uploadPayload = await uploadResponse.Content.ReadFromJsonAsync<UploadFileResponse>();
+        Assert.NotNull(uploadPayload);
+
+        var createGuildResponse = await SendAuthorizedPostAsync(
+            client,
+            "/api/guilds",
+            new
+            {
+                name = "Guild Delete Icon",
+                iconFileId = uploadPayload!.FileId
+            },
+            user.AccessToken);
+        Assert.Equal(HttpStatusCode.Created, createGuildResponse.StatusCode);
+
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        Assert.NotNull(createGuildPayload);
+
+        var deleteGuildResponse = await SendAuthorizedDeleteAsync(
+            client,
+            $"/api/guilds/{createGuildPayload!.GuildId}",
+            user.AccessToken);
+        Assert.Equal(HttpStatusCode.NoContent, deleteGuildResponse.StatusCode);
+
+        var oldFileResponse = await SendAuthorizedGetAsync(client, $"/api/files/{uploadPayload.FileId}", user.AccessToken);
+        Assert.Equal(HttpStatusCode.NotFound, oldFileResponse.StatusCode);
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_tempDir))
@@ -304,6 +343,16 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<WebApplicatio
         {
             Content = JsonContent.Create(payload)
         };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        return await client.SendAsync(request);
+    }
+
+    private static async Task<HttpResponseMessage> SendAuthorizedDeleteAsync(
+        HttpClient client,
+        string uri,
+        string accessToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Delete, uri);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         return await client.SendAsync(request);
     }
