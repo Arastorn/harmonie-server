@@ -181,6 +181,11 @@ public sealed class OpenApiDocumentTests : IClassFixture<WebApplicationFactory<P
         requestBody.Should().NotBeNull();
         requestBody!["content"]?["multipart/form-data"].Should().NotBeNull();
 
+        document["paths"]?["/api/files/uploads"]?["post"]?["description"]?.GetValue<string>()
+            .Should().Contain("Optional `purpose` values are `attachment` and `guildIcon`");
+        document["paths"]?["/api/files/uploads"]?["post"]?["description"]?.GetValue<string>()
+            .Should().Contain("/api/users/me/avatar");
+
         var schema = requestBody["content"]?["multipart/form-data"]?["schema"];
         schema.Should().NotBeNull();
 
