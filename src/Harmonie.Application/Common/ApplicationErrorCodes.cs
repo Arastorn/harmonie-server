@@ -80,6 +80,13 @@ public static class ApplicationErrorCodes
         public const string AccessDenied = "UPLOAD_ACCESS_DENIED";
     }
 
+    public static class Invite
+    {
+        public const string NotFound = "INVITE_NOT_FOUND";
+        public const string Expired = "INVITE_EXPIRED";
+        public const string Exhausted = "INVITE_EXHAUSTED";
+    }
+
     public static class Conversation
     {
         public const string NotFound = "CONVERSATION_NOT_FOUND";
