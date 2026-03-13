@@ -99,6 +99,55 @@ public sealed class GuildInviteRepository : IGuildInviteRepository
             row.ExpiresAtUtc);
     }
 
+    public async Task<InviteAcceptDetails?> GetAcceptDetailsByCodeAsync(string code, CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+                           SELECT gi.guild_id        AS "GuildId",
+                                  gi.creator_id      AS "CreatorId",
+                                  gi.uses_count      AS "UsesCount",
+                                  gi.max_uses        AS "MaxUses",
+                                  gi.expires_at_utc  AS "ExpiresAtUtc"
+                           FROM guild_invites gi
+                           WHERE gi.code = @Code
+                           """;
+
+        var connection = await _dbSession.GetOpenConnectionAsync(cancellationToken);
+        var command = new CommandDefinition(
+            sql,
+            new { Code = code },
+            transaction: _dbSession.Transaction,
+            cancellationToken: cancellationToken);
+
+        var row = await connection.QueryFirstOrDefaultAsync<InviteAcceptRow>(command);
+        if (row is null)
+            return null;
+
+        return new InviteAcceptDetails(
+            GuildId.From(row.GuildId),
+            UserId.From(row.CreatorId),
+            row.UsesCount,
+            row.MaxUses,
+            row.ExpiresAtUtc);
+    }
+
+    public async Task IncrementUsesCountAsync(string code, CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+                           UPDATE guild_invites
+                           SET uses_count = uses_count + 1
+                           WHERE code = @Code
+                           """;
+
+        var connection = await _dbSession.GetOpenConnectionAsync(cancellationToken);
+        var command = new CommandDefinition(
+            sql,
+            new { Code = code },
+            transaction: _dbSession.Transaction,
+            cancellationToken: cancellationToken);
+
+        await connection.ExecuteAsync(command);
+    }
+
     public async Task<IReadOnlyList<GuildInviteSummary>> GetByGuildIdAsync(GuildId guildId, CancellationToken cancellationToken = default)
     {
         const string sql = """
@@ -130,6 +179,15 @@ public sealed class GuildInviteRepository : IGuildInviteRepository
                 r.ExpiresAtUtc,
                 r.CreatedAtUtc))
             .ToArray();
+    }
+
+    private sealed class InviteAcceptRow
+    {
+        public Guid GuildId { get; init; }
+        public Guid CreatorId { get; init; }
+        public int UsesCount { get; init; }
+        public int? MaxUses { get; init; }
+        public DateTime? ExpiresAtUtc { get; init; }
     }
 
     private sealed class InvitePreviewRow
