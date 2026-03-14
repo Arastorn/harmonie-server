@@ -42,6 +42,16 @@ public class RealtimeHubDocumentation
         Summary = "Leave a direct conversation group.")]
     public void LeaveConversation() { }
 
+    [Channel("hubs/realtime/StartTypingChannel")]
+    [PublishOperation(typeof(StartTypingChannelMessage),
+        Summary = "Signal that the user is typing in a guild text channel. Throttled to 1 event per 5 seconds per user per channel.")]
+    public void StartTypingChannel() { }
+
+    [Channel("hubs/realtime/StartTypingConversation")]
+    [PublishOperation(typeof(StartTypingConversationMessage),
+        Summary = "Signal that the user is typing in a direct conversation. Throttled to 1 event per 5 seconds per user per conversation.")]
+    public void StartTypingConversation() { }
+
     // ── Server → Client (Subscribe) ───────────────────────────────
 
     [Channel("hubs/realtime/MessageCreated")]
@@ -88,6 +98,16 @@ public class RealtimeHubDocumentation
     [SubscribeOperation(typeof(GuildDeletedEvent),
         Summary = "Received when a guild is deleted.")]
     public void OnGuildDeleted() { }
+
+    [Channel("hubs/realtime/UserTyping")]
+    [SubscribeOperation(typeof(UserTypingEvent),
+        Summary = "Received when a user starts typing in a guild text channel.")]
+    public void OnUserTyping() { }
+
+    [Channel("hubs/realtime/ConversationUserTyping")]
+    [SubscribeOperation(typeof(ConversationUserTypingEvent),
+        Summary = "Received when a user starts typing in a direct conversation.")]
+    public void OnConversationUserTyping() { }
 }
 
 // ── Client → Server payload types ─────────────────────────────────
@@ -98,3 +118,5 @@ public sealed record JoinGuildMessage(Guid GuildId);
 public sealed record LeaveGuildMessage(Guid GuildId);
 public sealed record JoinConversationMessage(Guid ConversationId);
 public sealed record LeaveConversationMessage(Guid ConversationId);
+public sealed record StartTypingChannelMessage(Guid ChannelId);
+public sealed record StartTypingConversationMessage(Guid ConversationId);
