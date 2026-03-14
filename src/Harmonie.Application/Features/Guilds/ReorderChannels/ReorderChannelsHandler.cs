@@ -1,0 +1,152 @@
+using Harmonie.Application.Common;
+using Harmonie.Application.Interfaces;
+using Harmonie.Domain.Enums;
+using Harmonie.Domain.ValueObjects;
+using Microsoft.Extensions.Logging;
+
+namespace Harmonie.Application.Features.Guilds.ReorderChannels;
+
+public sealed class ReorderChannelsHandler
+{
+    private readonly IGuildRepository _guildRepository;
+    private readonly IGuildChannelRepository _guildChannelRepository;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly ILogger<ReorderChannelsHandler> _logger;
+
+    public ReorderChannelsHandler(
+        IGuildRepository guildRepository,
+        IGuildChannelRepository guildChannelRepository,
+        IUnitOfWork unitOfWork,
+        ILogger<ReorderChannelsHandler> logger)
+    {
+        _guildRepository = guildRepository;
+        _guildChannelRepository = guildChannelRepository;
+        _unitOfWork = unitOfWork;
+        _logger = logger;
+    }
+
+    public async Task<ApplicationResponse<ReorderChannelsResponse>> HandleAsync(
+        GuildId guildId,
+        UserId callerId,
+        ReorderChannelsRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation(
+            "ReorderChannels started. GuildId={GuildId}, CallerId={CallerId}, ChannelCount={ChannelCount}",
+            guildId,
+            callerId,
+            request.Channels.Count);
+
+        var ctx = await _guildRepository.GetWithCallerRoleAsync(guildId, callerId, cancellationToken);
+        if (ctx is null)
+        {
+            _logger.LogWarning(
+                "ReorderChannels failed because guild was not found. GuildId={GuildId}",
+                guildId);
+
+            return ApplicationResponse<ReorderChannelsResponse>.Fail(
+                ApplicationErrorCodes.Guild.NotFound,
+                "Guild was not found");
+        }
+
+        if (ctx.CallerRole is null)
+        {
+            _logger.LogWarning(
+                "ReorderChannels failed because caller is not a member. GuildId={GuildId}, CallerId={CallerId}",
+                guildId,
+                callerId);
+
+            return ApplicationResponse<ReorderChannelsResponse>.Fail(
+                ApplicationErrorCodes.Guild.AccessDenied,
+                "You do not have access to this guild");
+        }
+
+        if (ctx.CallerRole != GuildRole.Admin)
+        {
+            _logger.LogWarning(
+                "ReorderChannels failed because caller is not an admin. GuildId={GuildId}, CallerId={CallerId}, Role={Role}",
+                guildId,
+                callerId,
+                ctx.CallerRole);
+
+            return ApplicationResponse<ReorderChannelsResponse>.Fail(
+                ApplicationErrorCodes.Guild.AccessDenied,
+                "Only guild admins can reorder channels");
+        }
+
+        var channels = await _guildChannelRepository.GetByGuildIdAsync(guildId, cancellationToken);
+
+        var channelMap = channels.ToDictionary(c => c.Id);
+
+        var parsedItems = new List<(GuildChannelId Id, int Position)>(request.Channels.Count);
+        var seenIds = new HashSet<GuildChannelId>();
+
+        foreach (var item in request.Channels)
+        {
+            if (!GuildChannelId.TryParse(item.ChannelId, out var parsedId) || parsedId is null)
+            {
+                return ApplicationResponse<ReorderChannelsResponse>.Fail(
+                    ApplicationErrorCodes.Channel.NotFound,
+                    $"Channel '{item.ChannelId}' is not a valid ID");
+            }
+
+            if (!channelMap.ContainsKey(parsedId))
+            {
+                _logger.LogWarning(
+                    "ReorderChannels failed because channel was not found. GuildId={GuildId}, ChannelId={ChannelId}",
+                    guildId,
+                    parsedId);
+
+                return ApplicationResponse<ReorderChannelsResponse>.Fail(
+                    ApplicationErrorCodes.Channel.NotFound,
+                    $"Channel '{item.ChannelId}' was not found in this guild");
+            }
+
+            if (!seenIds.Add(parsedId))
+            {
+                return ApplicationResponse<ReorderChannelsResponse>.Fail(
+                    ApplicationErrorCodes.Common.ValidationFailed,
+                    $"Channel '{item.ChannelId}' appears more than once in the request");
+            }
+
+            parsedItems.Add((parsedId, item.Position));
+        }
+
+        await using var transaction = await _unitOfWork.BeginAsync(cancellationToken);
+
+        foreach (var (id, position) in parsedItems)
+        {
+            var channel = channelMap[id];
+
+            var result = channel.UpdatePosition(position);
+            if (result.IsFailure)
+            {
+                return ApplicationResponse<ReorderChannelsResponse>.Fail(
+                    ApplicationErrorCodes.Common.DomainRuleViolation,
+                    result.Error ?? "Channel position update failed");
+            }
+
+            await _guildChannelRepository.UpdateAsync(channel, cancellationToken);
+        }
+
+        await transaction.CommitAsync(cancellationToken);
+
+        var updatedChannels = await _guildChannelRepository.GetByGuildIdAsync(guildId, cancellationToken);
+
+        _logger.LogInformation(
+            "ReorderChannels succeeded. GuildId={GuildId}, CallerId={CallerId}",
+            guildId,
+            callerId);
+
+        var payload = new ReorderChannelsResponse(
+            GuildId: guildId.ToString(),
+            Channels: updatedChannels.Select(c => new ReorderChannelsItemResponse(
+                ChannelId: c.Id.ToString(),
+                Name: c.Name,
+                Type: c.Type.ToString(),
+                IsDefault: c.IsDefault,
+                Position: c.Position)).ToArray());
+
+        return ApplicationResponse<ReorderChannelsResponse>.Ok(payload);
+    }
+}
