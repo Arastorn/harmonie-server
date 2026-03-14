@@ -107,6 +107,23 @@ public sealed class Message : Entity<MessageId>
         return Result.Success();
     }
 
+    public Result RemoveAttachment(UploadedFileId attachmentFileId)
+    {
+        if (attachmentFileId is null)
+            return Result.Failure("Attachment file ID is required");
+
+        var remainingAttachments = Attachments
+            .Where(attachment => attachment.FileId != attachmentFileId)
+            .ToArray();
+
+        if (remainingAttachments.Length == Attachments.Count)
+            return Result.Failure("Attachment was not found on message");
+
+        Attachments = remainingAttachments;
+        MarkAsUpdated();
+        return Result.Success();
+    }
+
     public Result Delete()
     {
         if (DeletedAtUtc is not null)

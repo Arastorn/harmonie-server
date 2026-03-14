@@ -375,6 +375,99 @@ public sealed class ChannelEndpointsTests : IClassFixture<WebApplicationFactory<
     }
 
     [Fact]
+    public async Task DeleteMessageAttachment_WhenAuthorDeletesOwnAttachment_ShouldReturn204AndRemoveAttachment()
+    {
+        var author = await RegisterAsync();
+        var channelId = await CreateChannelAndGetIdAsync(author.AccessToken, "attachment-delete-channel");
+        var uploadedFile = await UploadAttachmentAsync(author.AccessToken, "notes.txt", "text/plain", "attachment payload");
+
+        var sendResponse = await SendAuthorizedPostAsync(
+            $"/api/channels/{channelId}/messages",
+            new SendMessageRequest("message with attachment", [uploadedFile.FileId]),
+            author.AccessToken);
+        sendResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var sendPayload = await sendResponse.Content.ReadFromJsonAsync<SendMessageResponse>();
+        sendPayload.Should().NotBeNull();
+
+        var deleteResponse = await SendAuthorizedDeleteAsync(
+            $"/api/channels/{channelId}/messages/{sendPayload!.MessageId}/attachments/{uploadedFile.FileId}",
+            author.AccessToken);
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var listResponse = await SendAuthorizedGetAsync(
+            $"/api/channels/{channelId}/messages",
+            author.AccessToken);
+        listResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var listPayload = await listResponse.Content.ReadFromJsonAsync<GetMessagesResponse>();
+        listPayload.Should().NotBeNull();
+        listPayload!.Items.Should().ContainSingle();
+        listPayload.Items[0].Attachments.Should().BeEmpty();
+
+        var fileResponse = await SendAuthorizedGetAsync($"/api/files/{uploadedFile.FileId}", author.AccessToken);
+        fileResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task DeleteMessageAttachment_WhenMemberTriesToDeleteAnotherUsersAttachment_ShouldReturn403()
+    {
+        var owner = await RegisterAsync();
+        var member = await RegisterAsync();
+
+        var guildId = await CreateGuildAndGetIdAsync(owner.AccessToken, "Delete Attachment Guild");
+        await InviteMemberAsync(guildId, member.UserId, owner.AccessToken);
+
+        var channelId = await CreateChannelAndGetIdAsync(owner.AccessToken, "attachment-auth-channel", guildId: guildId);
+        var uploadedFile = await UploadAttachmentAsync(owner.AccessToken, "notes.txt", "text/plain", "attachment payload");
+
+        var sendResponse = await SendAuthorizedPostAsync(
+            $"/api/channels/{channelId}/messages",
+            new SendMessageRequest("message with attachment", [uploadedFile.FileId]),
+            owner.AccessToken);
+        sendResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var sendPayload = await sendResponse.Content.ReadFromJsonAsync<SendMessageResponse>();
+        sendPayload.Should().NotBeNull();
+
+        var deleteResponse = await SendAuthorizedDeleteAsync(
+            $"/api/channels/{channelId}/messages/{sendPayload!.MessageId}/attachments/{uploadedFile.FileId}",
+            member.AccessToken);
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+        var error = await deleteResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        error.Should().NotBeNull();
+        error!.Code.Should().Be(ApplicationErrorCodes.Message.DeleteForbidden);
+    }
+
+    [Fact]
+    public async Task DeleteMessageAttachment_WhenAttachmentIsNotOnMessage_ShouldReturn404()
+    {
+        var author = await RegisterAsync();
+        var channelId = await CreateChannelAndGetIdAsync(author.AccessToken, "attachment-notfound-channel");
+        var messageId = await SendMessageAndGetIdAsync(channelId, "message without attachment", author.AccessToken);
+        var uploadedFile = await UploadAttachmentAsync(author.AccessToken, "unused.txt", "text/plain", "unused attachment");
+
+        var deleteResponse = await SendAuthorizedDeleteAsync(
+            $"/api/channels/{channelId}/messages/{messageId}/attachments/{uploadedFile.FileId}",
+            author.AccessToken);
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+        var error = await deleteResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        error.Should().NotBeNull();
+        error!.Code.Should().Be(ApplicationErrorCodes.Message.AttachmentNotFound);
+    }
+
+    [Fact]
+    public async Task DeleteMessageAttachment_WhenNotAuthenticated_ShouldReturn401()
+    {
+        var deleteResponse = await _client.DeleteAsync(
+            $"/api/channels/{Guid.NewGuid()}/messages/{Guid.NewGuid()}/attachments/{Guid.NewGuid()}");
+
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
     public async Task EditMessage_WhenAuthorEditsOwnMessage_ShouldReturn200WithUpdatedContent()
     {
         var author = await RegisterAsync();

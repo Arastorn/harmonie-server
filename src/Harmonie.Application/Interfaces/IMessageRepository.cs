@@ -39,6 +39,11 @@ public interface IMessageRepository
         Message message,
         CancellationToken cancellationToken = default);
 
+    Task RemoveAttachmentAsync(
+        MessageId messageId,
+        UploadedFileId attachmentFileId,
+        CancellationToken cancellationToken = default);
+
     Task SoftDeleteAsync(
         Message message,
         CancellationToken cancellationToken = default);

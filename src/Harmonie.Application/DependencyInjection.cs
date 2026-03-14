@@ -7,6 +7,7 @@ using Harmonie.Application.Features.Auth.Logout;
 using Harmonie.Application.Features.Auth.RefreshToken;
 using Harmonie.Application.Features.Auth.Register;
 using Harmonie.Application.Features.Channels.DeleteChannel;
+using Harmonie.Application.Features.Channels.DeleteMessageAttachment;
 using ChannelDeleteMessageHandler = Harmonie.Application.Features.Channels.DeleteMessage.DeleteMessageHandler;
 using ChannelEditMessageHandler = Harmonie.Application.Features.Channels.EditMessage.EditMessageHandler;
 using ChannelGetMessagesHandler = Harmonie.Application.Features.Channels.GetMessages.GetMessagesHandler;
@@ -106,6 +107,7 @@ public static class DependencyInjection
         services.AddScoped<HandleLiveKitWebhookHandler>();
         services.AddScoped<UpdateChannelHandler>();
         services.AddScoped<DeleteChannelHandler>();
+        services.AddScoped<DeleteMessageAttachmentHandler>();
         services.AddScoped<ChannelEditMessageHandler>();
         services.AddScoped<ChannelDeleteMessageHandler>();
         services.AddScoped<OpenConversationHandler>();

@@ -321,6 +321,7 @@ public static class EndpointExtensions
             ApplicationErrorCodes.Message.ContentEmpty => HttpStatusCode.BadRequest,
             ApplicationErrorCodes.Message.ContentTooLong => HttpStatusCode.BadRequest,
             ApplicationErrorCodes.Message.NotFound => HttpStatusCode.NotFound,
+            ApplicationErrorCodes.Message.AttachmentNotFound => HttpStatusCode.NotFound,
             ApplicationErrorCodes.Message.EditForbidden => HttpStatusCode.Forbidden,
             ApplicationErrorCodes.Message.DeleteForbidden => HttpStatusCode.Forbidden,
             ApplicationErrorCodes.User.NotFound => HttpStatusCode.NotFound,
