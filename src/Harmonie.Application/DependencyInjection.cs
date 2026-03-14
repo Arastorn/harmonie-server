@@ -39,6 +39,7 @@ using Harmonie.Application.Features.Guilds.SearchMessages;
 using Harmonie.Application.Features.Guilds.TransferOwnership;
 using Harmonie.Application.Features.Guilds.UpdateGuild;
 using Harmonie.Application.Features.Guilds.UpdateMemberRole;
+using Harmonie.Application.Features.Users.DeleteMyAvatar;
 using Harmonie.Application.Features.Users.GetMyProfile;
 using Harmonie.Application.Features.Users.SearchUsers;
 using Harmonie.Application.Features.Users.UpdateMyProfile;
@@ -93,6 +94,7 @@ public static class DependencyInjection
         services.AddScoped<ChannelSendMessageHandler>();
         services.AddScoped<ChannelGetMessagesHandler>();
         services.AddScoped<JoinVoiceChannelHandler>();
+        services.AddScoped<DeleteMyAvatarHandler>();
         services.AddScoped<GetMyProfileHandler>();
         services.AddScoped<SearchUsersHandler>();
         services.AddScoped<UpdateMyProfileHandler>();
