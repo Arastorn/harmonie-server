@@ -562,6 +562,31 @@ public sealed class MessageRepository : IMessageRepository
         await connection.ExecuteAsync(command);
     }
 
+    public async Task RemoveAttachmentAsync(
+        MessageId messageId,
+        UploadedFileId attachmentFileId,
+        CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+                           DELETE FROM message_attachments
+                           WHERE message_id = @MessageId
+                             AND uploaded_file_id = @UploadedFileId
+                           """;
+
+        var connection = await _dbSession.GetOpenConnectionAsync(cancellationToken);
+        var command = new CommandDefinition(
+            sql,
+            new
+            {
+                MessageId = messageId.Value,
+                UploadedFileId = attachmentFileId.Value
+            },
+            transaction: _dbSession.Transaction,
+            cancellationToken: cancellationToken);
+
+        await connection.ExecuteAsync(command);
+    }
+
     private async Task<IReadOnlyDictionary<Guid, IReadOnlyList<MessageAttachment>>> GetAttachmentsByMessageIdsAsync(
         IReadOnlyCollection<Guid> messageIds,
         CancellationToken cancellationToken)

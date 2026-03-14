@@ -2,6 +2,8 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Harmonie.Application.Features.Auth.Register;
+using Harmonie.Application.Features.Channels.SendMessage;
+using Harmonie.Application.Features.Guilds.CreateChannel;
 using Harmonie.Application.Features.Guilds.CreateGuild;
 using Harmonie.Application.Features.Uploads.UploadFile;
 using Microsoft.AspNetCore.Hosting;
@@ -284,6 +286,43 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<WebApplicatio
     }
 
     [Fact]
+    public async Task DeleteMessageAttachment_WhenMessageHasUploadedAttachment_ShouldDeleteStoredFile()
+    {
+        using var factory = BuildFactory();
+        using var client = factory.CreateClient();
+
+        var user = await RegisterAsync(client);
+        var guildId = await CreateGuildAsync(client, user.AccessToken, "Attachment Delete Guild");
+        var channelId = await CreateChannelAsync(client, user.AccessToken, guildId, "attachment-delete-channel");
+        using var multipart = CreateMultipartContent("attachment-delete.txt", "text/plain", "attachment to delete");
+
+        var uploadResponse = await SendAuthorizedMultipartAsync(client, "/api/files/uploads", multipart, user.AccessToken);
+        Assert.Equal(HttpStatusCode.Created, uploadResponse.StatusCode);
+
+        var uploadPayload = await uploadResponse.Content.ReadFromJsonAsync<UploadFileResponse>();
+        Assert.NotNull(uploadPayload);
+
+        var sendMessageResponse = await SendAuthorizedPostAsync(
+            client,
+            $"/api/channels/{channelId}/messages",
+            new SendMessageRequest("message with attachment", [uploadPayload!.FileId]),
+            user.AccessToken);
+        Assert.Equal(HttpStatusCode.Created, sendMessageResponse.StatusCode);
+
+        var sendMessagePayload = await sendMessageResponse.Content.ReadFromJsonAsync<SendMessageResponse>();
+        Assert.NotNull(sendMessagePayload);
+
+        var deleteAttachmentResponse = await SendAuthorizedDeleteAsync(
+            client,
+            $"/api/channels/{channelId}/messages/{sendMessagePayload!.MessageId}/attachments/{uploadPayload.FileId}",
+            user.AccessToken);
+        Assert.Equal(HttpStatusCode.NoContent, deleteAttachmentResponse.StatusCode);
+
+        var oldFileResponse = await SendAuthorizedGetAsync(client, $"/api/files/{uploadPayload.FileId}", user.AccessToken);
+        Assert.Equal(HttpStatusCode.NotFound, oldFileResponse.StatusCode);
+    }
+
+    [Fact]
     public async Task DeleteGuildIcon_WhenGuildHasUploadedIcon_ShouldDeleteStoredFile()
     {
         using var factory = BuildFactory();
@@ -358,6 +397,41 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<WebApplicatio
         var payload = await response.Content.ReadFromJsonAsync<RegisterResponse>();
         Assert.NotNull(payload);
         return payload!;
+    }
+
+    private static async Task<string> CreateGuildAsync(
+        HttpClient client,
+        string accessToken,
+        string name)
+    {
+        var response = await SendAuthorizedPostAsync(
+            client,
+            "/api/guilds",
+            new CreateGuildRequest(name),
+            accessToken);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        Assert.NotNull(payload);
+        return payload!.GuildId;
+    }
+
+    private static async Task<string> CreateChannelAsync(
+        HttpClient client,
+        string accessToken,
+        string guildId,
+        string name)
+    {
+        var response = await SendAuthorizedPostAsync(
+            client,
+            $"/api/guilds/{guildId}/channels",
+            new { name, type = "Text", position = 0 },
+            accessToken);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<CreateChannelResponse>();
+        Assert.NotNull(payload);
+        return payload!.ChannelId;
     }
 
     private static MultipartFormDataContent CreateMultipartContent(
