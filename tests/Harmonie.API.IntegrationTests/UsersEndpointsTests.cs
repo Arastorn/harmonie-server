@@ -309,6 +309,55 @@ public sealed class UsersEndpointsTests : IClassFixture<WebApplicationFactory<Pr
         payload!.Language.Should().BeNull();
     }
 
+    [Fact]
+    public async Task DeleteMyAvatar_WithExistingAvatar_ShouldReturnNoContentAndClearProfile()
+    {
+        var user = await RegisterAsync();
+        var avatarFileId = await UploadFileAsync(user.AccessToken, "avatar-delete.png", "image/png", "avatar to delete");
+
+        var seedResponse = await SendAuthorizedPatchAsync(
+            "/api/users/me",
+            new { avatarFileId },
+            user.AccessToken);
+        seedResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var response = await SendAuthorizedDeleteAsync("/api/users/me/avatar", user.AccessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var profileResponse = await SendAuthorizedGetAsync("/api/users/me", user.AccessToken);
+        profileResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var profile = await profileResponse.Content.ReadFromJsonAsync<GetMyProfileResponse>();
+        profile.Should().NotBeNull();
+        profile!.AvatarFileId.Should().BeNull();
+
+        var oldFileResponse = await SendAuthorizedGetAsync($"/api/files/{avatarFileId}", user.AccessToken);
+        oldFileResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task DeleteMyAvatar_WhenNoAvatarIsSet_ShouldReturnNotFound()
+    {
+        var user = await RegisterAsync();
+
+        var response = await SendAuthorizedDeleteAsync("/api/users/me/avatar", user.AccessToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        error.Should().NotBeNull();
+        error!.Code.Should().Be(ApplicationErrorCodes.Upload.NotFound);
+    }
+
+    [Fact]
+    public async Task DeleteMyAvatar_WithoutAuthentication_ShouldReturnUnauthorized()
+    {
+        var response = await _client.DeleteAsync("/api/users/me/avatar");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
     private async Task<RegisterResponse> RegisterAsync()
     {
         var request = new RegisterRequest(
@@ -341,6 +390,15 @@ public sealed class UsersEndpointsTests : IClassFixture<WebApplicationFactory<Pr
         {
             Content = JsonContent.Create(payload)
         };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        return await _client.SendAsync(request);
+    }
+
+    private async Task<HttpResponseMessage> SendAuthorizedDeleteAsync(
+        string uri,
+        string accessToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Delete, uri);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         return await _client.SendAsync(request);
     }
