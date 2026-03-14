@@ -9,6 +9,10 @@ public interface IUploadedFileRepository
         UploadedFileId id,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<UploadedFile>> GetByIdsAsync(
+        IReadOnlyCollection<UploadedFileId> ids,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(
         UploadedFile uploadedFile,
         CancellationToken cancellationToken = default);

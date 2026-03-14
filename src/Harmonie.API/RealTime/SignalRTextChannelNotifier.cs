@@ -1,3 +1,4 @@
+using Harmonie.Application.Common;
 using Harmonie.Application.Interfaces;
 using Microsoft.AspNetCore.SignalR;
 
@@ -23,6 +24,7 @@ public sealed class SignalRTextChannelNotifier : ITextChannelNotifier
             ChannelId: notification.ChannelId.ToString(),
             AuthorUserId: notification.AuthorUserId.ToString(),
             Content: notification.Content,
+            Attachments: notification.Attachments,
             CreatedAtUtc: notification.CreatedAtUtc);
 
         await _hubContext.Clients
@@ -68,6 +70,7 @@ public sealed record MessageCreatedEvent(
     string ChannelId,
     string AuthorUserId,
     string Content,
+    IReadOnlyList<MessageAttachmentDto> Attachments,
     DateTime CreatedAtUtc);
 
 public sealed record MessageUpdatedEvent(

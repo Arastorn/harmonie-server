@@ -15,6 +15,7 @@ public sealed class SendMessageHandlerTests
 {
     private readonly Mock<IGuildChannelRepository> _guildChannelRepositoryMock;
     private readonly Mock<IMessageRepository> _channelMessageRepositoryMock;
+    private readonly Mock<IUploadedFileRepository> _uploadedFileRepositoryMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly Mock<IUnitOfWorkTransaction> _transactionMock;
     private readonly Mock<ITextChannelNotifier> _textChannelNotifierMock;
@@ -24,6 +25,7 @@ public sealed class SendMessageHandlerTests
     {
         _guildChannelRepositoryMock = new Mock<IGuildChannelRepository>();
         _channelMessageRepositoryMock = new Mock<IMessageRepository>();
+        _uploadedFileRepositoryMock = new Mock<IUploadedFileRepository>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _transactionMock = new Mock<IUnitOfWorkTransaction>();
         _textChannelNotifierMock = new Mock<ITextChannelNotifier>();
@@ -45,6 +47,7 @@ public sealed class SendMessageHandlerTests
         _handler = new SendMessageHandler(
             _guildChannelRepositoryMock.Object,
             _channelMessageRepositoryMock.Object,
+            new MessageAttachmentResolver(_uploadedFileRepositoryMock.Object),
             _unitOfWorkMock.Object,
             _textChannelNotifierMock.Object,
             NullLogger<SendMessageHandler>.Instance);
@@ -144,6 +147,7 @@ public sealed class SendMessageHandlerTests
         response.Error.Should().BeNull();
         response.Data.Should().NotBeNull();
         response.Data!.Content.Should().Be("hello team");
+        response.Data.Attachments.Should().BeEmpty();
         persistedMessage.Should().NotBeNull();
         persistedMessage!.Content.Value.Should().Be("hello team");
         _unitOfWorkMock.Verify(x => x.BeginAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -157,6 +161,41 @@ public sealed class SendMessageHandlerTests
                     && n.Content == "hello team"),
                 It.IsAny<CancellationToken>()),
             Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WithOwnedAttachmentFiles_ShouldPersistAttachmentsAndReturnThem()
+    {
+        var channel = CreateChannel(GuildChannelType.Text);
+        var userId = UserId.New();
+        var attachment = CreateUploadedFile(userId);
+
+        _guildChannelRepositoryMock
+            .Setup(x => x.GetWithCallerRoleAsync(channel.Id, userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ChannelAccessContext(channel, GuildRole.Member));
+
+        _uploadedFileRepositoryMock
+            .Setup(x => x.GetByIdsAsync(It.IsAny<IReadOnlyCollection<UploadedFileId>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([attachment]);
+
+        Message? persistedMessage = null;
+        _channelMessageRepositoryMock
+            .Setup(x => x.AddAsync(It.IsAny<Message>(), It.IsAny<CancellationToken>()))
+            .Callback<Message, CancellationToken>((message, _) => persistedMessage = message)
+            .Returns(Task.CompletedTask);
+
+        var response = await _handler.HandleAsync(
+            channel.Id,
+            new SendMessageRequest("message with file", [attachment.Id.ToString()]),
+            userId);
+
+        response.Success.Should().BeTrue();
+        response.Data.Should().NotBeNull();
+        response.Data!.Attachments.Should().ContainSingle();
+        response.Data.Attachments[0].FileId.Should().Be(attachment.Id.ToString());
+        persistedMessage.Should().NotBeNull();
+        persistedMessage!.Attachments.Should().ContainSingle();
+        persistedMessage.Attachments[0].FileId.Should().Be(attachment.Id);
     }
 
     [Fact]
@@ -241,5 +280,20 @@ public sealed class SendMessageHandlerTests
             throw new InvalidOperationException("Failed to create channel for tests.");
 
         return channelResult.Value!;
+    }
+
+    private static UploadedFile CreateUploadedFile(UserId uploaderUserId)
+    {
+        var result = UploadedFile.Create(
+            uploaderUserId,
+            "report.pdf",
+            "application/pdf",
+            123,
+            $"uploads/{Guid.NewGuid():N}.pdf",
+            UploadPurpose.Attachment);
+        if (result.IsFailure || result.Value is null)
+            throw new InvalidOperationException("Failed to create uploaded file for tests.");
+
+        return result.Value;
     }
 }

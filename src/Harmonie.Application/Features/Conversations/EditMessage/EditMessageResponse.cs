@@ -1,3 +1,5 @@
+using Harmonie.Application.Common;
+
 namespace Harmonie.Application.Features.Conversations.EditMessage;
 
 public sealed record EditMessageResponse(
@@ -5,5 +7,6 @@ public sealed record EditMessageResponse(
     string ConversationId,
     string AuthorUserId,
     string Content,
+    IReadOnlyList<MessageAttachmentDto> Attachments,
     DateTime CreatedAtUtc,
     DateTime? UpdatedAtUtc);

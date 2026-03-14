@@ -116,6 +116,7 @@ public sealed class SearchConversationMessagesHandlerTests
         response.Data.Items[0].AuthorUserId.Should().Be(user2.ToString());
         response.Data.Items[0].AuthorUsername.Should().Be("participant-two");
         response.Data.Items[0].Content.Should().Be("deploy succeeded");
+        response.Data.Items[0].Attachments.Should().BeEmpty();
         response.Data.NextCursor.Should().NotBeNullOrWhiteSpace();
     }
 
@@ -143,6 +144,7 @@ public sealed class SearchConversationMessagesHandlerTests
             AuthorUsername: "participant-two",
             AuthorDisplayName: "Participant Two",
             AuthorAvatarFileId: UploadedFileId.From(Guid.Parse("3d3eb034-f75d-4a59-9f59-2f84ebf6e58c")),
+            Attachments: Array.Empty<MessageAttachment>(),
             Content: contentResult.Value,
             CreatedAtUtc: createdAtUtc,
             UpdatedAtUtc: null);

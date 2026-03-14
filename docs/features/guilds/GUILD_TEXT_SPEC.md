@@ -21,7 +21,6 @@ Out of scope for this cycle:
 - moderation features (mute/ban/kick/message deletion)
 - thread support
 - reactions
-- file attachments
 - typing indicators
 - read receipts
 

@@ -12,6 +12,7 @@ public sealed class SendMessageHandler
 
     private readonly IConversationRepository _conversationRepository;
     private readonly IMessageRepository _conversationMessageRepository;
+    private readonly MessageAttachmentResolver _messageAttachmentResolver;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IConversationMessageNotifier _conversationMessageNotifier;
     private readonly ILogger<SendMessageHandler> _logger;
@@ -19,12 +20,14 @@ public sealed class SendMessageHandler
     public SendMessageHandler(
         IConversationRepository conversationRepository,
         IMessageRepository conversationMessageRepository,
+        MessageAttachmentResolver messageAttachmentResolver,
         IUnitOfWork unitOfWork,
         IConversationMessageNotifier conversationMessageNotifier,
         ILogger<SendMessageHandler> logger)
     {
         _conversationRepository = conversationRepository;
         _conversationMessageRepository = conversationMessageRepository;
+        _messageAttachmentResolver = messageAttachmentResolver;
         _unitOfWork = unitOfWork;
         _conversationMessageNotifier = conversationMessageNotifier;
         _logger = logger;
@@ -81,10 +84,26 @@ public sealed class SendMessageHandler
                 "You do not have access to this conversation");
         }
 
+        var attachmentResolution = await _messageAttachmentResolver.ResolveAsync(
+            request.AttachmentFileIds,
+            currentUserId,
+            cancellationToken);
+        if (!attachmentResolution.Success)
+        {
+            return ApplicationResponse<SendMessageResponse>.Fail(
+                ApplicationErrorCodes.Common.ValidationFailed,
+                "Request validation failed",
+                EndpointExtensions.SingleValidationError(
+                    nameof(request.AttachmentFileIds),
+                    ApplicationErrorCodes.Validation.Invalid,
+                    attachmentResolution.Error ?? "Attachments are invalid"));
+        }
+
         var messageResult = Message.CreateForConversation(
             conversationId,
             currentUserId,
-            contentResult.Value);
+            contentResult.Value,
+            attachmentResolution.Attachments);
         if (messageResult.IsFailure || messageResult.Value is null)
         {
             _logger.LogWarning(
@@ -116,6 +135,7 @@ public sealed class SendMessageHandler
                 messageConversationId,
                 messageResult.Value.AuthorUserId,
                 messageResult.Value.Content.Value,
+                messageResult.Value.Attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
                 messageResult.Value.CreatedAtUtc));
 
         _logger.LogInformation(
@@ -129,6 +149,7 @@ public sealed class SendMessageHandler
             ConversationId: messageConversationId.ToString(),
             AuthorUserId: messageResult.Value.AuthorUserId.ToString(),
             Content: messageResult.Value.Content.Value,
+            Attachments: messageResult.Value.Attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
             CreatedAtUtc: messageResult.Value.CreatedAtUtc));
     }
 

@@ -7,6 +7,7 @@ using FluentAssertions;
 using Harmonie.Application.Common;
 using Harmonie.Application.Features.Auth.Register;
 using Harmonie.Application.Features.Channels.EditMessage;
+using Harmonie.Application.Features.Channels.GetMessages;
 using Harmonie.Application.Features.Channels.JoinVoiceChannel;
 using Harmonie.Application.Features.Channels.SendMessage;
 using Harmonie.Application.Features.Channels.UpdateChannel;
@@ -14,6 +15,7 @@ using Harmonie.Application.Features.Guilds.CreateChannel;
 using Harmonie.Application.Features.Guilds.CreateGuild;
 using Harmonie.Application.Features.Guilds.GetGuildChannels;
 using Harmonie.Application.Features.Guilds.InviteMember;
+using Harmonie.Application.Features.Uploads.UploadFile;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
 
@@ -341,6 +343,36 @@ public sealed class ChannelEndpointsTests : IClassFixture<WebApplicationFactory<
     }
 
     // ─── EditMessage Tests ─────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task SendMessage_WithAttachmentFileIds_ShouldReturnCreatedAndExposeAttachmentsInList()
+    {
+        var author = await RegisterAsync();
+        var channelId = await CreateChannelAndGetIdAsync(author.AccessToken, "attachment-channel");
+        var uploadedFile = await UploadAttachmentAsync(author.AccessToken, "notes.txt", "text/plain", "attachment payload");
+
+        var sendResponse = await SendAuthorizedPostAsync(
+            $"/api/channels/{channelId}/messages",
+            new SendMessageRequest("message with attachment", [uploadedFile.FileId]),
+            author.AccessToken);
+        sendResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var sendPayload = await sendResponse.Content.ReadFromJsonAsync<SendMessageResponse>();
+        sendPayload.Should().NotBeNull();
+        sendPayload!.Attachments.Should().ContainSingle();
+        sendPayload.Attachments[0].FileId.Should().Be(uploadedFile.FileId);
+
+        var listResponse = await SendAuthorizedGetAsync(
+            $"/api/channels/{channelId}/messages",
+            author.AccessToken);
+        listResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var listPayload = await listResponse.Content.ReadFromJsonAsync<GetMessagesResponse>();
+        listPayload.Should().NotBeNull();
+        listPayload!.Items.Should().ContainSingle();
+        listPayload.Items[0].Attachments.Should().ContainSingle();
+        listPayload.Items[0].Attachments[0].FileId.Should().Be(uploadedFile.FileId);
+    }
 
     [Fact]
     public async Task EditMessage_WhenAuthorEditsOwnMessage_ShouldReturn200WithUpdatedContent()
@@ -777,6 +809,31 @@ public sealed class ChannelEndpointsTests : IClassFixture<WebApplicationFactory<
         payload.Should().NotBeNull();
 
         return payload!.MessageId;
+    }
+
+    private async Task<UploadFileResponse> UploadAttachmentAsync(
+        string accessToken,
+        string fileName,
+        string contentType,
+        string content)
+    {
+        using var multipart = new MultipartFormDataContent();
+        var fileContent = new ByteArrayContent(System.Text.Encoding.UTF8.GetBytes(content));
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+        multipart.Add(fileContent, "file", fileName);
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/files/uploads")
+        {
+            Content = multipart
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        var response = await _client.SendAsync(request);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var payload = await response.Content.ReadFromJsonAsync<UploadFileResponse>();
+        payload.Should().NotBeNull();
+        return payload!;
     }
 
     private async Task<HttpResponseMessage> SendAuthorizedPostAsync<TRequest>(
