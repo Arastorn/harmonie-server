@@ -211,6 +211,64 @@ public sealed class UserTests
         result.Error.Should().Be("Avatar background is too long");
     }
 
+    [Theory]
+    [InlineData("online")]
+    [InlineData("idle")]
+    [InlineData("dnd")]
+    [InlineData("invisible")]
+    public void UpdateStatus_WithValidValue_ShouldSucceed(string status)
+    {
+        var user = CreateUser();
+
+        var result = user.UpdateStatus(status);
+
+        result.IsSuccess.Should().BeTrue();
+        user.Status.Should().Be(status);
+        user.StatusUpdatedAtUtc.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void UpdateStatus_WithEmptyValue_ShouldFail()
+    {
+        var user = CreateUser();
+
+        var result = user.UpdateStatus("");
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be("Status cannot be empty");
+    }
+
+    [Fact]
+    public void UpdateStatus_WithInvalidValue_ShouldFail()
+    {
+        var user = CreateUser();
+
+        var result = user.UpdateStatus("away");
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be("Status must be one of: online, idle, dnd, invisible");
+    }
+
+    [Fact]
+    public void UpdateStatus_ShouldNormalizeToLowercase()
+    {
+        var user = CreateUser();
+
+        var result = user.UpdateStatus("DND");
+
+        result.IsSuccess.Should().BeTrue();
+        user.Status.Should().Be("dnd");
+    }
+
+    [Fact]
+    public void UpdateStatus_DefaultValue_ShouldBeOnline()
+    {
+        var user = CreateUser();
+
+        user.Status.Should().Be("online");
+        user.StatusUpdatedAtUtc.Should().BeNull();
+    }
+
     private static User CreateUser()
     {
         return User.Create(
