@@ -13,6 +13,8 @@ public sealed class Message : Entity<MessageId>
 
     public MessageContent Content { get; private set; }
 
+    public IReadOnlyList<MessageAttachment> Attachments { get; private set; } = Array.Empty<MessageAttachment>();
+
     public DateTime? DeletedAtUtc { get; private set; }
 
     private Message(
@@ -21,6 +23,7 @@ public sealed class Message : Entity<MessageId>
         ConversationId? conversationId,
         UserId authorUserId,
         MessageContent content,
+        IReadOnlyList<MessageAttachment> attachments,
         DateTime createdAtUtc,
         DateTime? updatedAtUtc,
         DateTime? deletedAtUtc)
@@ -30,6 +33,7 @@ public sealed class Message : Entity<MessageId>
         ConversationId = conversationId;
         AuthorUserId = authorUserId;
         Content = content;
+        Attachments = attachments.ToArray();
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
         DeletedAtUtc = deletedAtUtc;
@@ -38,7 +42,8 @@ public sealed class Message : Entity<MessageId>
     public static Result<Message> CreateForChannel(
         GuildChannelId channelId,
         UserId authorUserId,
-        MessageContent content)
+        MessageContent content,
+        IReadOnlyList<MessageAttachment>? attachments = null)
     {
         if (channelId is null)
             return Result.Failure<Message>("Channel ID is required");
@@ -46,6 +51,10 @@ public sealed class Message : Entity<MessageId>
             return Result.Failure<Message>("Author user ID is required");
         if (content is null)
             return Result.Failure<Message>("Message content is required");
+        if (attachments is null)
+            attachments = Array.Empty<MessageAttachment>();
+        if (attachments.Any(attachment => attachment is null))
+            return Result.Failure<Message>("Message attachments are invalid");
 
         return Result.Success(new Message(
             MessageId.New(),
@@ -53,6 +62,7 @@ public sealed class Message : Entity<MessageId>
             conversationId: null,
             authorUserId,
             content,
+            attachments,
             DateTime.UtcNow,
             updatedAtUtc: null,
             deletedAtUtc: null));
@@ -61,7 +71,8 @@ public sealed class Message : Entity<MessageId>
     public static Result<Message> CreateForConversation(
         ConversationId conversationId,
         UserId authorUserId,
-        MessageContent content)
+        MessageContent content,
+        IReadOnlyList<MessageAttachment>? attachments = null)
     {
         if (conversationId is null)
             return Result.Failure<Message>("Conversation ID is required");
@@ -69,6 +80,10 @@ public sealed class Message : Entity<MessageId>
             return Result.Failure<Message>("Author user ID is required");
         if (content is null)
             return Result.Failure<Message>("Message content is required");
+        if (attachments is null)
+            attachments = Array.Empty<MessageAttachment>();
+        if (attachments.Any(attachment => attachment is null))
+            return Result.Failure<Message>("Message attachments are invalid");
 
         return Result.Success(new Message(
             MessageId.New(),
@@ -76,6 +91,7 @@ public sealed class Message : Entity<MessageId>
             conversationId,
             authorUserId,
             content,
+            attachments,
             DateTime.UtcNow,
             updatedAtUtc: null,
             deletedAtUtc: null));
@@ -109,7 +125,8 @@ public sealed class Message : Entity<MessageId>
         MessageContent content,
         DateTime createdAtUtc,
         DateTime? updatedAtUtc,
-        DateTime? deletedAtUtc)
+        DateTime? deletedAtUtc,
+        IReadOnlyList<MessageAttachment>? attachments = null)
     {
         ArgumentNullException.ThrowIfNull(id);
         ArgumentNullException.ThrowIfNull(authorUserId);
@@ -124,6 +141,7 @@ public sealed class Message : Entity<MessageId>
             conversationId,
             authorUserId,
             content,
+            attachments ?? Array.Empty<MessageAttachment>(),
             createdAtUtc,
             updatedAtUtc,
             deletedAtUtc);

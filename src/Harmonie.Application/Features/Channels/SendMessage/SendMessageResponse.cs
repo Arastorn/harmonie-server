@@ -1,3 +1,5 @@
+using Harmonie.Application.Common;
+
 namespace Harmonie.Application.Features.Channels.SendMessage;
 
 public sealed record SendMessageResponse(
@@ -5,4 +7,5 @@ public sealed record SendMessageResponse(
     string ChannelId,
     string AuthorUserId,
     string Content,
+    IReadOnlyList<MessageAttachmentDto> Attachments,
     DateTime CreatedAtUtc);

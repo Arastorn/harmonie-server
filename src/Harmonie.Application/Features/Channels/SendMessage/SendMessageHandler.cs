@@ -13,6 +13,7 @@ public sealed class SendMessageHandler
 
     private readonly IGuildChannelRepository _guildChannelRepository;
     private readonly IMessageRepository _channelMessageRepository;
+    private readonly MessageAttachmentResolver _messageAttachmentResolver;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ITextChannelNotifier _textChannelNotifier;
     private readonly ILogger<SendMessageHandler> _logger;
@@ -20,12 +21,14 @@ public sealed class SendMessageHandler
     public SendMessageHandler(
         IGuildChannelRepository guildChannelRepository,
         IMessageRepository channelMessageRepository,
+        MessageAttachmentResolver messageAttachmentResolver,
         IUnitOfWork unitOfWork,
         ITextChannelNotifier textChannelNotifier,
         ILogger<SendMessageHandler> logger)
     {
         _guildChannelRepository = guildChannelRepository;
         _channelMessageRepository = channelMessageRepository;
+        _messageAttachmentResolver = messageAttachmentResolver;
         _unitOfWork = unitOfWork;
         _textChannelNotifier = textChannelNotifier;
         _logger = logger;
@@ -96,10 +99,26 @@ public sealed class SendMessageHandler
                 "You do not have access to this channel");
         }
 
+        var attachmentResolution = await _messageAttachmentResolver.ResolveAsync(
+            request.AttachmentFileIds,
+            currentUserId,
+            cancellationToken);
+        if (!attachmentResolution.Success)
+        {
+            return ApplicationResponse<SendMessageResponse>.Fail(
+                ApplicationErrorCodes.Common.ValidationFailed,
+                "Request validation failed",
+                EndpointExtensions.SingleValidationError(
+                    nameof(request.AttachmentFileIds),
+                    ApplicationErrorCodes.Validation.Invalid,
+                    attachmentResolution.Error ?? "Attachments are invalid"));
+        }
+
         var messageResult = Message.CreateForChannel(
             channelId,
             currentUserId,
-            contentResult.Value);
+            contentResult.Value,
+            attachmentResolution.Attachments);
         if (messageResult.IsFailure || messageResult.Value is null)
         {
             _logger.LogWarning(
@@ -131,6 +150,7 @@ public sealed class SendMessageHandler
                 messageChannelId,
                 messageResult.Value.AuthorUserId,
                 messageResult.Value.Content.Value,
+                messageResult.Value.Attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
                 messageResult.Value.CreatedAtUtc));
 
         _logger.LogInformation(
@@ -144,6 +164,7 @@ public sealed class SendMessageHandler
             ChannelId: messageChannelId.ToString(),
             AuthorUserId: messageResult.Value.AuthorUserId.ToString(),
             Content: messageResult.Value.Content.Value,
+            Attachments: messageResult.Value.Attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
             CreatedAtUtc: messageResult.Value.CreatedAtUtc);
 
         return ApplicationResponse<SendMessageResponse>.Ok(payload);

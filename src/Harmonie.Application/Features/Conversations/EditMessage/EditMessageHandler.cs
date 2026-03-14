@@ -147,6 +147,7 @@ public sealed class EditMessageHandler
             ConversationId: messageConversationId.ToString(),
             AuthorUserId: message.AuthorUserId.ToString(),
             Content: message.Content.Value,
+            Attachments: message.Attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
             CreatedAtUtc: message.CreatedAtUtc,
             UpdatedAtUtc: updatedAtUtc));
     }

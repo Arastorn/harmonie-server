@@ -1,3 +1,4 @@
+using Harmonie.Application.Common;
 using Harmonie.Domain.ValueObjects;
 
 namespace Harmonie.Application.Interfaces;
@@ -22,6 +23,7 @@ public sealed record ConversationMessageCreatedNotification(
     ConversationId ConversationId,
     UserId AuthorUserId,
     string Content,
+    IReadOnlyList<MessageAttachmentDto> Attachments,
     DateTime CreatedAtUtc);
 
 public sealed record ConversationMessageUpdatedNotification(

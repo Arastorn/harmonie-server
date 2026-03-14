@@ -1,3 +1,5 @@
+using Harmonie.Application.Common;
+
 namespace Harmonie.Application.Features.Guilds.SearchMessages;
 
 public sealed record SearchMessagesResponse(
@@ -13,5 +15,6 @@ public sealed record SearchMessagesItemResponse(
     string AuthorUsername,
     string? AuthorDisplayName,
     string Content,
+    IReadOnlyList<MessageAttachmentDto> Attachments,
     DateTime CreatedAtUtc,
     DateTime? UpdatedAtUtc);

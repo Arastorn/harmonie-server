@@ -113,6 +113,7 @@ public sealed class GetMessagesHandlerTests
         response.Data.Should().NotBeNull();
         response.Data!.Items.Should().HaveCount(2);
         response.Data.Items[0].Content.Should().Be("First");
+        response.Data.Items[0].Attachments.Should().BeEmpty();
         response.Data.Items[1].Content.Should().Be("Second");
         response.Data.NextCursor.Should().NotBeNullOrEmpty();
     }

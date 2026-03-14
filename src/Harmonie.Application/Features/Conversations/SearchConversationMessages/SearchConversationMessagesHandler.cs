@@ -161,6 +161,7 @@ public sealed class SearchConversationMessagesHandler
                     AuthorDisplayName: item.AuthorDisplayName,
                     AuthorAvatarFileId: item.AuthorAvatarFileId?.ToString(),
                     Content: item.Content.Value,
+                    Attachments: item.Attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
                     CreatedAtUtc: item.CreatedAtUtc,
                     UpdatedAtUtc: item.UpdatedAtUtc))
                 .ToArray(),

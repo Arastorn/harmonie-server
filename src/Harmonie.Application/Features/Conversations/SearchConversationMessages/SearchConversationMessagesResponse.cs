@@ -1,3 +1,5 @@
+using Harmonie.Application.Common;
+
 namespace Harmonie.Application.Features.Conversations.SearchConversationMessages;
 
 public sealed record SearchConversationMessagesResponse(
@@ -12,5 +14,6 @@ public sealed record SearchConversationMessagesItemResponse(
     string? AuthorDisplayName,
     string? AuthorAvatarFileId,
     string Content,
+    IReadOnlyList<MessageAttachmentDto> Attachments,
     DateTime CreatedAtUtc,
     DateTime? UpdatedAtUtc);

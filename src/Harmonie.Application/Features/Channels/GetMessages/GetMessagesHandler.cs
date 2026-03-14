@@ -120,6 +120,7 @@ public sealed class GetMessagesHandler
                 MessageId: x.Id.ToString(),
                 AuthorUserId: x.AuthorUserId.ToString(),
                 Content: x.Content.Value,
+                Attachments: x.Attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
                 CreatedAtUtc: x.CreatedAtUtc,
                 UpdatedAtUtc: x.UpdatedAtUtc))
             .ToArray();

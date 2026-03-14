@@ -55,6 +55,48 @@ public sealed class UploadedFileRepository : IUploadedFileRepository
             row.CreatedAtUtc);
     }
 
+    public async Task<IReadOnlyList<UploadedFile>> GetByIdsAsync(
+        IReadOnlyCollection<UploadedFileId> ids,
+        CancellationToken cancellationToken = default)
+    {
+        if (ids.Count == 0)
+            return Array.Empty<UploadedFile>();
+
+        const string sql = """
+                           SELECT
+                               id AS "Id",
+                               uploader_id AS "UploaderId",
+                               filename AS "Filename",
+                               content_type AS "ContentType",
+                               size_bytes AS "SizeBytes",
+                               storage_key AS "StorageKey",
+                               purpose AS "Purpose",
+                               created_at_utc AS "CreatedAtUtc"
+                           FROM uploaded_files
+                           WHERE id = ANY(@Ids)
+                           """;
+
+        var connection = await _dbSession.GetOpenConnectionAsync(cancellationToken);
+        var command = new CommandDefinition(
+            sql,
+            new { Ids = ids.Select(id => id.Value).ToArray() },
+            transaction: _dbSession.Transaction,
+            cancellationToken: cancellationToken);
+
+        var rows = await connection.QueryAsync<UploadedFileRow>(command);
+        return rows
+            .Select(row => UploadedFile.Rehydrate(
+                UploadedFileId.From(row.Id),
+                UserId.From(row.UploaderId),
+                row.Filename,
+                row.ContentType,
+                row.SizeBytes,
+                row.StorageKey,
+                Enum.Parse<UploadPurpose>(row.Purpose, ignoreCase: true),
+                row.CreatedAtUtc))
+            .ToArray();
+    }
+
     public async Task AddAsync(
         UploadedFile uploadedFile,
         CancellationToken cancellationToken = default)

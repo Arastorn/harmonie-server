@@ -248,6 +248,7 @@ public sealed class SearchMessagesHandler
                     AuthorUsername: item.AuthorUsername,
                     AuthorDisplayName: item.AuthorDisplayName,
                     Content: item.Content.Value,
+                    Attachments: item.Attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
                     CreatedAtUtc: item.CreatedAtUtc,
                     UpdatedAtUtc: item.UpdatedAtUtc))
                 .ToArray(),

@@ -62,6 +62,7 @@ public static class DependencyInjection
         // Register FluentValidation validators
         services.AddValidatorsFromAssembly(assembly);
         services.AddScoped<UploadedFileCleanupService>();
+        services.AddScoped<MessageAttachmentResolver>();
 
         // Register feature handlers
         // Auth features

@@ -68,6 +68,7 @@ public sealed record SearchGuildMessagesItem(
     UserId AuthorUserId,
     string AuthorUsername,
     string? AuthorDisplayName,
+    IReadOnlyList<MessageAttachment> Attachments,
     MessageContent Content,
     DateTime CreatedAtUtc,
     DateTime? UpdatedAtUtc);
@@ -89,6 +90,7 @@ public sealed record SearchConversationMessagesItem(
     string AuthorUsername,
     string? AuthorDisplayName,
     UploadedFileId? AuthorAvatarFileId,
+    IReadOnlyList<MessageAttachment> Attachments,
     MessageContent Content,
     DateTime CreatedAtUtc,
     DateTime? UpdatedAtUtc);

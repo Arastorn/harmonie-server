@@ -59,6 +59,33 @@ public sealed class MessageRepository : IMessageRepository
             cancellationToken: cancellationToken);
 
         await connection.ExecuteAsync(command);
+
+        if (message.Attachments.Count == 0)
+            return;
+
+        const string attachmentSql = """
+                                     INSERT INTO message_attachments (
+                                         message_id,
+                                         uploaded_file_id,
+                                         position)
+                                     VALUES (
+                                         @MessageId,
+                                         @UploadedFileId,
+                                         @Position)
+                                     """;
+
+        var attachmentCommand = new CommandDefinition(
+            attachmentSql,
+            message.Attachments.Select((attachment, index) => new
+            {
+                MessageId = message.Id.Value,
+                UploadedFileId = attachment.FileId.Value,
+                Position = index
+            }),
+            transaction: _dbSession.Transaction,
+            cancellationToken: cancellationToken);
+
+        await connection.ExecuteAsync(attachmentCommand);
     }
 
     public async Task<MessagePage> GetChannelPageAsync(
@@ -136,9 +163,12 @@ public sealed class MessageRepository : IMessageRepository
         var rows = (await connection.QueryAsync<MessageRow>(command)).ToArray();
         var hasMore = rows.Length > limit;
         var pageRows = hasMore ? rows.Take(limit).ToArray() : rows;
+        var attachmentsByMessageId = await GetAttachmentsByMessageIdsAsync(
+            pageRows.Select(row => row.Id).ToArray(),
+            cancellationToken);
 
         var items = pageRows
-            .Select(MapToMessage)
+            .Select(row => MapToMessage(row, attachmentsByMessageId))
             .OrderBy(x => x.CreatedAtUtc)
             .ThenBy(x => x.Id.Value)
             .ToArray();
@@ -228,9 +258,12 @@ public sealed class MessageRepository : IMessageRepository
         var rows = (await connection.QueryAsync<MessageRow>(command)).ToArray();
         var hasMore = rows.Length > limit;
         var pageRows = hasMore ? rows.Take(limit).ToArray() : rows;
+        var attachmentsByMessageId = await GetAttachmentsByMessageIdsAsync(
+            pageRows.Select(row => row.Id).ToArray(),
+            cancellationToken);
 
         var items = pageRows
-            .Select(MapToMessage)
+            .Select(row => MapToMessage(row, attachmentsByMessageId))
             .OrderBy(x => x.CreatedAtUtc)
             .ThenBy(x => x.Id.Value)
             .ToArray();
@@ -332,9 +365,12 @@ public sealed class MessageRepository : IMessageRepository
         var rows = (await connection.QueryAsync<ChannelMessageSearchRow>(command)).ToArray();
         var hasMore = rows.Length > limit;
         var pageRows = hasMore ? rows.Take(limit).ToArray() : rows;
+        var attachmentsByMessageId = await GetAttachmentsByMessageIdsAsync(
+            pageRows.Select(row => row.MessageId).ToArray(),
+            cancellationToken);
 
         var items = pageRows
-            .Select(MapToSearchGuildMessagesItem)
+            .Select(row => MapToSearchGuildMessagesItem(row, attachmentsByMessageId))
             .OrderBy(x => x.CreatedAtUtc)
             .ThenBy(x => x.MessageId.Value)
             .ToArray();
@@ -421,9 +457,12 @@ public sealed class MessageRepository : IMessageRepository
         var rows = (await connection.QueryAsync<ConversationMessageSearchRow>(command)).ToArray();
         var hasMore = rows.Length > limit;
         var pageRows = hasMore ? rows.Take(limit).ToArray() : rows;
+        var attachmentsByMessageId = await GetAttachmentsByMessageIdsAsync(
+            pageRows.Select(row => row.MessageId).ToArray(),
+            cancellationToken);
 
         var items = pageRows
-            .Select(MapToSearchConversationMessagesItem)
+            .Select(row => MapToSearchConversationMessagesItem(row, attachmentsByMessageId))
             .OrderBy(x => x.CreatedAtUtc)
             .ThenBy(x => x.MessageId.Value)
             .ToArray();
@@ -464,7 +503,11 @@ public sealed class MessageRepository : IMessageRepository
             cancellationToken: cancellationToken);
 
         var row = await connection.QuerySingleOrDefaultAsync<MessageRow>(command);
-        return row is null ? null : MapToMessage(row);
+        if (row is null)
+            return null;
+
+        var attachmentsByMessageId = await GetAttachmentsByMessageIdsAsync([row.Id], cancellationToken);
+        return MapToMessage(row, attachmentsByMessageId);
     }
 
     public async Task UpdateAsync(
@@ -519,7 +562,52 @@ public sealed class MessageRepository : IMessageRepository
         await connection.ExecuteAsync(command);
     }
 
-    private static Message MapToMessage(MessageRow row)
+    private async Task<IReadOnlyDictionary<Guid, IReadOnlyList<MessageAttachment>>> GetAttachmentsByMessageIdsAsync(
+        IReadOnlyCollection<Guid> messageIds,
+        CancellationToken cancellationToken)
+    {
+        if (messageIds.Count == 0)
+            return new Dictionary<Guid, IReadOnlyList<MessageAttachment>>();
+
+        const string sql = """
+                           SELECT ma.message_id AS "MessageId",
+                                  ma.position AS "Position",
+                                  uf.id AS "UploadedFileId",
+                                  uf.filename AS "FileName",
+                                  uf.content_type AS "ContentType",
+                                  uf.size_bytes AS "SizeBytes"
+                           FROM message_attachments ma
+                           INNER JOIN uploaded_files uf ON uf.id = ma.uploaded_file_id
+                           WHERE ma.message_id = ANY(@MessageIds)
+                           ORDER BY ma.message_id, ma.position
+                           """;
+
+        var connection = await _dbSession.GetOpenConnectionAsync(cancellationToken);
+        var command = new CommandDefinition(
+            sql,
+            new { MessageIds = messageIds.ToArray() },
+            transaction: _dbSession.Transaction,
+            cancellationToken: cancellationToken);
+
+        var rows = await connection.QueryAsync<MessageAttachmentRow>(command);
+
+        return rows
+            .GroupBy(row => row.MessageId)
+            .ToDictionary(
+                group => group.Key,
+                group => (IReadOnlyList<MessageAttachment>)group
+                    .OrderBy(row => row.Position)
+                    .Select(row => new MessageAttachment(
+                        UploadedFileId.From(row.UploadedFileId),
+                        row.FileName,
+                        row.ContentType,
+                        row.SizeBytes))
+                    .ToArray());
+    }
+
+    private static Message MapToMessage(
+        MessageRow row,
+        IReadOnlyDictionary<Guid, IReadOnlyList<MessageAttachment>> attachmentsByMessageId)
     {
         var contentResult = MessageContent.Create(row.Content);
         if (contentResult.IsFailure || contentResult.Value is null)
@@ -531,6 +619,7 @@ public sealed class MessageRepository : IMessageRepository
         ConversationId? conversationId = row.ConversationId.HasValue
             ? ConversationId.From(row.ConversationId.Value)
             : null;
+        attachmentsByMessageId.TryGetValue(row.Id, out var attachments);
 
         return Message.Rehydrate(
             MessageId.From(row.Id),
@@ -540,14 +629,18 @@ public sealed class MessageRepository : IMessageRepository
             contentResult.Value,
             row.CreatedAtUtc,
             row.UpdatedAtUtc,
-            row.DeletedAtUtc);
+            row.DeletedAtUtc,
+            attachments);
     }
 
-    private static SearchGuildMessagesItem MapToSearchGuildMessagesItem(ChannelMessageSearchRow row)
+    private static SearchGuildMessagesItem MapToSearchGuildMessagesItem(
+        ChannelMessageSearchRow row,
+        IReadOnlyDictionary<Guid, IReadOnlyList<MessageAttachment>> attachmentsByMessageId)
     {
         var contentResult = MessageContent.Create(row.Content);
         if (contentResult.IsFailure || contentResult.Value is null)
             throw new InvalidOperationException("Stored guild message search content is invalid.");
+        attachmentsByMessageId.TryGetValue(row.MessageId, out var attachments);
 
         return new SearchGuildMessagesItem(
             MessageId: MessageId.From(row.MessageId),
@@ -556,16 +649,20 @@ public sealed class MessageRepository : IMessageRepository
             AuthorUserId: UserId.From(row.AuthorUserId),
             AuthorUsername: row.AuthorUsername,
             AuthorDisplayName: row.AuthorDisplayName,
+            Attachments: attachments ?? Array.Empty<MessageAttachment>(),
             Content: contentResult.Value,
             CreatedAtUtc: row.CreatedAtUtc,
             UpdatedAtUtc: row.UpdatedAtUtc);
     }
 
-    private static SearchConversationMessagesItem MapToSearchConversationMessagesItem(ConversationMessageSearchRow row)
+    private static SearchConversationMessagesItem MapToSearchConversationMessagesItem(
+        ConversationMessageSearchRow row,
+        IReadOnlyDictionary<Guid, IReadOnlyList<MessageAttachment>> attachmentsByMessageId)
     {
         var contentResult = MessageContent.Create(row.Content);
         if (contentResult.IsFailure || contentResult.Value is null)
             throw new InvalidOperationException("Stored conversation message search content is invalid.");
+        attachmentsByMessageId.TryGetValue(row.MessageId, out var attachments);
 
         return new SearchConversationMessagesItem(
             MessageId: MessageId.From(row.MessageId),
@@ -573,8 +670,19 @@ public sealed class MessageRepository : IMessageRepository
             AuthorUsername: row.AuthorUsername,
             AuthorDisplayName: row.AuthorDisplayName,
             AuthorAvatarFileId: row.AuthorAvatarFileId.HasValue ? UploadedFileId.From(row.AuthorAvatarFileId.Value) : null,
+            Attachments: attachments ?? Array.Empty<MessageAttachment>(),
             Content: contentResult.Value,
             CreatedAtUtc: row.CreatedAtUtc,
             UpdatedAtUtc: row.UpdatedAtUtc);
+    }
+
+    private sealed class MessageAttachmentRow
+    {
+        public Guid MessageId { get; init; }
+        public int Position { get; init; }
+        public Guid UploadedFileId { get; init; }
+        public string FileName { get; init; } = string.Empty;
+        public string ContentType { get; init; } = string.Empty;
+        public long SizeBytes { get; init; }
     }
 }
