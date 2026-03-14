@@ -32,6 +32,7 @@ using Harmonie.Application.Features.Guilds.ListGuildInvites;
 using Harmonie.Application.Features.Guilds.PreviewInvite;
 using Harmonie.Application.Features.Guilds.RevokeInvite;
 using Harmonie.Application.Features.Guilds.GetGuildChannels;
+using Harmonie.Application.Features.Guilds.ReorderChannels;
 using Harmonie.Application.Features.Guilds.GetGuildVoiceParticipants;
 using Harmonie.Application.Features.Guilds.GetGuildMembers;
 using Harmonie.Application.Features.Guilds.InviteMember;
@@ -92,6 +93,7 @@ public static class DependencyInjection
         services.AddScoped<TransferOwnershipHandler>();
         services.AddScoped<UpdateGuildHandler>();
         services.AddScoped<GetGuildChannelsHandler>();
+        services.AddScoped<ReorderChannelsHandler>();
         services.AddScoped<GetGuildVoiceParticipantsHandler>();
         services.AddScoped<GetGuildMembersHandler>();
         services.AddScoped<SearchMessagesHandler>();
