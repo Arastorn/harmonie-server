@@ -49,6 +49,12 @@ public interface IMessageRepository
     Task SoftDeleteAsync(
         Message message,
         CancellationToken cancellationToken = default);
+
+    Task<int> SoftDeleteByAuthorInGuildAsync(
+        GuildId guildId,
+        UserId authorUserId,
+        int days,
+        CancellationToken cancellationToken = default);
 }
 
 public sealed record MessageCursor(

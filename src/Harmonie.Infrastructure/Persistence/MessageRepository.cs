@@ -603,6 +603,42 @@ public sealed class MessageRepository : IMessageRepository
         await connection.ExecuteAsync(command);
     }
 
+    public async Task<int> SoftDeleteByAuthorInGuildAsync(
+        GuildId guildId,
+        UserId authorUserId,
+        int days,
+        CancellationToken cancellationToken = default)
+    {
+        if (days <= 0)
+            return 0;
+
+        const string sql = """
+                           UPDATE messages m
+                           SET deleted_at_utc = NOW(),
+                               updated_at_utc = NOW()
+                           FROM guild_channels gc
+                           WHERE m.channel_id = gc.id
+                             AND gc.guild_id = @GuildId
+                             AND m.author_user_id = @AuthorUserId
+                             AND m.deleted_at_utc IS NULL
+                             AND m.created_at_utc >= NOW() - @Interval::interval
+                           """;
+
+        var connection = await _dbSession.GetOpenConnectionAsync(cancellationToken);
+        var command = new CommandDefinition(
+            sql,
+            new
+            {
+                GuildId = guildId.Value,
+                AuthorUserId = authorUserId.Value,
+                Interval = $"{days} days"
+            },
+            transaction: _dbSession.Transaction,
+            cancellationToken: cancellationToken);
+
+        return await connection.ExecuteAsync(command);
+    }
+
     public async Task RemoveAttachmentAsync(
         MessageId messageId,
         UploadedFileId attachmentFileId,

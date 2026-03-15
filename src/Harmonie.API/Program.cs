@@ -31,6 +31,7 @@ using ConversationRemoveReaction = Harmonie.Application.Features.Conversations.R
 using Harmonie.Application.Features.Guilds.CreateChannel;
 using Harmonie.Application.Features.Guilds.CreateGuild;
 using Harmonie.Application.Features.Guilds.AcceptInvite;
+using Harmonie.Application.Features.Guilds.BanMember;
 using Harmonie.Application.Features.Guilds.CreateGuildInvite;
 using Harmonie.Application.Features.Guilds.DeleteGuild;
 using Harmonie.Application.Features.Guilds.DeleteGuildIcon;
@@ -301,6 +302,7 @@ GetGuildMembersEndpoint.Map(app);
 SearchMessagesEndpoint.Map(app);
 LeaveGuildEndpoint.Map(app);
 RemoveMemberEndpoint.Map(app);
+BanMemberEndpoint.Map(app);
 UpdateMemberRoleEndpoint.Map(app);
 TransferOwnershipEndpoint.Map(app);
 UpdateGuildEndpoint.Map(app);

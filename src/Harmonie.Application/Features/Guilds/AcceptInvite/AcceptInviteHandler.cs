@@ -11,17 +11,20 @@ public sealed class AcceptInviteHandler
 {
     private readonly IGuildInviteRepository _guildInviteRepository;
     private readonly IGuildMemberRepository _guildMemberRepository;
+    private readonly IGuildBanRepository _guildBanRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<AcceptInviteHandler> _logger;
 
     public AcceptInviteHandler(
         IGuildInviteRepository guildInviteRepository,
         IGuildMemberRepository guildMemberRepository,
+        IGuildBanRepository guildBanRepository,
         IUnitOfWork unitOfWork,
         ILogger<AcceptInviteHandler> logger)
     {
         _guildInviteRepository = guildInviteRepository;
         _guildMemberRepository = guildMemberRepository;
+        _guildBanRepository = guildBanRepository;
         _unitOfWork = unitOfWork;
         _logger = logger;
     }
@@ -88,6 +91,20 @@ public sealed class AcceptInviteHandler
             return ApplicationResponse<AcceptInviteResponse>.Fail(
                 ApplicationErrorCodes.Guild.MemberAlreadyExists,
                 "You are already a member of this guild");
+        }
+
+        var isBanned = await _guildBanRepository.ExistsAsync(invite.GuildId, callerUserId, cancellationToken);
+        if (isBanned)
+        {
+            _logger.LogWarning(
+                "AcceptInvite failed because user is banned. InviteCode={InviteCode}, GuildId={GuildId}, CallerUserId={CallerUserId}",
+                inviteCode,
+                invite.GuildId,
+                callerUserId);
+
+            return ApplicationResponse<AcceptInviteResponse>.Fail(
+                ApplicationErrorCodes.Guild.UserBanned,
+                "You are banned from this guild");
         }
 
         var memberResult = GuildMember.Create(
