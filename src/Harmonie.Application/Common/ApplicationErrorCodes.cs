@@ -47,6 +47,10 @@ public static class ApplicationErrorCodes
         public const string OwnerCannotBeRemoved = "GUILD_OWNER_CANNOT_BE_REMOVED";
         public const string OwnerRoleCannotBeChanged = "GUILD_OWNER_ROLE_CANNOT_BE_CHANGED";
         public const string OwnerTransferToSelf = "GUILD_OWNER_TRANSFER_TO_SELF";
+        public const string CannotBanSelf = "GUILD_CANNOT_BAN_SELF";
+        public const string OwnerCannotBeBanned = "GUILD_OWNER_CANNOT_BE_BANNED";
+        public const string AlreadyBanned = "GUILD_ALREADY_BANNED";
+        public const string UserBanned = "GUILD_USER_BANNED";
     }
 
     public static class Channel

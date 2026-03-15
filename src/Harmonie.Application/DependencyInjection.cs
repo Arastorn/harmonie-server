@@ -25,6 +25,7 @@ using ConversationSendMessageHandler = Harmonie.Application.Features.Conversatio
 using Harmonie.Application.Features.Guilds.CreateChannel;
 using Harmonie.Application.Features.Guilds.CreateGuild;
 using Harmonie.Application.Features.Guilds.AcceptInvite;
+using Harmonie.Application.Features.Guilds.BanMember;
 using Harmonie.Application.Features.Guilds.CreateGuildInvite;
 using Harmonie.Application.Features.Guilds.DeleteGuild;
 using Harmonie.Application.Features.Guilds.DeleteGuildIcon;
@@ -87,6 +88,7 @@ public static class DependencyInjection
         services.AddScoped<ListGuildInvitesHandler>();
         services.AddScoped<PreviewInviteHandler>();
         services.AddScoped<AcceptInviteHandler>();
+        services.AddScoped<BanMemberHandler>();
         services.AddScoped<RevokeInviteHandler>();
         services.AddScoped<DeleteGuildHandler>();
         services.AddScoped<DeleteGuildIconHandler>();

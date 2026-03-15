@@ -14,6 +14,7 @@ public sealed class AcceptInviteHandlerTests
 {
     private readonly Mock<IGuildInviteRepository> _guildInviteRepositoryMock;
     private readonly Mock<IGuildMemberRepository> _guildMemberRepositoryMock;
+    private readonly Mock<IGuildBanRepository> _guildBanRepositoryMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly Mock<IUnitOfWorkTransaction> _transactionMock;
     private readonly AcceptInviteHandler _handler;
@@ -27,6 +28,7 @@ public sealed class AcceptInviteHandlerTests
     {
         _guildInviteRepositoryMock = new Mock<IGuildInviteRepository>();
         _guildMemberRepositoryMock = new Mock<IGuildMemberRepository>();
+        _guildBanRepositoryMock = new Mock<IGuildBanRepository>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _transactionMock = new Mock<IUnitOfWorkTransaction>();
 
@@ -37,6 +39,7 @@ public sealed class AcceptInviteHandlerTests
         _handler = new AcceptInviteHandler(
             _guildInviteRepositoryMock.Object,
             _guildMemberRepositoryMock.Object,
+            _guildBanRepositoryMock.Object,
             _unitOfWorkMock.Object,
             NullLogger<AcceptInviteHandler>.Instance);
     }
