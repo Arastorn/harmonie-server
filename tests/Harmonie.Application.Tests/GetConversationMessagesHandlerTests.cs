@@ -101,8 +101,12 @@ public sealed class GetConversationMessagesHandlerTests
                 conversation.Id,
                 It.IsAny<MessageCursor?>(),
                 50,
+                participantOne,
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new MessagePage([second, first], nextCursor));
+            .ReturnsAsync(new MessagePage(
+                [second, first],
+                nextCursor,
+                new Dictionary<Guid, IReadOnlyList<MessageReactionSummary>>()));
 
         var response = await _handler.HandleAsync(
             conversation.Id,
@@ -115,6 +119,7 @@ public sealed class GetConversationMessagesHandlerTests
         response.Data!.Items.Should().HaveCount(2);
         response.Data.Items[0].Content.Should().Be("First");
         response.Data.Items[0].Attachments.Should().BeEmpty();
+        response.Data.Items[0].Reactions.Should().BeEmpty();
         response.Data.Items[1].Content.Should().Be("Second");
         response.Data.NextCursor.Should().NotBeNullOrEmpty();
     }

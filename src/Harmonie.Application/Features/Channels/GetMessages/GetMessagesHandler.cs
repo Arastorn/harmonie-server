@@ -104,6 +104,7 @@ public sealed class GetMessagesHandler
             channelId,
             beforeCursor,
             limit,
+            currentUserId,
             cancellationToken);
 
         _logger.LogInformation(
@@ -116,13 +117,19 @@ public sealed class GetMessagesHandler
         var items = page.Items
             .OrderBy(x => x.CreatedAtUtc)
             .ThenBy(x => x.Id.Value)
-            .Select(x => new GetMessagesItemResponse(
-                MessageId: x.Id.ToString(),
-                AuthorUserId: x.AuthorUserId.ToString(),
-                Content: x.Content.Value,
-                Attachments: x.Attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
-                CreatedAtUtc: x.CreatedAtUtc,
-                UpdatedAtUtc: x.UpdatedAtUtc))
+            .Select(x =>
+            {
+                page.ReactionsByMessageId.TryGetValue(x.Id.Value, out var reactions);
+                return new GetMessagesItemResponse(
+                    MessageId: x.Id.ToString(),
+                    AuthorUserId: x.AuthorUserId.ToString(),
+                    Content: x.Content.Value,
+                    Attachments: x.Attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
+                    Reactions: reactions?.Select(r => new MessageReactionDto(r.Emoji, r.Count, r.ReactedByCaller)).ToArray()
+                              ?? Array.Empty<MessageReactionDto>(),
+                    CreatedAtUtc: x.CreatedAtUtc,
+                    UpdatedAtUtc: x.UpdatedAtUtc);
+            })
             .ToArray();
 
         var payload = new GetMessagesResponse(

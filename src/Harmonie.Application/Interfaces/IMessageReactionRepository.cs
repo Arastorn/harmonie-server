@@ -23,3 +23,8 @@ public interface IMessageReactionRepository
         string emoji,
         CancellationToken cancellationToken = default);
 }
+
+public sealed record MessageReactionSummary(
+    string Emoji,
+    int Count,
+    bool ReactedByCaller);

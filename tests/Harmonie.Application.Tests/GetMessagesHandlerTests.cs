@@ -100,8 +100,12 @@ public sealed class GetMessagesHandlerTests
                 channel.Id,
                 It.IsAny<MessageCursor?>(),
                 50,
+                userId,
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new MessagePage([second, first], nextCursor));
+            .ReturnsAsync(new MessagePage(
+                [second, first],
+                nextCursor,
+                new Dictionary<Guid, IReadOnlyList<MessageReactionSummary>>()));
 
         var response = await _handler.HandleAsync(
             channel.Id,
@@ -114,6 +118,7 @@ public sealed class GetMessagesHandlerTests
         response.Data!.Items.Should().HaveCount(2);
         response.Data.Items[0].Content.Should().Be("First");
         response.Data.Items[0].Attachments.Should().BeEmpty();
+        response.Data.Items[0].Reactions.Should().BeEmpty();
         response.Data.Items[1].Content.Should().Be("Second");
         response.Data.NextCursor.Should().NotBeNullOrEmpty();
     }
