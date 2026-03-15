@@ -51,6 +51,7 @@ public static class ApplicationErrorCodes
         public const string OwnerCannotBeBanned = "GUILD_OWNER_CANNOT_BE_BANNED";
         public const string AlreadyBanned = "GUILD_ALREADY_BANNED";
         public const string UserBanned = "GUILD_USER_BANNED";
+        public const string NotBanned = "GUILD_NOT_BANNED";
     }
 
     public static class Channel

@@ -85,4 +85,30 @@ public sealed class GuildBanRepository : IGuildBanRepository
 
         return await connection.ExecuteScalarAsync<bool>(command);
     }
+
+    public async Task<bool> DeleteAsync(
+        GuildId guildId,
+        UserId userId,
+        CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+                           DELETE FROM guild_bans
+                           WHERE guild_id = @GuildId
+                             AND user_id = @UserId
+                           """;
+
+        var connection = await _dbSession.GetOpenConnectionAsync(cancellationToken);
+        var command = new CommandDefinition(
+            sql,
+            new
+            {
+                GuildId = guildId.Value,
+                UserId = userId.Value
+            },
+            transaction: _dbSession.Transaction,
+            cancellationToken: cancellationToken);
+
+        var affected = await connection.ExecuteAsync(command);
+        return affected > 0;
+    }
 }
