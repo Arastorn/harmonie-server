@@ -11,15 +11,18 @@ public sealed class GetMessagesHandler
 
     private readonly IConversationRepository _conversationRepository;
     private readonly IMessageRepository _conversationMessageRepository;
+    private readonly IMessageReactionRepository _reactionRepository;
     private readonly ILogger<GetMessagesHandler> _logger;
 
     public GetMessagesHandler(
         IConversationRepository conversationRepository,
         IMessageRepository conversationMessageRepository,
+        IMessageReactionRepository reactionRepository,
         ILogger<GetMessagesHandler> logger)
     {
         _conversationRepository = conversationRepository;
         _conversationMessageRepository = conversationMessageRepository;
+        _reactionRepository = reactionRepository;
         _logger = logger;
     }
 
@@ -98,16 +101,28 @@ public sealed class GetMessagesHandler
             page.Items.Count,
             page.NextCursor is not null);
 
+        var messageIds = page.Items.Select(x => x.Id.Value).ToArray();
+        var reactionsByMessageId = await _reactionRepository.GetByMessageIdsAsync(
+            messageIds,
+            currentUserId,
+            cancellationToken);
+
         var items = page.Items
             .OrderBy(x => x.CreatedAtUtc)
             .ThenBy(x => x.Id.Value)
-            .Select(x => new GetMessagesItemResponse(
-                MessageId: x.Id.ToString(),
-                AuthorUserId: x.AuthorUserId.ToString(),
-                Content: x.Content.Value,
-                Attachments: x.Attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
-                CreatedAtUtc: x.CreatedAtUtc,
-                UpdatedAtUtc: x.UpdatedAtUtc))
+            .Select(x =>
+            {
+                reactionsByMessageId.TryGetValue(x.Id.Value, out var reactions);
+                return new GetMessagesItemResponse(
+                    MessageId: x.Id.ToString(),
+                    AuthorUserId: x.AuthorUserId.ToString(),
+                    Content: x.Content.Value,
+                    Attachments: x.Attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
+                    Reactions: reactions?.Select(r => new MessageReactionDto(r.Emoji, r.Count, r.ReactedByCaller)).ToArray()
+                              ?? Array.Empty<MessageReactionDto>(),
+                    CreatedAtUtc: x.CreatedAtUtc,
+                    UpdatedAtUtc: x.UpdatedAtUtc);
+            })
             .ToArray();
 
         var payload = new GetMessagesResponse(

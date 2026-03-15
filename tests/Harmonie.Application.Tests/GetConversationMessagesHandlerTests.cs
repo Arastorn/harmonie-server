@@ -14,16 +14,19 @@ public sealed class GetConversationMessagesHandlerTests
 {
     private readonly Mock<IConversationRepository> _conversationRepositoryMock;
     private readonly Mock<IMessageRepository> _directMessageRepositoryMock;
+    private readonly Mock<IMessageReactionRepository> _reactionRepositoryMock;
     private readonly GetMessagesHandler _handler;
 
     public GetConversationMessagesHandlerTests()
     {
         _conversationRepositoryMock = new Mock<IConversationRepository>();
         _directMessageRepositoryMock = new Mock<IMessageRepository>();
+        _reactionRepositoryMock = new Mock<IMessageReactionRepository>();
 
         _handler = new GetMessagesHandler(
             _conversationRepositoryMock.Object,
             _directMessageRepositoryMock.Object,
+            _reactionRepositoryMock.Object,
             NullLogger<GetMessagesHandler>.Instance);
     }
 
@@ -103,6 +106,13 @@ public sealed class GetConversationMessagesHandlerTests
                 50,
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(new MessagePage([second, first], nextCursor));
+
+        _reactionRepositoryMock
+            .Setup(x => x.GetByMessageIdsAsync(
+                It.IsAny<IReadOnlyCollection<Guid>>(),
+                participantOne,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<Guid, IReadOnlyList<MessageReactionSummary>>());
 
         var response = await _handler.HandleAsync(
             conversation.Id,
