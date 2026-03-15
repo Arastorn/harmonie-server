@@ -13,4 +13,9 @@ public interface IGuildBanRepository
         GuildId guildId,
         UserId userId,
         CancellationToken cancellationToken = default);
+
+    Task<bool> DeleteAsync(
+        GuildId guildId,
+        UserId userId,
+        CancellationToken cancellationToken = default);
 }

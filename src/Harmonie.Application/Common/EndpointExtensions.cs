@@ -316,6 +316,7 @@ public static class EndpointExtensions
             ApplicationErrorCodes.Guild.OwnerCannotBeBanned => HttpStatusCode.Conflict,
             ApplicationErrorCodes.Guild.AlreadyBanned => HttpStatusCode.Conflict,
             ApplicationErrorCodes.Guild.UserBanned => HttpStatusCode.Forbidden,
+            ApplicationErrorCodes.Guild.NotBanned => HttpStatusCode.NotFound,
             ApplicationErrorCodes.Channel.NotFound => HttpStatusCode.NotFound,
             ApplicationErrorCodes.Channel.AccessDenied => HttpStatusCode.Forbidden,
             ApplicationErrorCodes.Channel.NotText => HttpStatusCode.Conflict,
