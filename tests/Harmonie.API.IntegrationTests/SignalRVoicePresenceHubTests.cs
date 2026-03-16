@@ -33,34 +33,7 @@ public sealed class SignalRVoicePresenceHubTests : IClassFixture<WebApplicationF
     }
 
     [Fact]
-    public async Task JoinGuild_WhenUserIsNotMember_ShouldReturnAccessDeniedHubException()
-    {
-        var owner = await RegisterAsync();
-        var outsider = await RegisterAsync();
-
-        var createGuildResponse = await SendAuthorizedPostAsync(
-            "/api/guilds",
-            new CreateGuildRequest("Voice Presence Guild"),
-            owner.AccessToken);
-        createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
-
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
-        createGuildPayload.Should().NotBeNull();
-
-        var guildIdParsed = Guid.TryParse(createGuildPayload!.GuildId, out var guildId);
-        guildIdParsed.Should().BeTrue();
-
-        await using var connection = CreateHubConnection(outsider.AccessToken);
-        await connection.StartAsync();
-
-        var act = async () => await connection.InvokeAsync("JoinGuild", guildId);
-
-        var exception = await act.Should().ThrowAsync<HubException>();
-        exception.Which.Message.Should().Contain(ApplicationErrorCodes.Guild.AccessDenied);
-    }
-
-    [Fact]
-    public async Task VoiceParticipantJoined_WhenMemberJoinedGuild_ShouldReceiveEvent()
+    public async Task VoiceParticipantJoined_WhenMemberConnected_ShouldReceiveEvent()
     {
         var owner = await RegisterAsync();
         var member = await RegisterAsync();
@@ -76,8 +49,11 @@ public sealed class SignalRVoicePresenceHubTests : IClassFixture<WebApplicationF
             eventReceived.TrySetResult(payload);
         });
 
+        var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        connection.On("Ready", () => ready.TrySetResult());
+
         await connection.StartAsync();
-        await connection.InvokeAsync("JoinGuild", Guid.Parse(guildId));
+        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5));
 
         var webhookResponse = await SendLiveKitWebhookAsync(
             CreateParticipantWebhookBody("participant_joined", voiceChannelId, member.UserId, member.Username));
@@ -96,7 +72,7 @@ public sealed class SignalRVoicePresenceHubTests : IClassFixture<WebApplicationF
     }
 
     [Fact]
-    public async Task VoiceParticipantLeft_WhenMemberJoinedGuild_ShouldReceiveEvent()
+    public async Task VoiceParticipantLeft_WhenMemberConnected_ShouldReceiveEvent()
     {
         var owner = await RegisterAsync();
         var member = await RegisterAsync();
@@ -112,8 +88,11 @@ public sealed class SignalRVoicePresenceHubTests : IClassFixture<WebApplicationF
             eventReceived.TrySetResult(payload);
         });
 
+        var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        connection.On("Ready", () => ready.TrySetResult());
+
         await connection.StartAsync();
-        await connection.InvokeAsync("JoinGuild", Guid.Parse(guildId));
+        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5));
 
         var webhookResponse = await SendLiveKitWebhookAsync(
             CreateParticipantWebhookBody("participant_left", voiceChannelId, member.UserId, member.Username));
