@@ -297,6 +297,59 @@ public sealed class ConnectionTrackerTests : IDisposable
             Times.Never);
     }
 
+    [Fact]
+    public void GetConnectionIds_WhenNoConnections_ShouldReturnEmpty()
+    {
+        var userId = UserId.New();
+        _tracker.GetConnectionIds(userId).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetConnectionIds_WithActiveConnections_ShouldReturnAll()
+    {
+        var userId = UserId.New();
+        var user = CreateUser(userId);
+
+        _userRepositoryMock
+            .Setup(x => x.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+        _guildMemberRepositoryMock
+            .Setup(x => x.GetUserGuildMembershipsAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<UserGuildMembership>());
+
+        await _tracker.HandleConnectedAsync(userId, "conn-1");
+        await _tracker.HandleConnectedAsync(userId, "conn-2");
+
+        var connectionIds = _tracker.GetConnectionIds(userId);
+        connectionIds.Should().HaveCount(2);
+        connectionIds.Should().Contain("conn-1");
+        connectionIds.Should().Contain("conn-2");
+    }
+
+    [Fact]
+    public async Task GetConnectionIds_AfterDisconnect_ShouldExcludeRemovedConnection()
+    {
+        var userId = UserId.New();
+        var user = CreateUser(userId);
+
+        _userRepositoryMock
+            .Setup(x => x.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+        _guildMemberRepositoryMock
+            .Setup(x => x.GetUserGuildMembershipsAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<UserGuildMembership>());
+
+        await _tracker.HandleConnectedAsync(userId, "conn-1");
+        await _tracker.HandleConnectedAsync(userId, "conn-2");
+        await _tracker.HandleDisconnectedAsync(userId, "conn-1");
+
+        var connectionIds = _tracker.GetConnectionIds(userId);
+        connectionIds.Should().HaveCount(1);
+        connectionIds.Should().Contain("conn-2");
+    }
+
     private static User CreateUser(UserId? userId = null, string status = "online")
     {
         var id = userId ?? UserId.New();
