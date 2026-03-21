@@ -3,6 +3,7 @@ using Harmonie.Application.Common;
 using Harmonie.Application.Features.Conversations.GetMessages;
 using Harmonie.Application.Interfaces.Conversations;
 using Harmonie.Application.Interfaces.Messages;
+using Harmonie.Application.Tests.Common;
 using Harmonie.Domain.Entities.Conversations;
 using Harmonie.Domain.Entities.Messages;
 using Harmonie.Domain.ValueObjects.Conversations;
@@ -130,32 +131,12 @@ public sealed class GetConversationMessagesHandlerTests
     }
 
     private static Conversation CreateConversation(UserId user1Id, UserId user2Id)
-    {
-        var result = Conversation.Create(user1Id, user2Id);
-        if (result.IsFailure || result.Value is null)
-            throw new InvalidOperationException("Failed to create test conversation.");
-
-        return result.Value;
-    }
+        => ApplicationTestBuilders.CreateConversation(user1Id, user2Id);
 
     private static Message CreateConversationMessage(
         ConversationId conversationId,
         UserId authorUserId,
         string content,
         DateTime createdAtUtc)
-    {
-        var contentResult = MessageContent.Create(content);
-        if (contentResult.IsFailure || contentResult.Value is null)
-            throw new InvalidOperationException("Failed to create test conversation message content.");
-
-        return Message.Rehydrate(
-            id: MessageId.New(),
-            channelId: null,
-            conversationId: conversationId,
-            authorUserId: authorUserId,
-            content: contentResult.Value,
-            createdAtUtc: createdAtUtc,
-            updatedAtUtc: null,
-            deletedAtUtc: null);
-    }
+        => ApplicationTestBuilders.CreateConversationMessage(conversationId, authorUserId, content: content, createdAtUtc: createdAtUtc);
 }

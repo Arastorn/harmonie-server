@@ -3,6 +3,7 @@ using Harmonie.Application.Common;
 using Harmonie.Application.Features.Channels.GetMessages;
 using Harmonie.Application.Interfaces.Channels;
 using Harmonie.Application.Interfaces.Messages;
+using Harmonie.Application.Tests.Common;
 using Harmonie.Domain.Entities.Guilds;
 using Harmonie.Domain.Entities.Messages;
 using Harmonie.Domain.Enums;
@@ -129,37 +130,12 @@ public sealed class GetMessagesHandlerTests
     }
 
     private static GuildChannel CreateChannel(GuildChannelType type)
-    {
-        var channelResult = GuildChannel.Create(
-            GuildId.New(),
-            "general",
-            type,
-            isDefault: true,
-            position: 0);
-        if (channelResult.IsFailure)
-            throw new InvalidOperationException("Failed to create channel for tests.");
-
-        return channelResult.Value!;
-    }
+        => ApplicationTestBuilders.CreateChannel(type);
 
     private static Message CreateMessage(
         GuildChannelId channelId,
         UserId authorUserId,
         string content,
         DateTime createdAtUtc)
-    {
-        var contentResult = MessageContent.Create(content);
-        if (contentResult.IsFailure)
-            throw new InvalidOperationException("Failed to create message content for tests.");
-
-        return Message.Rehydrate(
-            id: MessageId.New(),
-            channelId: channelId,
-            conversationId: null,
-            authorUserId: authorUserId,
-            content: contentResult.Value!,
-            createdAtUtc: createdAtUtc,
-            updatedAtUtc: null,
-            deletedAtUtc: null);
-    }
+        => ApplicationTestBuilders.CreateChannelMessage(channelId, authorUserId, content: content, createdAtUtc: createdAtUtc);
 }

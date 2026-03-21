@@ -4,6 +4,7 @@ using Harmonie.Application.Features.Conversations.OpenConversation;
 using Harmonie.Application.Interfaces.Common;
 using Harmonie.Application.Interfaces.Conversations;
 using Harmonie.Application.Interfaces.Users;
+using Harmonie.Application.Tests.Common;
 using Harmonie.Domain.Entities.Conversations;
 using Harmonie.Domain.Entities.Users;
 using Harmonie.Domain.ValueObjects.Users;
@@ -161,11 +162,5 @@ public sealed class OpenConversationHandlerTests
     }
 
     private static Conversation CreateConversation(UserId callerUserId, UserId targetUserId)
-    {
-        var result = Conversation.Create(callerUserId, targetUserId);
-        if (result.IsFailure || result.Value is null)
-            throw new InvalidOperationException("Failed to create test conversation.");
-
-        return result.Value;
-    }
+        => ApplicationTestBuilders.CreateConversation(callerUserId, targetUserId);
 }

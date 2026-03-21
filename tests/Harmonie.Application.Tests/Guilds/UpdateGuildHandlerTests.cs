@@ -5,6 +5,7 @@ using Harmonie.Application.Features.Guilds.UpdateGuild;
 using Harmonie.Application.Interfaces.Common;
 using Harmonie.Application.Interfaces.Guilds;
 using Harmonie.Application.Interfaces.Uploads;
+using Harmonie.Application.Tests.Common;
 using Harmonie.Domain.Entities.Guilds;
 using Harmonie.Domain.Entities.Uploads;
 using Harmonie.Domain.Enums;
@@ -34,17 +35,7 @@ public sealed class UpdateGuildHandlerTests
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _transactionMock = new Mock<IUnitOfWorkTransaction>();
 
-        _unitOfWorkMock
-            .Setup(x => x.BeginAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_transactionMock.Object);
-
-        _transactionMock
-            .Setup(x => x.CommitAsync(It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-
-        _transactionMock
-            .Setup(x => x.DisposeAsync())
-            .Returns(ValueTask.CompletedTask);
+        _transactionMock = _unitOfWorkMock.SetupTransactionMock();
 
         _handler = new UpdateGuildHandler(
             _guildRepositoryMock.Object,
@@ -262,35 +253,13 @@ public sealed class UpdateGuildHandlerTests
     }
 
     private static Guild CreateGuild(UploadedFileId? iconFileId = null)
-    {
-        var guildNameResult = GuildName.Create("Guild Alpha");
-        if (guildNameResult.IsFailure || guildNameResult.Value is null)
-            throw new InvalidOperationException("Failed to create guild name for tests.");
+        => ApplicationTestBuilders.CreateGuild(iconFileId: iconFileId);
 
-        return Guild.Rehydrate(
-            GuildId.New(),
-            guildNameResult.Value,
-            UserId.New(),
-            DateTime.UtcNow.AddDays(-2),
-            DateTime.UtcNow.AddDays(-1),
-            iconFileId: iconFileId);
-    }
-
-    private static UploadedFile CreateUploadedFile(
-        string fileName,
-        string storageKey)
-    {
-        var uploadedFileResult = UploadedFile.Create(
-            UserId.New(),
-            fileName,
-            "image/png",
-            123,
-            storageKey,
-            UploadPurpose.GuildIcon);
-
-        if (uploadedFileResult.IsFailure || uploadedFileResult.Value is null)
-            throw new InvalidOperationException("Failed to create uploaded file for tests.");
-
-        return uploadedFileResult.Value;
-    }
+    private static UploadedFile CreateUploadedFile(string fileName, string storageKey)
+        => ApplicationTestBuilders.CreateUploadedFile(
+            fileName: fileName,
+            storageKey: storageKey,
+            contentType: "image/png",
+            sizeBytes: 123,
+            purpose: UploadPurpose.GuildIcon);
 }

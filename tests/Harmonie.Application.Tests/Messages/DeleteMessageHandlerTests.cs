@@ -4,6 +4,7 @@ using Harmonie.Application.Features.Channels.DeleteMessage;
 using Harmonie.Application.Interfaces.Channels;
 using Harmonie.Application.Interfaces.Common;
 using Harmonie.Application.Interfaces.Messages;
+using Harmonie.Application.Tests.Common;
 using Harmonie.Domain.Entities.Guilds;
 using Harmonie.Domain.Entities.Messages;
 using Harmonie.Domain.Enums;
@@ -34,17 +35,7 @@ public sealed class DeleteMessageHandlerTests
         _transactionMock = new Mock<IUnitOfWorkTransaction>();
         _textChannelNotifierMock = new Mock<ITextChannelNotifier>();
 
-        _unitOfWorkMock
-            .Setup(x => x.BeginAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_transactionMock.Object);
-
-        _transactionMock
-            .Setup(x => x.CommitAsync(It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-
-        _transactionMock
-            .Setup(x => x.DisposeAsync())
-            .Returns(ValueTask.CompletedTask);
+        _transactionMock = _unitOfWorkMock.SetupTransactionMock();
 
         _textChannelNotifierMock
             .Setup(x => x.NotifyMessageDeletedAsync(It.IsAny<TextChannelMessageDeletedNotification>(), It.IsAny<CancellationToken>()))
@@ -347,34 +338,8 @@ public sealed class DeleteMessageHandlerTests
         response.Success.Should().BeTrue();
     }
     private static GuildChannel CreateChannel(GuildChannelType type)
-    {
-        var result = GuildChannel.Create(
-            GuildId.New(),
-            "general",
-            type,
-            isDefault: false,
-            position: 0);
-
-        if (result.IsFailure)
-            throw new InvalidOperationException("Failed to create channel for tests.");
-
-        return result.Value!;
-    }
+        => ApplicationTestBuilders.CreateChannel(type);
 
     private static Message CreateMessage(GuildChannelId channelId, UserId authorId)
-    {
-        var contentResult = MessageContent.Create("test content");
-        if (contentResult.IsFailure || contentResult.Value is null)
-            throw new InvalidOperationException("Failed to create message content for tests.");
-
-        return Message.Rehydrate(
-            id: MessageId.New(),
-            channelId: channelId,
-            conversationId: null,
-            authorUserId: authorId,
-            content: contentResult.Value,
-            createdAtUtc: DateTime.UtcNow,
-            updatedAtUtc: null,
-            deletedAtUtc: null);
-    }
+        => ApplicationTestBuilders.CreateChannelMessage(channelId, authorId);
 }

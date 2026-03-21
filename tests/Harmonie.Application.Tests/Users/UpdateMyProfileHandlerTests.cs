@@ -4,8 +4,9 @@ using Harmonie.Application.Common.Uploads;
 using Harmonie.Application.Features.Users.UpdateMyProfile;
 using Harmonie.Application.Interfaces.Uploads;
 using Harmonie.Application.Interfaces.Users;
-using Harmonie.Domain.Entities.Users;
+using Harmonie.Application.Tests.Common;
 using Harmonie.Domain.ValueObjects.Uploads;
+using Harmonie.Domain.Entities.Users;
 using Harmonie.Domain.ValueObjects.Users;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
@@ -337,23 +338,5 @@ public sealed class UpdateMyProfileHandlerTests
         response.Data.Language.Should().BeNull();
     }
 
-    private static User CreateUser()
-    {
-        var emailResult = Email.Create($"test-{Guid.NewGuid():N}@harmonie.chat");
-        if (emailResult.IsFailure || emailResult.Value is null)
-            throw new InvalidOperationException("Failed to create email for tests.");
-
-        var usernameResult = Username.Create($"user{Guid.NewGuid():N}"[..20]);
-        if (usernameResult.IsFailure || usernameResult.Value is null)
-            throw new InvalidOperationException("Failed to create username for tests.");
-
-        var userResult = User.Create(
-            emailResult.Value,
-            usernameResult.Value,
-            "hashed_password");
-        if (userResult.IsFailure || userResult.Value is null)
-            throw new InvalidOperationException("Failed to create user for tests.");
-
-        return userResult.Value;
-    }
+    private static Domain.Entities.Users.User CreateUser() => ApplicationTestBuilders.CreateUser();
 }

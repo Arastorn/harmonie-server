@@ -2,6 +2,7 @@ using FluentAssertions;
 using Harmonie.Application.Common;
 using Harmonie.Application.Features.Guilds.InviteMember;
 using Harmonie.Application.Interfaces.Guilds;
+using Harmonie.Application.Tests.Common;
 using Harmonie.Domain.Entities.Guilds;
 using Harmonie.Domain.Enums;
 using Harmonie.Domain.ValueObjects.Guilds;
@@ -123,16 +124,5 @@ public sealed class InviteMemberHandlerTests
         response.Data.Role.Should().Be(GuildRole.Member.ToString());
     }
 
-    private static Guild CreateGuild()
-    {
-        var nameResult = GuildName.Create("Guild Alpha");
-        if (nameResult.IsFailure)
-            throw new InvalidOperationException("Failed to create guild name for tests.");
-
-        var guildResult = Guild.Create(nameResult.Value!, UserId.New());
-        if (guildResult.IsFailure)
-            throw new InvalidOperationException("Failed to create guild for tests.");
-
-        return guildResult.Value!;
-    }
+    private static Guild CreateGuild() => ApplicationTestBuilders.CreateGuild();
 }

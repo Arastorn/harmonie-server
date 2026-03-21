@@ -6,10 +6,11 @@ using Harmonie.Application.Interfaces.Common;
 using Harmonie.Application.Interfaces.Conversations;
 using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Application.Interfaces.Uploads;
+using Harmonie.Application.Tests.Common;
 using Harmonie.Domain.Entities.Conversations;
+using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.Entities.Messages;
 using Harmonie.Domain.Entities.Uploads;
-using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.ValueObjects.Uploads;
 using Harmonie.Domain.ValueObjects.Users;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -37,13 +38,7 @@ public sealed class SendConversationMessageHandlerTests
         _transactionMock = new Mock<IUnitOfWorkTransaction>();
         _directMessageNotifierMock = new Mock<IConversationMessageNotifier>();
 
-        _transactionMock
-            .Setup(x => x.DisposeAsync())
-            .Returns(ValueTask.CompletedTask);
-
-        _unitOfWorkMock
-            .Setup(x => x.BeginAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_transactionMock.Object);
+        _transactionMock = _unitOfWorkMock.SetupTransactionMock();
 
         _directMessageNotifierMock
             .Setup(x => x.NotifyMessageCreatedAsync(
@@ -226,26 +221,8 @@ public sealed class SendConversationMessageHandlerTests
     }
 
     private static Conversation CreateConversation(UserId user1Id, UserId user2Id)
-    {
-        var result = Conversation.Create(user1Id, user2Id);
-        if (result.IsFailure || result.Value is null)
-            throw new InvalidOperationException("Failed to create test conversation.");
-
-        return result.Value;
-    }
+        => ApplicationTestBuilders.CreateConversation(user1Id, user2Id);
 
     private static UploadedFile CreateUploadedFile(UserId uploaderUserId)
-    {
-        var result = UploadedFile.Create(
-            uploaderUserId,
-            "report.pdf",
-            "application/pdf",
-            123,
-            $"uploads/{Guid.NewGuid():N}.pdf",
-            Harmonie.Domain.Enums.UploadPurpose.Attachment);
-        if (result.IsFailure || result.Value is null)
-            throw new InvalidOperationException("Failed to create uploaded file for tests.");
-
-        return result.Value;
-    }
+        => ApplicationTestBuilders.CreateUploadedFile(uploaderUserId: uploaderUserId, fileName: "report.pdf", contentType: "application/pdf");
 }

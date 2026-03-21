@@ -6,6 +6,7 @@ using Harmonie.Application.Interfaces.Channels;
 using Harmonie.Application.Interfaces.Common;
 using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Application.Interfaces.Uploads;
+using Harmonie.Application.Tests.Common;
 using Harmonie.Domain.Entities.Guilds;
 using Harmonie.Domain.Entities.Messages;
 using Harmonie.Domain.Entities.Uploads;
@@ -41,13 +42,7 @@ public sealed class DeleteMessageAttachmentHandlerTests
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _transactionMock = new Mock<IUnitOfWorkTransaction>();
 
-        _unitOfWorkMock
-            .Setup(x => x.BeginAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_transactionMock.Object);
-
-        _transactionMock
-            .Setup(x => x.DisposeAsync())
-            .Returns(ValueTask.CompletedTask);
+        _transactionMock = _unitOfWorkMock.SetupTransactionMock();
 
         _handler = new DeleteMessageAttachmentHandler(
             _guildChannelRepositoryMock.Object,
@@ -196,53 +191,24 @@ public sealed class DeleteMessageAttachmentHandlerTests
     }
 
     private static GuildChannel CreateChannel(GuildChannelType type = GuildChannelType.Text)
-    {
-        return GuildChannel.Rehydrate(
-            GuildChannelId.New(),
-            GuildId.New(),
-            "general",
-            type,
-            isDefault: true,
-            position: 0,
-            createdAtUtc: DateTime.UtcNow.AddDays(-2));
-    }
+        => ApplicationTestBuilders.CreateChannel(type);
 
     private static Message CreateMessage(
         GuildChannelId channelId,
         UserId authorId,
         UploadedFileId attachmentId)
-    {
-        var contentResult = MessageContent.Create("hello");
-        if (contentResult.IsFailure || contentResult.Value is null)
-            throw new InvalidOperationException("Failed to create message content for tests.");
-
-        return Message.Rehydrate(
-            MessageId.New(),
+        => ApplicationTestBuilders.CreateChannelMessage(
             channelId,
-            conversationId: null,
             authorId,
-            contentResult.Value,
-            createdAtUtc: DateTime.UtcNow.AddMinutes(-5),
-            updatedAtUtc: null,
-            deletedAtUtc: null,
-            attachments:
-            [
-                new MessageAttachment(attachmentId, "notes.txt", "text/plain", 12)
-            ]);
-    }
+            content: "hello",
+            attachments: [new MessageAttachment(attachmentId, "notes.txt", "text/plain", 12)]);
 
-    private static UploadedFile CreateUploadedFile(
-        UploadedFileId attachmentId,
-        UserId uploaderUserId)
-    {
-        return UploadedFile.Rehydrate(
-            attachmentId,
-            uploaderUserId,
-            "notes.txt",
-            "text/plain",
-            12,
-            "attachments/file.txt",
-            UploadPurpose.Attachment,
-            DateTime.UtcNow.AddMinutes(-10));
-    }
+    private static UploadedFile CreateUploadedFile(UploadedFileId attachmentId, UserId uploaderUserId)
+        => ApplicationTestBuilders.CreateUploadedFile(
+            id: attachmentId,
+            uploaderUserId: uploaderUserId,
+            fileName: "notes.txt",
+            contentType: "text/plain",
+            sizeBytes: 12,
+            storageKey: "attachments/file.txt");
 }

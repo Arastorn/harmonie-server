@@ -6,10 +6,10 @@ using Harmonie.Application.Interfaces.Common;
 using Harmonie.Application.Interfaces.Conversations;
 using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Application.Interfaces.Uploads;
+using Harmonie.Application.Tests.Common;
 using Harmonie.Domain.Entities.Conversations;
 using Harmonie.Domain.Entities.Messages;
 using Harmonie.Domain.Entities.Uploads;
-using Harmonie.Domain.Enums;
 using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.ValueObjects.Messages;
 using Harmonie.Domain.ValueObjects.Uploads;
@@ -40,13 +40,7 @@ public sealed class DeleteConversationMessageAttachmentHandlerTests
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _transactionMock = new Mock<IUnitOfWorkTransaction>();
 
-        _unitOfWorkMock
-            .Setup(x => x.BeginAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_transactionMock.Object);
-
-        _transactionMock
-            .Setup(x => x.DisposeAsync())
-            .Returns(ValueTask.CompletedTask);
+        _transactionMock = _unitOfWorkMock.SetupTransactionMock();
 
         _handler = new DeleteMessageAttachmentHandler(
             _conversationRepositoryMock.Object,
@@ -224,50 +218,24 @@ public sealed class DeleteConversationMessageAttachmentHandlerTests
     }
 
     private static Conversation CreateConversation(UserId user1Id, UserId user2Id)
-    {
-        var result = Conversation.Create(user1Id, user2Id);
-        if (result.IsFailure || result.Value is null)
-            throw new InvalidOperationException("Failed to create test conversation.");
-
-        return result.Value;
-    }
+        => ApplicationTestBuilders.CreateConversation(user1Id, user2Id);
 
     private static Message CreateConversationMessage(
         ConversationId conversationId,
         UserId authorId,
         UploadedFileId attachmentId)
-    {
-        var contentResult = MessageContent.Create("hello");
-        if (contentResult.IsFailure || contentResult.Value is null)
-            throw new InvalidOperationException("Failed to create message content for tests.");
-
-        return Message.Rehydrate(
-            MessageId.New(),
-            channelId: null,
+        => ApplicationTestBuilders.CreateConversationMessage(
             conversationId,
             authorId,
-            contentResult.Value,
-            createdAtUtc: DateTime.UtcNow.AddMinutes(-5),
-            updatedAtUtc: null,
-            deletedAtUtc: null,
-            attachments:
-            [
-                new MessageAttachment(attachmentId, "notes.txt", "text/plain", 12)
-            ]);
-    }
+            content: "hello",
+            attachments: [new MessageAttachment(attachmentId, "notes.txt", "text/plain", 12)]);
 
-    private static UploadedFile CreateUploadedFile(
-        UploadedFileId attachmentId,
-        UserId uploaderUserId)
-    {
-        return UploadedFile.Rehydrate(
-            attachmentId,
-            uploaderUserId,
-            "notes.txt",
-            "text/plain",
-            12,
-            "attachments/file.txt",
-            UploadPurpose.Attachment,
-            DateTime.UtcNow.AddMinutes(-10));
-    }
+    private static UploadedFile CreateUploadedFile(UploadedFileId attachmentId, UserId uploaderUserId)
+        => ApplicationTestBuilders.CreateUploadedFile(
+            id: attachmentId,
+            uploaderUserId: uploaderUserId,
+            fileName: "notes.txt",
+            contentType: "text/plain",
+            sizeBytes: 12,
+            storageKey: "attachments/file.txt");
 }

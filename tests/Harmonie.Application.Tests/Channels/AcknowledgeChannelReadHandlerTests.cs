@@ -4,11 +4,11 @@ using Harmonie.Application.Features.Channels.AcknowledgeRead;
 using Harmonie.Application.Interfaces.Channels;
 using Harmonie.Application.Interfaces.Common;
 using Harmonie.Application.Interfaces.Messages;
+using Harmonie.Application.Tests.Common;
 using Harmonie.Domain.Entities.Guilds;
 using Harmonie.Domain.Entities.Messages;
 using Harmonie.Domain.Enums;
 using Harmonie.Domain.ValueObjects.Channels;
-using Harmonie.Domain.ValueObjects.Guilds;
 using Harmonie.Domain.ValueObjects.Messages;
 using Harmonie.Domain.ValueObjects.Users;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -34,17 +34,7 @@ public sealed class AcknowledgeChannelReadHandlerTests
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _transactionMock = new Mock<IUnitOfWorkTransaction>();
 
-        _unitOfWorkMock
-            .Setup(x => x.BeginAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_transactionMock.Object);
-
-        _transactionMock
-            .Setup(x => x.CommitAsync(It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-
-        _transactionMock
-            .Setup(x => x.DisposeAsync())
-            .Returns(ValueTask.CompletedTask);
+        _transactionMock = _unitOfWorkMock.SetupTransactionMock();
 
         _handler = new AcknowledgeReadHandler(
             _guildChannelRepositoryMock.Object,
@@ -233,34 +223,8 @@ public sealed class AcknowledgeChannelReadHandlerTests
     }
 
     private static GuildChannel CreateChannel(GuildChannelType type)
-    {
-        var result = GuildChannel.Create(
-            GuildId.New(),
-            "general",
-            type,
-            isDefault: false,
-            position: 0);
-
-        if (result.IsFailure)
-            throw new InvalidOperationException("Failed to create channel for tests.");
-
-        return result.Value!;
-    }
+        => ApplicationTestBuilders.CreateChannel(type);
 
     private static Message CreateChannelMessage(GuildChannelId channelId, UserId authorId)
-    {
-        var contentResult = MessageContent.Create("test content");
-        if (contentResult.IsFailure || contentResult.Value is null)
-            throw new InvalidOperationException("Failed to create message content for tests.");
-
-        return Message.Rehydrate(
-            id: MessageId.New(),
-            channelId: channelId,
-            conversationId: null,
-            authorUserId: authorId,
-            content: contentResult.Value,
-            createdAtUtc: DateTime.UtcNow,
-            updatedAtUtc: null,
-            deletedAtUtc: null);
-    }
+        => ApplicationTestBuilders.CreateChannelMessage(channelId, authorId);
 }

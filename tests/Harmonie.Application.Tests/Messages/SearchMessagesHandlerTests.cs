@@ -1,6 +1,6 @@
-using System.Runtime.InteropServices.JavaScript;
 using FluentAssertions;
 using Harmonie.Application.Common;
+using Harmonie.Application.Tests.Common;
 using Harmonie.Application.Features.Guilds.SearchMessages;
 using Harmonie.Application.Interfaces.Channels;
 using Harmonie.Application.Interfaces.Guilds;
@@ -196,31 +196,10 @@ public sealed class SearchMessagesHandlerTests
     }
 
     private static Guild CreateGuild(UserId ownerId)
-    {
-        var nameResult = GuildName.Create("Search Guild");
-        if (nameResult.IsFailure || nameResult.Value is null)
-            throw new InvalidOperationException("Failed to create test guild name.");
-
-        var guildResult = Guild.Create(nameResult.Value, ownerId);
-        if (guildResult.IsFailure || guildResult.Value is null)
-            throw new InvalidOperationException("Failed to create test guild.");
-
-        return guildResult.Value;
-    }
+        => ApplicationTestBuilders.CreateGuild(ownerId);
 
     private static GuildChannel CreateChannel(GuildId guildId, GuildChannelType type, string name)
-    {
-        var channelResult = GuildChannel.Create(
-            guildId,
-            name,
-            type,
-            isDefault: false,
-            position: 1);
-        if (channelResult.IsFailure || channelResult.Value is null)
-            throw new InvalidOperationException("Failed to create test channel.");
-
-        return channelResult.Value;
-    }
+        => ApplicationTestBuilders.CreateChannel(type, guildId: guildId, name: name);
 
     private static SearchGuildMessagesItem CreateSearchItem(
         GuildChannelId channelId,

@@ -4,6 +4,7 @@ using Harmonie.Application.Features.Conversations.AcknowledgeRead;
 using Harmonie.Application.Interfaces.Common;
 using Harmonie.Application.Interfaces.Conversations;
 using Harmonie.Application.Interfaces.Messages;
+using Harmonie.Application.Tests.Common;
 using Harmonie.Domain.Entities.Conversations;
 using Harmonie.Domain.Entities.Messages;
 using Harmonie.Domain.ValueObjects.Conversations;
@@ -32,17 +33,7 @@ public sealed class AcknowledgeConversationReadHandlerTests
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _transactionMock = new Mock<IUnitOfWorkTransaction>();
 
-        _unitOfWorkMock
-            .Setup(x => x.BeginAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_transactionMock.Object);
-
-        _transactionMock
-            .Setup(x => x.CommitAsync(It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-
-        _transactionMock
-            .Setup(x => x.DisposeAsync())
-            .Returns(ValueTask.CompletedTask);
+        _transactionMock = _unitOfWorkMock.SetupTransactionMock();
 
         _handler = new AcknowledgeReadHandler(
             _conversationRepositoryMock.Object,
@@ -221,28 +212,8 @@ public sealed class AcknowledgeConversationReadHandlerTests
     }
 
     private static Conversation CreateConversation(UserId user1Id, UserId user2Id)
-    {
-        var result = Conversation.Create(user1Id, user2Id);
-        if (result.IsFailure || result.Value is null)
-            throw new InvalidOperationException("Failed to create test conversation.");
-
-        return result.Value;
-    }
+        => ApplicationTestBuilders.CreateConversation(user1Id, user2Id);
 
     private static Message CreateConversationMessage(ConversationId conversationId, UserId authorUserId)
-    {
-        var contentResult = MessageContent.Create("test content");
-        if (contentResult.IsFailure || contentResult.Value is null)
-            throw new InvalidOperationException("Failed to create test conversation message.");
-
-        return Message.Rehydrate(
-            id: MessageId.New(),
-            channelId: null,
-            conversationId: conversationId,
-            authorUserId: authorUserId,
-            content: contentResult.Value,
-            createdAtUtc: DateTime.UtcNow,
-            updatedAtUtc: null,
-            deletedAtUtc: null);
-    }
+        => ApplicationTestBuilders.CreateConversationMessage(conversationId, authorUserId);
 }

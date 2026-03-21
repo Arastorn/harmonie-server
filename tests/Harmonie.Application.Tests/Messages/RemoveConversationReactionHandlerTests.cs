@@ -4,6 +4,7 @@ using Harmonie.Application.Features.Conversations.RemoveReaction;
 using Harmonie.Application.Interfaces.Common;
 using Harmonie.Application.Interfaces.Conversations;
 using Harmonie.Application.Interfaces.Messages;
+using Harmonie.Application.Tests.Common;
 using Harmonie.Domain.Entities.Conversations;
 using Harmonie.Domain.Entities.Messages;
 using Harmonie.Domain.ValueObjects.Conversations;
@@ -34,17 +35,7 @@ public sealed class RemoveConversationReactionHandlerTests
         _transactionMock = new Mock<IUnitOfWorkTransaction>();
         _reactionNotifierMock = new Mock<IReactionNotifier>();
 
-        _unitOfWorkMock
-            .Setup(x => x.BeginAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_transactionMock.Object);
-
-        _transactionMock
-            .Setup(x => x.CommitAsync(It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-
-        _transactionMock
-            .Setup(x => x.DisposeAsync())
-            .Returns(ValueTask.CompletedTask);
+        _transactionMock = _unitOfWorkMock.SetupTransactionMock();
 
         _reactionNotifierMock
             .Setup(x => x.NotifyReactionRemovedFromConversationAsync(It.IsAny<ConversationReactionRemovedNotification>(), It.IsAny<CancellationToken>()))
@@ -231,28 +222,8 @@ public sealed class RemoveConversationReactionHandlerTests
     }
 
     private static Conversation CreateConversation(UserId user1Id, UserId user2Id)
-    {
-        var result = Conversation.Create(user1Id, user2Id);
-        if (result.IsFailure || result.Value is null)
-            throw new InvalidOperationException("Failed to create test conversation.");
-
-        return result.Value;
-    }
+        => ApplicationTestBuilders.CreateConversation(user1Id, user2Id);
 
     private static Message CreateConversationMessage(ConversationId conversationId, UserId authorUserId)
-    {
-        var contentResult = MessageContent.Create("original content");
-        if (contentResult.IsFailure || contentResult.Value is null)
-            throw new InvalidOperationException("Failed to create test conversation message.");
-
-        return Message.Rehydrate(
-            id: MessageId.New(),
-            channelId: null,
-            conversationId: conversationId,
-            authorUserId: authorUserId,
-            content: contentResult.Value,
-            createdAtUtc: DateTime.UtcNow.AddMinutes(-1),
-            updatedAtUtc: null,
-            deletedAtUtc: null);
-    }
+        => ApplicationTestBuilders.CreateConversationMessage(conversationId, authorUserId);
 }

@@ -1,6 +1,6 @@
-using System.Runtime.InteropServices.JavaScript;
 using FluentAssertions;
 using Harmonie.Application.Common;
+using Harmonie.Application.Tests.Common;
 using Harmonie.Application.Features.Conversations.SearchConversationMessages;
 using Harmonie.Application.Interfaces.Conversations;
 using Harmonie.Application.Interfaces.Messages;
@@ -128,13 +128,7 @@ public sealed class SearchConversationMessagesHandlerTests
     }
 
     private static Conversation CreateConversation(UserId user1Id, UserId user2Id)
-    {
-        var result = Conversation.Create(user1Id, user2Id);
-        if (result.IsFailure || result.Value is null)
-            throw new InvalidOperationException("Failed to create test conversation.");
-
-        return result.Value;
-    }
+        => ApplicationTestBuilders.CreateConversation(user1Id, user2Id);
 
     private static SearchConversationMessagesItem CreateSearchItem(
         UserId authorUserId,

@@ -5,6 +5,7 @@ using Harmonie.Application.Features.Users.DeleteMyAvatar;
 using Harmonie.Application.Interfaces.Common;
 using Harmonie.Application.Interfaces.Uploads;
 using Harmonie.Application.Interfaces.Users;
+using Harmonie.Application.Tests.Common;
 using Harmonie.Domain.Entities.Uploads;
 using Harmonie.Domain.Entities.Users;
 using Harmonie.Domain.Enums;

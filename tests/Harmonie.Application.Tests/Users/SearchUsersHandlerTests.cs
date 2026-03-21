@@ -3,7 +3,7 @@ using Harmonie.Application.Common;
 using Harmonie.Application.Features.Users.SearchUsers;
 using Harmonie.Application.Interfaces.Guilds;
 using Harmonie.Application.Interfaces.Users;
-using Harmonie.Domain.Entities.Guilds;
+using Harmonie.Application.Tests.Common;
 using Harmonie.Domain.Enums;
 using Harmonie.Domain.ValueObjects.Guilds;
 using Harmonie.Domain.ValueObjects.Uploads;
@@ -116,18 +116,8 @@ public sealed class SearchUsersHandlerTests
         response.Data.Users[0].Status.Should().Be("Active");
     }
 
-    private static Guild CreateGuild(UserId ownerId)
-    {
-        var nameResult = GuildName.Create("Search Users Guild");
-        if (nameResult.IsFailure || nameResult.Value is null)
-            throw new InvalidOperationException("Failed to create test guild name.");
-
-        var guildResult = Guild.Create(nameResult.Value, ownerId);
-        if (guildResult.IsFailure || guildResult.Value is null)
-            throw new InvalidOperationException("Failed to create test guild.");
-
-        return guildResult.Value;
-    }
+    private static Domain.Entities.Guilds.Guild CreateGuild(UserId ownerId)
+        => ApplicationTestBuilders.CreateGuild(ownerId);
 
     private static SearchUserResult CreateSearchUser(string username, string? displayName, bool isActive)
     {

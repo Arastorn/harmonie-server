@@ -6,6 +6,7 @@ using Harmonie.Application.Interfaces.Channels;
 using Harmonie.Application.Interfaces.Common;
 using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Application.Interfaces.Uploads;
+using Harmonie.Application.Tests.Common;
 using Harmonie.Domain.Entities.Guilds;
 using Harmonie.Domain.Entities.Messages;
 using Harmonie.Domain.Entities.Uploads;
@@ -39,13 +40,7 @@ public sealed class SendMessageHandlerTests
         _transactionMock = new Mock<IUnitOfWorkTransaction>();
         _textChannelNotifierMock = new Mock<ITextChannelNotifier>();
 
-        _transactionMock
-            .Setup(x => x.DisposeAsync())
-            .Returns(ValueTask.CompletedTask);
-
-        _unitOfWorkMock
-            .Setup(x => x.BeginAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_transactionMock.Object);
+        _transactionMock = _unitOfWorkMock.SetupTransactionMock();
 
         _textChannelNotifierMock
             .Setup(x => x.NotifyMessageCreatedAsync(
@@ -279,31 +274,11 @@ public sealed class SendMessageHandlerTests
     }
 
     private static GuildChannel CreateChannel(GuildChannelType type)
-    {
-        var channelResult = GuildChannel.Create(
-            GuildId.New(),
-            "general",
-            type,
-            isDefault: true,
-            position: 0);
-        if (channelResult.IsFailure)
-            throw new InvalidOperationException("Failed to create channel for tests.");
-
-        return channelResult.Value!;
-    }
+        => ApplicationTestBuilders.CreateChannel(type);
 
     private static UploadedFile CreateUploadedFile(UserId uploaderUserId)
-    {
-        var result = UploadedFile.Create(
-            uploaderUserId,
-            "report.pdf",
-            "application/pdf",
-            123,
-            $"uploads/{Guid.NewGuid():N}.pdf",
-            UploadPurpose.Attachment);
-        if (result.IsFailure || result.Value is null)
-            throw new InvalidOperationException("Failed to create uploaded file for tests.");
-
-        return result.Value;
-    }
+        => ApplicationTestBuilders.CreateUploadedFile(
+            uploaderUserId: uploaderUserId,
+            fileName: "report.pdf",
+            contentType: "application/pdf");
 }
