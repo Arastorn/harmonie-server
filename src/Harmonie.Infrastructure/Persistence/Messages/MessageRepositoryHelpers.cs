@@ -1,8 +1,13 @@
 using Dapper;
-using Harmonie.Application.Interfaces;
-using Harmonie.Domain.Entities;
-using Harmonie.Domain.ValueObjects;
-using Harmonie.Infrastructure.Rows;
+using Harmonie.Application.Interfaces.Messages;
+using Harmonie.Domain.Entities.Messages;
+using Harmonie.Domain.ValueObjects.Channels;
+using Harmonie.Domain.ValueObjects.Conversations;
+using Harmonie.Domain.ValueObjects.Messages;
+using Harmonie.Domain.ValueObjects.Uploads;
+using Harmonie.Domain.ValueObjects.Users;
+using Harmonie.Infrastructure.Persistence.Common;
+using Harmonie.Infrastructure.Rows.Messages;
 
 namespace Harmonie.Infrastructure.Persistence.Messages;
 

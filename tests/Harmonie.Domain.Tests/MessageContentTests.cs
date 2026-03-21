@@ -1,5 +1,5 @@
 using FluentAssertions;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Domain.ValueObjects.Messages;
 using Xunit;
 
 namespace Harmonie.Domain.Tests;

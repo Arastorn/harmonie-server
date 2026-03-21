@@ -1,5 +1,5 @@
 using Harmonie.Application.Common;
-using Harmonie.Application.Interfaces;
+using Harmonie.Application.Interfaces.Guilds;
 using Microsoft.Extensions.Logging;
 
 namespace Harmonie.Application.Features.Guilds.PreviewInvite;

@@ -1,6 +1,9 @@
 using Harmonie.Application.Common;
-using Harmonie.Application.Interfaces;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Application.Interfaces.Auth;
+using Harmonie.Application.Interfaces.Common;
+using Harmonie.Application.Interfaces.Users;
+using Harmonie.Domain.Entities.Users;
+using Harmonie.Domain.ValueObjects.Users;
 
 namespace Harmonie.Application.Features.Auth.Login;
 
@@ -37,7 +40,7 @@ public sealed class LoginHandler
         var emailResult = Email.Create(request.EmailOrUsername);
         var usernameResult = Username.Create(request.EmailOrUsername);
 
-        Harmonie.Domain.Entities.User? user = null;
+        User? user = null;
         if (emailResult.IsSuccess && emailResult.Value is not null)
             user = await _userRepository.GetByEmailAsync(emailResult.Value, cancellationToken);
         else if (usernameResult.IsSuccess && usernameResult.Value is not null)

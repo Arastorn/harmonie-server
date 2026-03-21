@@ -1,7 +1,9 @@
 using Harmonie.Application.Common;
-using Harmonie.Application.Interfaces;
-using Harmonie.Domain.Entities;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Application.Interfaces.Auth;
+using Harmonie.Application.Interfaces.Common;
+using Harmonie.Application.Interfaces.Users;
+using Harmonie.Domain.Entities.Users;
+using Harmonie.Domain.ValueObjects.Users;
 
 namespace Harmonie.Application.Features.Auth.Register;
 

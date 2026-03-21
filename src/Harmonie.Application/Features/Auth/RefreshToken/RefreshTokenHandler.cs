@@ -1,5 +1,7 @@
 using Harmonie.Application.Common;
-using Harmonie.Application.Interfaces;
+using Harmonie.Application.Common.Auth;
+using Harmonie.Application.Interfaces.Auth;
+using Harmonie.Application.Interfaces.Users;
 
 namespace Harmonie.Application.Features.Auth.RefreshToken;
 

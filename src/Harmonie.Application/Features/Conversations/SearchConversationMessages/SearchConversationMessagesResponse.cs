@@ -1,4 +1,5 @@
 using Harmonie.Application.Common;
+using Harmonie.Application.Common.Messages;
 using Harmonie.Application.Features.Users;
 
 namespace Harmonie.Application.Features.Conversations.SearchConversationMessages;

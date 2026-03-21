@@ -1,8 +1,8 @@
 using FluentAssertions;
-using Harmonie.Application.Interfaces;
-using Harmonie.Domain.Entities;
+using Harmonie.Application.Interfaces.Channels;
+using Harmonie.Domain.Entities.Guilds;
 using Harmonie.Domain.Enums;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Domain.ValueObjects.Guilds;
 using Harmonie.Infrastructure.Configuration;
 using Harmonie.Infrastructure.LiveKit;
 using Livekit.Server.Sdk.Dotnet;

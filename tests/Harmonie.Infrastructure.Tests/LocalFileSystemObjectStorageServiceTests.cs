@@ -1,5 +1,5 @@
 using FluentAssertions;
-using Harmonie.Application.Interfaces;
+using Harmonie.Application.Interfaces.Uploads;
 using Harmonie.Infrastructure.Configuration;
 using Harmonie.Infrastructure.ObjectStorage;
 using Microsoft.Extensions.Logging.Abstractions;

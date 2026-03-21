@@ -1,5 +1,6 @@
-using Harmonie.Application.Interfaces;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Application.Interfaces.Voice;
+using Harmonie.Domain.ValueObjects.Channels;
+using Harmonie.Domain.ValueObjects.Users;
 using Harmonie.Infrastructure.Configuration;
 using Livekit.Server.Sdk.Dotnet;
 using Microsoft.Extensions.Options;

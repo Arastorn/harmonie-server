@@ -1,4 +1,4 @@
-using Harmonie.Application.Interfaces;
+using Harmonie.Application.Interfaces.Voice;
 using Harmonie.Infrastructure.Configuration;
 using Livekit.Server.Sdk.Dotnet;
 using Microsoft.Extensions.Logging;

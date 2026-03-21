@@ -1,6 +1,9 @@
 using FluentAssertions;
-using Harmonie.Domain.Entities;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Domain.Entities.Messages;
+using Harmonie.Domain.ValueObjects.Channels;
+using Harmonie.Domain.ValueObjects.Conversations;
+using Harmonie.Domain.ValueObjects.Messages;
+using Harmonie.Domain.ValueObjects.Users;
 using Xunit;
 
 namespace Harmonie.Domain.Tests;

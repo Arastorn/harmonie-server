@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using FluentAssertions;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Domain.ValueObjects.Channels;
+using Harmonie.Domain.ValueObjects.Users;
 using Harmonie.Infrastructure.Authentication;
 using Harmonie.Infrastructure.Configuration;
 using Microsoft.Extensions.Options;

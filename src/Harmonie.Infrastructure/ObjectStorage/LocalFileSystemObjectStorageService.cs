@@ -1,4 +1,4 @@
-using Harmonie.Application.Interfaces;
+using Harmonie.Application.Interfaces.Uploads;
 using Harmonie.Infrastructure.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

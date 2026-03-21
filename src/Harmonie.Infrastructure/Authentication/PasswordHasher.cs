@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
-using Harmonie.Application.Interfaces;
+using Harmonie.Application.Interfaces.Users;
 
 namespace Harmonie.Infrastructure.Authentication;
 public sealed class PasswordHasher : IPasswordHasher

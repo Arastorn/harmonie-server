@@ -1,8 +1,18 @@
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 using Harmonie.API.Middleware;
-using Harmonie.API.RealTime;
 using Harmonie.Application;
 using Harmonie.Application.Common;
 using Harmonie.API.Configuration;
+using Harmonie.API.RealTime.Channels;
+using Harmonie.API.RealTime.Common;
+using Harmonie.API.RealTime.Conversations;
+using Harmonie.API.RealTime.Guilds;
+using Harmonie.API.RealTime.Messages;
+using Harmonie.API.RealTime.Users;
+using Harmonie.API.RealTime.Voice;
 using Harmonie.Application.Features.Auth.Login;
 using Harmonie.Application.Features.Auth.LogoutAll;
 using Harmonie.Application.Features.Auth.Logout;
@@ -54,6 +64,7 @@ using Harmonie.Application.Features.Guilds.SearchMessages;
 using Harmonie.Application.Features.Guilds.TransferOwnership;
 using Harmonie.Application.Features.Guilds.UpdateGuild;
 using Harmonie.Application.Features.Guilds.UpdateMemberRole;
+using Harmonie.Application.Features.Uploads.DownloadFile;
 using Harmonie.Application.Features.Users.DeleteMyAvatar;
 using Harmonie.Application.Features.Users.GetMyProfile;
 using Harmonie.Application.Features.Users.SearchUsers;
@@ -62,25 +73,23 @@ using Harmonie.Application.Features.Users.UpdateUserStatus;
 using Harmonie.Application.Features.Users.UploadMyAvatar;
 using Harmonie.Application.Features.Uploads.UploadFile;
 using Harmonie.Application.Features.Voice.HandleLiveKitWebhook;
-using Harmonie.Application.Interfaces;
+using Harmonie.Application.Interfaces.Channels;
+using Harmonie.Application.Interfaces.Common;
+using Harmonie.Application.Interfaces.Conversations;
+using Harmonie.Application.Interfaces.Guilds;
+using Harmonie.Application.Interfaces.Messages;
+using Harmonie.Application.Interfaces.Users;
+using Harmonie.Application.Interfaces.Voice;
 using Harmonie.Infrastructure;
-using Harmonie.Infrastructure.Configuration;
 using Harmonie.Infrastructure.HealthChecks;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
-using Serilog;
-using System.Text;
-using System.Text.Json.Serialization;
-using System.Threading.RateLimiting;
-using Microsoft.OpenApi;
 using Saunter;
 using Saunter.AsyncApiSchema.v2;
 using Scalar.AspNetCore;
-using Harmonie.Application.Features.Uploads.DownloadFile;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
-using System.Text.Json;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -105,7 +114,7 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddSignalR();
 builder.Services.AddAsyncApiSchemaGeneration(options =>
 {
-    options.AssemblyMarkerTypes = new[] { typeof(Harmonie.API.RealTime.RealtimeHubDocumentation) };
+    options.AssemblyMarkerTypes = new[] { typeof(RealtimeHubDocumentation) };
     options.Middleware.UiTitle = "Harmonie Realtime API";
     options.AsyncApi = new AsyncApiDocument
     {
