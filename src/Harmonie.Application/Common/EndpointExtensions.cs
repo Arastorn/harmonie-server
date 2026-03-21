@@ -293,6 +293,7 @@ public static class EndpointExtensions
     public static HttpStatusCode MapStatusCode(string errorCode)
         => errorCode switch
         {
+            ApplicationErrorCodes.Validation.WrongEnumValue => HttpStatusCode.BadRequest,
             ApplicationErrorCodes.Common.ValidationFailed => HttpStatusCode.BadRequest,
             ApplicationErrorCodes.Common.DomainRuleViolation => HttpStatusCode.BadRequest,
             ApplicationErrorCodes.Auth.InvalidCredentials => HttpStatusCode.Unauthorized,

@@ -1,5 +1,6 @@
 using System.Net;
 using System.Data.Common;
+using System.Text.Json;
 using FluentValidation;
 using Harmonie.Application.Common;
 namespace Harmonie.API.Middleware;
@@ -46,6 +47,18 @@ public sealed class GlobalExceptionHandler
                 ApplicationErrorCodes.Common.ValidationFailed,
                 "Request validation failed",
                 errors);
+        }
+        else if (exception is BadHttpRequestException { StatusCode: StatusCodes.Status400BadRequest } badRequestEx
+                 && badRequestEx.InnerException is JsonException jsonEx)
+        {
+            var fieldName = jsonEx.Path?.TrimStart('$', '.') ?? "value";
+            error = new ApplicationError(
+                ApplicationErrorCodes.Validation.WrongEnumValue,
+                $"The value provided for '{fieldName}' is not valid",
+                EndpointExtensions.SingleValidationError(
+                    fieldName,
+                    ApplicationErrorCodes.Validation.WrongEnumValue,
+                    $"The value provided for '{fieldName}' is not valid"));
         }
         else if (exception is BadHttpRequestException { StatusCode: StatusCodes.Status400BadRequest })
         {

@@ -12,11 +12,11 @@ using Xunit;
 
 namespace Harmonie.API.IntegrationTests;
 
-public sealed class UpdateMemberRoleTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class UpdateMemberRoleTests : IClassFixture<HarmonieWebApplicationFactory>
 {
     private readonly HttpClient _client;
 
-    public UpdateMemberRoleTests(WebApplicationFactory<Program> factory)
+    public UpdateMemberRoleTests(HarmonieWebApplicationFactory factory)
     {
         _client = factory.CreateClient();
     }
@@ -201,7 +201,7 @@ public sealed class UpdateMemberRoleTests : IClassFixture<WebApplicationFactory<
 
         var error = await updateRoleResponse.Content.ReadFromJsonAsync<ApplicationError>();
         error.Should().NotBeNull();
-        error!.Code.Should().Be(ApplicationErrorCodes.Common.ValidationFailed);
+        error!.Code.Should().Be(ApplicationErrorCodes.Validation.WrongEnumValue);
     }
 
     private async Task<HttpResponseMessage> SendAuthorizedPutRawAsync(

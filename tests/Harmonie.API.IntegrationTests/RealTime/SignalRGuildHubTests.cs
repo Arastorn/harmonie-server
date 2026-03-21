@@ -12,12 +12,12 @@ using Xunit;
 
 namespace Harmonie.API.IntegrationTests;
 
-public sealed class SignalRGuildHubTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class SignalRGuildHubTests : IClassFixture<HarmonieWebApplicationFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly HarmonieWebApplicationFactory _factory;
     private readonly HttpClient _client;
 
-    public SignalRGuildHubTests(WebApplicationFactory<Program> factory)
+    public SignalRGuildHubTests(HarmonieWebApplicationFactory factory)
     {
         _factory = factory;
         _client = factory.CreateClient();
@@ -45,15 +45,18 @@ public sealed class SignalRGuildHubTests : IClassFixture<WebApplicationFactory<P
         inviteResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
         await using var connection = CreateHubConnection(member.AccessToken);
+        var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var eventReceived = new TaskCompletionSource<SignalRGuildDeletedEvent>(
             TaskCreationOptions.RunContinuationsAsynchronously);
 
+        connection.On("Ready", () => ready.TrySetResult());
         connection.On<SignalRGuildDeletedEvent>("GuildDeleted", payload =>
         {
             eventReceived.TrySetResult(payload);
         });
 
         await connection.StartAsync();
+        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5));
 
         var deleteGuildResponse = await _client.SendAuthorizedDeleteAsync(
             $"/api/guilds/{createGuildPayload.GuildId}",

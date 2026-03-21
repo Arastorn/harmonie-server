@@ -11,11 +11,11 @@ using Xunit;
 
 namespace Harmonie.API.IntegrationTests;
 
-public sealed class GuildChannelsTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class GuildChannelsTests : IClassFixture<HarmonieWebApplicationFactory>
 {
     private readonly HttpClient _client;
 
-    public GuildChannelsTests(WebApplicationFactory<Program> factory)
+    public GuildChannelsTests(HarmonieWebApplicationFactory factory)
     {
         _client = factory.CreateClient();
     }
@@ -180,7 +180,7 @@ public sealed class GuildChannelsTests : IClassFixture<WebApplicationFactory<Pro
 
         var error = await createChannelResponse.Content.ReadFromJsonAsync<ApplicationError>();
         error.Should().NotBeNull();
-        error!.Code.Should().Be(ApplicationErrorCodes.Common.ValidationFailed);
+        error!.Code.Should().Be(ApplicationErrorCodes.Validation.WrongEnumValue);
     }
 
     [Fact]
