@@ -60,7 +60,7 @@ public sealed class CreateGuildInviteHandlerTests
     [Fact]
     public async Task HandleAsync_WhenCallerIsNotAdmin_ShouldReturnForbidden()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var callerId = UserId.New();
         var request = new CreateGuildInviteRequest();
 
@@ -78,7 +78,7 @@ public sealed class CreateGuildInviteHandlerTests
     [Fact]
     public async Task HandleAsync_WhenCallerIsNotMember_ShouldReturnForbidden()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var callerId = UserId.New();
         var request = new CreateGuildInviteRequest();
 
@@ -95,7 +95,7 @@ public sealed class CreateGuildInviteHandlerTests
     [Fact]
     public async Task HandleAsync_WithValidRequest_ShouldCreateInvite()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var callerId = UserId.New();
         var request = new CreateGuildInviteRequest(MaxUses: 10, ExpiresInHours: 24);
 
@@ -122,7 +122,7 @@ public sealed class CreateGuildInviteHandlerTests
     [Fact]
     public async Task HandleAsync_WithNoLimits_ShouldCreateUnlimitedInvite()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var callerId = UserId.New();
         var request = new CreateGuildInviteRequest();
 
@@ -138,5 +138,4 @@ public sealed class CreateGuildInviteHandlerTests
         response.Data.ExpiresAtUtc.Should().BeNull();
     }
 
-    private static Guild CreateGuild() => ApplicationTestBuilders.CreateGuild();
 }

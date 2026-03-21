@@ -61,7 +61,7 @@ public sealed class ReorderChannelsHandlerTests
     [Fact]
     public async Task HandleAsync_WhenCallerIsNotMember_ShouldReturnAccessDenied()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var callerId = UserId.New();
 
         _guildRepositoryMock
@@ -79,7 +79,7 @@ public sealed class ReorderChannelsHandlerTests
     [Fact]
     public async Task HandleAsync_WhenCallerIsMemberNotAdmin_ShouldReturnAccessDenied()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var callerId = UserId.New();
 
         _guildRepositoryMock
@@ -97,7 +97,7 @@ public sealed class ReorderChannelsHandlerTests
     [Fact]
     public async Task HandleAsync_WhenChannelNotInGuild_ShouldReturnChannelNotFound()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var adminId = UserId.New();
 
         _guildRepositoryMock
@@ -120,7 +120,7 @@ public sealed class ReorderChannelsHandlerTests
     [Fact]
     public async Task HandleAsync_WhenDuplicateChannelId_ShouldReturnValidationFailed()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var adminId = UserId.New();
         var channel = CreateChannel(guild.Id, "ch1", 0);
 
@@ -147,7 +147,7 @@ public sealed class ReorderChannelsHandlerTests
     [Fact]
     public async Task HandleAsync_WhenAdminReordersChannels_ShouldReturnUpdatedPositions()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var adminId = UserId.New();
         var ch1 = CreateChannel(guild.Id, "ch1", 0);
         var ch2 = CreateChannel(guild.Id, "ch2", 1);
@@ -180,7 +180,7 @@ public sealed class ReorderChannelsHandlerTests
     [Fact]
     public async Task HandleAsync_WhenAdminReordersChannels_ShouldPersistAndCommit()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var adminId = UserId.New();
         var ch1 = CreateChannel(guild.Id, "ch1", 0);
         var ch2 = CreateChannel(guild.Id, "ch2", 1);
@@ -211,7 +211,7 @@ public sealed class ReorderChannelsHandlerTests
     [Fact]
     public async Task HandleAsync_WhenPartialReorder_ShouldOnlyUpdateRequestedChannels()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var adminId = UserId.New();
         var ch1 = CreateChannel(guild.Id, "ch1", 0);
         var ch2 = CreateChannel(guild.Id, "ch2", 1);
@@ -233,9 +233,6 @@ public sealed class ReorderChannelsHandlerTests
             x => x.UpdateAsync(It.IsAny<GuildChannel>(), It.IsAny<CancellationToken>()),
             Times.Once);
     }
-
-    private static Guild CreateGuild()
-        => ApplicationTestBuilders.CreateGuild();
 
     private static GuildChannel CreateChannel(GuildId guildId, string name, int position)
     {

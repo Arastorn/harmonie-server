@@ -28,7 +28,7 @@ public sealed class GetMyProfileHandlerTests
     [Fact]
     public async Task HandleAsync_WhenUserExists_ShouldReturnProfile()
     {
-        var user = CreateUser();
+        var user = ApplicationTestBuilders.CreateUser();
         user.UpdateDisplayName("Alice");
         user.UpdateBio("Hello Harmonie");
         var avatarFileId = UploadedFileId.New();
@@ -73,7 +73,7 @@ public sealed class GetMyProfileHandlerTests
     [Fact]
     public async Task HandleAsync_WhenUserHasAvatarAppearance_ShouldReturnAvatarObject()
     {
-        var user = CreateUser();
+        var user = ApplicationTestBuilders.CreateUser();
         user.UpdateAvatarColor("#FFF4D6");
         user.UpdateAvatarIcon("star");
         user.UpdateAvatarBg("#1F2937");
@@ -95,7 +95,7 @@ public sealed class GetMyProfileHandlerTests
     [Fact]
     public async Task HandleAsync_WhenUserHasThemeAndLanguage_ShouldReturnThem()
     {
-        var user = CreateUser();
+        var user = ApplicationTestBuilders.CreateUser();
         user.UpdateTheme("dark");
         user.UpdateLanguage("fr");
 
@@ -111,5 +111,4 @@ public sealed class GetMyProfileHandlerTests
         response.Data.Language.Should().Be("fr");
     }
 
-    private static Domain.Entities.Users.User CreateUser() => ApplicationTestBuilders.CreateUser();
 }

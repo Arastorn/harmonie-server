@@ -50,7 +50,7 @@ public sealed class ListBansHandlerTests
     [Fact]
     public async Task HandleAsync_WhenCallerIsNotAdmin_ShouldReturnAccessDenied()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var callerId = UserId.New();
 
         _guildRepositoryMock
@@ -66,7 +66,7 @@ public sealed class ListBansHandlerTests
     [Fact]
     public async Task HandleAsync_WhenCallerIsNotMember_ShouldReturnAccessDenied()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var callerId = UserId.New();
 
         _guildRepositoryMock
@@ -83,7 +83,7 @@ public sealed class ListBansHandlerTests
     public async Task HandleAsync_WhenAdminAndNoBans_ShouldReturnEmptyList()
     {
         var ownerId = UserId.New();
-        var guild = CreateGuild(ownerId);
+        var guild = ApplicationTestBuilders.CreateGuild(ownerId);
 
         _guildRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, ownerId, It.IsAny<CancellationToken>()))
@@ -105,7 +105,7 @@ public sealed class ListBansHandlerTests
     public async Task HandleAsync_WhenAdminAndBansExist_ShouldReturnBanList()
     {
         var ownerId = UserId.New();
-        var guild = CreateGuild(ownerId);
+        var guild = ApplicationTestBuilders.CreateGuild(ownerId);
         var bannedUserId = UserId.New();
         var bannedUsername = Username.Create("banneduser")!.Value!;
 
@@ -148,6 +148,4 @@ public sealed class ListBansHandlerTests
         ban.Avatar!.Color.Should().Be("#ff0000");
     }
 
-    private static Guild CreateGuild(UserId? ownerId = null)
-        => ApplicationTestBuilders.CreateGuild(ownerId);
 }

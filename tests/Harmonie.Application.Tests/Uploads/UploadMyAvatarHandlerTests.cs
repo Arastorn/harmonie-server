@@ -75,7 +75,7 @@ public sealed class UploadMyAvatarHandlerTests
     [Fact]
     public async Task HandleAsync_WhenObjectStorageUploadFails_ShouldReturnServiceUnavailable()
     {
-        var user = CreateUser();
+        var user = ApplicationTestBuilders.CreateUser();
 
         _userRepositoryMock
             .Setup(x => x.GetByIdAsync(user.Id, It.IsAny<CancellationToken>()))
@@ -101,7 +101,7 @@ public sealed class UploadMyAvatarHandlerTests
     [Fact]
     public async Task HandleAsync_WithValidRequest_ShouldUploadResizeAndUpdateAvatarFile()
     {
-        var user = CreateUser();
+        var user = ApplicationTestBuilders.CreateUser();
         ObjectStorageUploadRequest? capturedUploadRequest = null;
 
         _userRepositoryMock
@@ -145,7 +145,7 @@ public sealed class UploadMyAvatarHandlerTests
     [Fact]
     public async Task HandleAsync_WhenPersistenceFails_ShouldDeleteUploadedObject()
     {
-        var user = CreateUser();
+        var user = ApplicationTestBuilders.CreateUser();
         string? uploadedStorageKey = null;
 
         _userRepositoryMock
@@ -187,6 +187,4 @@ public sealed class UploadMyAvatarHandlerTests
         return stream;
     }
 
-    private static User CreateUser()
-        => ApplicationTestBuilders.CreateUser();
 }

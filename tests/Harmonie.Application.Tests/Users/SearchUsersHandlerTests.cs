@@ -59,7 +59,7 @@ public sealed class SearchUsersHandlerTests
     {
         var ownerId = UserId.New();
         var currentUserId = UserId.New();
-        var guild = CreateGuild(ownerId);
+        var guild = ApplicationTestBuilders.CreateGuild(ownerId);
 
         _guildRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, currentUserId, It.IsAny<CancellationToken>()))
@@ -82,7 +82,7 @@ public sealed class SearchUsersHandlerTests
     public async Task HandleAsync_WithValidRequest_ShouldReturnMappedUsers()
     {
         var ownerId = UserId.New();
-        var guild = CreateGuild(ownerId);
+        var guild = ApplicationTestBuilders.CreateGuild(ownerId);
         var matchedUser = CreateSearchUser("alice-dev", "Alice Dev", isActive: true);
 
         _guildRepositoryMock
@@ -115,9 +115,6 @@ public sealed class SearchUsersHandlerTests
         response.Data.Users[0].DisplayName.Should().Be("Alice Dev");
         response.Data.Users[0].Status.Should().Be("Active");
     }
-
-    private static Domain.Entities.Guilds.Guild CreateGuild(UserId ownerId)
-        => ApplicationTestBuilders.CreateGuild(ownerId);
 
     private static SearchUserResult CreateSearchUser(string username, string? displayName, bool isActive)
     {

@@ -61,7 +61,7 @@ public sealed class CreateChannelHandlerTests
     [Fact]
     public async Task HandleAsync_WhenCallerIsNotMember_ShouldReturnAccessDenied()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var callerId = UserId.New();
 
         _guildRepositoryMock
@@ -78,7 +78,7 @@ public sealed class CreateChannelHandlerTests
     [Fact]
     public async Task HandleAsync_WhenCallerIsMemberNotAdmin_ShouldReturnAccessDenied()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var callerId = UserId.New();
 
         _guildRepositoryMock
@@ -95,7 +95,7 @@ public sealed class CreateChannelHandlerTests
     [Fact]
     public async Task HandleAsync_WhenNameAlreadyExistsInGuild_ShouldReturnNameConflict()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var adminId = UserId.New();
 
         _guildRepositoryMock
@@ -120,7 +120,7 @@ public sealed class CreateChannelHandlerTests
     [Fact]
     public async Task HandleAsync_WhenAdminCreatesTextChannel_ShouldReturnCreatedChannel()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var adminId = UserId.New();
 
         _guildRepositoryMock
@@ -143,7 +143,7 @@ public sealed class CreateChannelHandlerTests
     [Fact]
     public async Task HandleAsync_WhenAdminCreatesVoiceChannel_ShouldReturnCreatedChannel()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var adminId = UserId.New();
 
         _guildRepositoryMock
@@ -163,7 +163,7 @@ public sealed class CreateChannelHandlerTests
     [Fact]
     public async Task HandleAsync_WhenAdminCreatesChannel_ShouldPersistAndCommit()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var adminId = UserId.New();
 
         _guildRepositoryMock
@@ -181,6 +181,4 @@ public sealed class CreateChannelHandlerTests
             Times.Once);
     }
 
-    private static Guild CreateGuild()
-        => ApplicationTestBuilders.CreateGuild();
 }

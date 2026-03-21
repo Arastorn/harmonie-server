@@ -67,7 +67,7 @@ public sealed class UpdateGuildHandlerTests
     [Fact]
     public async Task HandleAsync_WhenCallerIsMemberNotAdminNorOwner_ShouldReturnAccessDenied()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var callerId = UserId.New();
 
         _guildRepositoryMock
@@ -84,7 +84,7 @@ public sealed class UpdateGuildHandlerTests
     [Fact]
     public async Task HandleAsync_WhenAdminUpdatesGuild_ShouldPersistAndReturnIcon()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var adminId = UserId.New();
 
         _guildRepositoryMock
@@ -132,7 +132,7 @@ public sealed class UpdateGuildHandlerTests
     [Fact]
     public async Task HandleAsync_WhenIconIsCleared_ShouldSetIconPayloadToNull()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         guild.UpdateIconColor("#INITIAL");
         guild.UpdateIconName("shield");
         guild.UpdateIconBg("#000000");
@@ -164,7 +164,7 @@ public sealed class UpdateGuildHandlerTests
     [Fact]
     public async Task HandleAsync_WhenNoFieldsSet_ShouldNotPersist()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var ownerId = guild.OwnerUserId;
 
         _guildRepositoryMock
@@ -186,11 +186,9 @@ public sealed class UpdateGuildHandlerTests
     public async Task HandleAsync_WhenReplacingExistingIconFile_ShouldDeleteOldStoredObject()
     {
         var oldFileId = UploadedFileId.From(Guid.Parse("08f8d69f-5b34-4037-8fb0-ccf6d98af75d"));
-        var guild = CreateGuild(iconFileId: oldFileId);
+        var guild = ApplicationTestBuilders.CreateGuild(iconFileId: oldFileId);
         var ownerId = guild.OwnerUserId;
-        var oldUploadedFile = CreateUploadedFile(
-            "guild-icon-old.png",
-            "guild-icons/old-file.png");
+        var oldUploadedFile = ApplicationTestBuilders.CreateUploadedFile(fileName: "guild-icon-old.png", storageKey: "guild-icons/old-file.png", contentType: "image/png", sizeBytes: 123, purpose: UploadPurpose.GuildIcon);
 
         _guildRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, ownerId, It.IsAny<CancellationToken>()))
@@ -221,11 +219,9 @@ public sealed class UpdateGuildHandlerTests
     public async Task HandleAsync_WhenClearingExistingIconFile_ShouldDeleteOldStoredObject()
     {
         var oldFileId = UploadedFileId.From(Guid.Parse("08f8d69f-5b34-4037-8fb0-ccf6d98af75d"));
-        var guild = CreateGuild(iconFileId: oldFileId);
+        var guild = ApplicationTestBuilders.CreateGuild(iconFileId: oldFileId);
         var ownerId = guild.OwnerUserId;
-        var oldUploadedFile = CreateUploadedFile(
-            "guild-icon-old.png",
-            "guild-icons/old-file.png");
+        var oldUploadedFile = ApplicationTestBuilders.CreateUploadedFile(fileName: "guild-icon-old.png", storageKey: "guild-icons/old-file.png", contentType: "image/png", sizeBytes: 123, purpose: UploadPurpose.GuildIcon);
 
         _guildRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, ownerId, It.IsAny<CancellationToken>()))
@@ -252,14 +248,4 @@ public sealed class UpdateGuildHandlerTests
             Times.Once);
     }
 
-    private static Guild CreateGuild(UploadedFileId? iconFileId = null)
-        => ApplicationTestBuilders.CreateGuild(iconFileId: iconFileId);
-
-    private static UploadedFile CreateUploadedFile(string fileName, string storageKey)
-        => ApplicationTestBuilders.CreateUploadedFile(
-            fileName: fileName,
-            storageKey: storageKey,
-            contentType: "image/png",
-            sizeBytes: 123,
-            purpose: UploadPurpose.GuildIcon);
 }

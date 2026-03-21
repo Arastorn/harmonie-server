@@ -82,7 +82,7 @@ public sealed class SendConversationMessageHandlerTests
         var participantOne = UserId.New();
         var participantTwo = UserId.New();
         var outsider = UserId.New();
-        var conversation = CreateConversation(participantOne, participantTwo);
+        var conversation = ApplicationTestBuilders.CreateConversation(participantOne, participantTwo);
 
         _conversationRepositoryMock
             .Setup(x => x.GetByIdAsync(conversation.Id, It.IsAny<CancellationToken>()))
@@ -102,7 +102,7 @@ public sealed class SendConversationMessageHandlerTests
     [Fact]
     public async Task HandleAsync_WithEmptyContent_ShouldReturnContentEmpty()
     {
-        var conversation = CreateConversation(UserId.New(), UserId.New());
+        var conversation = ApplicationTestBuilders.CreateConversation(UserId.New(), UserId.New());
 
         _conversationRepositoryMock
             .Setup(x => x.GetByIdAsync(conversation.Id, It.IsAny<CancellationToken>()))
@@ -122,7 +122,7 @@ public sealed class SendConversationMessageHandlerTests
     [Fact]
     public async Task HandleAsync_WithValidRequest_ShouldPersistCommitAndNotify()
     {
-        var conversation = CreateConversation(UserId.New(), UserId.New());
+        var conversation = ApplicationTestBuilders.CreateConversation(UserId.New(), UserId.New());
         Message? persistedMessage = null;
 
         _conversationRepositoryMock
@@ -160,8 +160,8 @@ public sealed class SendConversationMessageHandlerTests
     [Fact]
     public async Task HandleAsync_WithOwnedAttachmentFiles_ShouldPersistAttachmentsAndReturnThem()
     {
-        var conversation = CreateConversation(UserId.New(), UserId.New());
-        var attachment = CreateUploadedFile(conversation.User1Id);
+        var conversation = ApplicationTestBuilders.CreateConversation(UserId.New(), UserId.New());
+        var attachment = ApplicationTestBuilders.CreateUploadedFile(uploaderUserId: conversation.User1Id, fileName: "report.pdf", contentType: "application/pdf");
 
         _conversationRepositoryMock
             .Setup(x => x.GetByIdAsync(conversation.Id, It.IsAny<CancellationToken>()))
@@ -194,7 +194,7 @@ public sealed class SendConversationMessageHandlerTests
     [Fact]
     public async Task HandleAsync_WhenNotifierThrows_ShouldStillSucceed()
     {
-        var conversation = CreateConversation(UserId.New(), UserId.New());
+        var conversation = ApplicationTestBuilders.CreateConversation(UserId.New(), UserId.New());
 
         _conversationRepositoryMock
             .Setup(x => x.GetByIdAsync(conversation.Id, It.IsAny<CancellationToken>()))
@@ -220,9 +220,4 @@ public sealed class SendConversationMessageHandlerTests
         _transactionMock.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    private static Conversation CreateConversation(UserId user1Id, UserId user2Id)
-        => ApplicationTestBuilders.CreateConversation(user1Id, user2Id);
-
-    private static UploadedFile CreateUploadedFile(UserId uploaderUserId)
-        => ApplicationTestBuilders.CreateUploadedFile(uploaderUserId: uploaderUserId, fileName: "report.pdf", contentType: "application/pdf");
 }

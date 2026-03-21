@@ -49,7 +49,7 @@ public sealed class GetGuildMembersHandlerTests
     [Fact]
     public async Task HandleAsync_WhenRequesterIsNotMember_ShouldReturnAccessDenied()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var requesterUserId = UserId.New();
 
         _guildRepositoryMock
@@ -66,7 +66,7 @@ public sealed class GetGuildMembersHandlerTests
     [Fact]
     public async Task HandleAsync_WhenRequesterIsMember_ShouldReturnGuildMembers()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var requesterUserId = UserId.New();
         var adminUser = CreateMemberUser(GuildRole.Admin, "owner", displayName: "Owner");
         var memberUser = CreateMemberUser(GuildRole.Member, "member", displayName: null);
@@ -91,8 +91,6 @@ public sealed class GetGuildMembersHandlerTests
         response.Data.Members[1].Role.Should().Be("Member");
         response.Data.Members[1].DisplayName.Should().BeNull();
     }
-
-    private static Guild CreateGuild() => ApplicationTestBuilders.CreateGuild();
 
     private static GuildMemberUser CreateMemberUser(
         GuildRole role,

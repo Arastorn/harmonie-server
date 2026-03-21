@@ -50,7 +50,7 @@ public sealed class GetMessagesHandlerTests
     [Fact]
     public async Task HandleAsync_WhenChannelIsVoice_ShouldReturnNotText()
     {
-        var channel = CreateChannel(GuildChannelType.Voice);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Voice);
         var userId = UserId.New();
 
         _guildChannelRepositoryMock
@@ -70,7 +70,7 @@ public sealed class GetMessagesHandlerTests
     [Fact]
     public async Task HandleAsync_WhenUserIsNotMember_ShouldReturnAccessDenied()
     {
-        var channel = CreateChannel(GuildChannelType.Text);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);
         var userId = UserId.New();
 
         _guildChannelRepositoryMock
@@ -90,15 +90,15 @@ public sealed class GetMessagesHandlerTests
     [Fact]
     public async Task HandleAsync_WithValidRequest_ShouldReturnMessagesAscending()
     {
-        var channel = CreateChannel(GuildChannelType.Text);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);
         var userId = UserId.New();
 
         _guildChannelRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(channel.Id, userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ChannelAccessContext(channel, GuildRole.Member));
 
-        var first = CreateMessage(channel.Id, userId, "First", DateTime.UtcNow.AddMinutes(-2));
-        var second = CreateMessage(channel.Id, userId, "Second", DateTime.UtcNow.AddMinutes(-1));
+        var first = ApplicationTestBuilders.CreateChannelMessage(channel.Id, userId, content: "First", createdAtUtc: DateTime.UtcNow.AddMinutes(-2));
+        var second = ApplicationTestBuilders.CreateChannelMessage(channel.Id, userId, content: "Second", createdAtUtc: DateTime.UtcNow.AddMinutes(-1));
         var nextCursor = new MessageCursor(first.CreatedAtUtc, first.Id);
 
         _channelMessageRepositoryMock
@@ -129,13 +129,4 @@ public sealed class GetMessagesHandlerTests
         response.Data.NextCursor.Should().NotBeNullOrEmpty();
     }
 
-    private static GuildChannel CreateChannel(GuildChannelType type)
-        => ApplicationTestBuilders.CreateChannel(type);
-
-    private static Message CreateMessage(
-        GuildChannelId channelId,
-        UserId authorUserId,
-        string content,
-        DateTime createdAtUtc)
-        => ApplicationTestBuilders.CreateChannelMessage(channelId, authorUserId, content: content, createdAtUtc: createdAtUtc);
 }

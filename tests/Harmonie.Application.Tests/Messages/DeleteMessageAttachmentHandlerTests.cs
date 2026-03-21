@@ -77,11 +77,11 @@ public sealed class DeleteMessageAttachmentHandlerTests
     [Fact]
     public async Task HandleAsync_WhenCallerIsNotAuthor_ShouldReturnDeleteForbidden()
     {
-        var channel = CreateChannel();
+        var channel = ApplicationTestBuilders.CreateChannel();
         var callerId = UserId.New();
         var authorId = UserId.New();
         var attachmentId = UploadedFileId.New();
-        var message = CreateMessage(channel.Id, authorId, attachmentId);
+        var message = ApplicationTestBuilders.CreateChannelMessage(channel.Id, authorId, content: "hello", attachments: [new MessageAttachment(attachmentId, "notes.txt", "text/plain", 12)]);
 
         _guildChannelRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(channel.Id, callerId, It.IsAny<CancellationToken>()))
@@ -101,10 +101,11 @@ public sealed class DeleteMessageAttachmentHandlerTests
     [Fact]
     public async Task HandleAsync_WhenAttachmentIsNotOnMessage_ShouldReturnAttachmentNotFound()
     {
-        var channel = CreateChannel();
+        var channel = ApplicationTestBuilders.CreateChannel();
         var authorId = UserId.New();
         var attachmentId = UploadedFileId.New();
-        var message = CreateMessage(channel.Id, authorId, UploadedFileId.New());
+        var otherAttachmentId = UploadedFileId.New();
+        var message = ApplicationTestBuilders.CreateChannelMessage(channel.Id, authorId, content: "hello", attachments: [new MessageAttachment(otherAttachmentId, "notes.txt", "text/plain", 12)]);
 
         _guildChannelRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(channel.Id, authorId, It.IsAny<CancellationToken>()))
@@ -124,11 +125,11 @@ public sealed class DeleteMessageAttachmentHandlerTests
     [Fact]
     public async Task HandleAsync_WhenAuthorDeletesAttachment_ShouldRemoveReferenceCommitAndCleanupFile()
     {
-        var channel = CreateChannel();
+        var channel = ApplicationTestBuilders.CreateChannel();
         var authorId = UserId.New();
         var attachmentId = UploadedFileId.New();
-        var message = CreateMessage(channel.Id, authorId, attachmentId);
-        var uploadedFile = CreateUploadedFile(attachmentId, authorId);
+        var message = ApplicationTestBuilders.CreateChannelMessage(channel.Id, authorId, content: "hello", attachments: [new MessageAttachment(attachmentId, "notes.txt", "text/plain", 12)]);
+        var uploadedFile = ApplicationTestBuilders.CreateUploadedFile(id: attachmentId, uploaderUserId: authorId, fileName: "notes.txt", contentType: "text/plain", sizeBytes: 12, storageKey: "attachments/file.txt");
         var sequence = new MockSequence();
 
         _guildChannelRepositoryMock
@@ -190,25 +191,4 @@ public sealed class DeleteMessageAttachmentHandlerTests
             Times.Once);
     }
 
-    private static GuildChannel CreateChannel(GuildChannelType type = GuildChannelType.Text)
-        => ApplicationTestBuilders.CreateChannel(type);
-
-    private static Message CreateMessage(
-        GuildChannelId channelId,
-        UserId authorId,
-        UploadedFileId attachmentId)
-        => ApplicationTestBuilders.CreateChannelMessage(
-            channelId,
-            authorId,
-            content: "hello",
-            attachments: [new MessageAttachment(attachmentId, "notes.txt", "text/plain", 12)]);
-
-    private static UploadedFile CreateUploadedFile(UploadedFileId attachmentId, UserId uploaderUserId)
-        => ApplicationTestBuilders.CreateUploadedFile(
-            id: attachmentId,
-            uploaderUserId: uploaderUserId,
-            fileName: "notes.txt",
-            contentType: "text/plain",
-            sizeBytes: 12,
-            storageKey: "attachments/file.txt");
 }

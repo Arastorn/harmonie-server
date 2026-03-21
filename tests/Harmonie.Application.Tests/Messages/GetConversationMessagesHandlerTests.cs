@@ -72,7 +72,7 @@ public sealed class GetConversationMessagesHandlerTests
         var participantOne = UserId.New();
         var participantTwo = UserId.New();
         var outsider = UserId.New();
-        var conversation = CreateConversation(participantOne, participantTwo);
+        var conversation = ApplicationTestBuilders.CreateConversation(participantOne, participantTwo);
 
         _conversationRepositoryMock
             .Setup(x => x.GetByIdAsync(conversation.Id, It.IsAny<CancellationToken>()))
@@ -93,9 +93,9 @@ public sealed class GetConversationMessagesHandlerTests
     {
         var participantOne = UserId.New();
         var participantTwo = UserId.New();
-        var conversation = CreateConversation(participantOne, participantTwo);
-        var first = CreateConversationMessage(conversation.Id, participantOne, "First", DateTime.UtcNow.AddMinutes(-2));
-        var second = CreateConversationMessage(conversation.Id, participantTwo, "Second", DateTime.UtcNow.AddMinutes(-1));
+        var conversation = ApplicationTestBuilders.CreateConversation(participantOne, participantTwo);
+        var first = ApplicationTestBuilders.CreateConversationMessage(conversation.Id, participantOne, content: "First", createdAtUtc: DateTime.UtcNow.AddMinutes(-2));
+        var second = ApplicationTestBuilders.CreateConversationMessage(conversation.Id, participantTwo, content: "Second", createdAtUtc: DateTime.UtcNow.AddMinutes(-1));
         var nextCursor = new MessageCursor(first.CreatedAtUtc, first.Id);
 
         _conversationRepositoryMock
@@ -130,13 +130,4 @@ public sealed class GetConversationMessagesHandlerTests
         response.Data.NextCursor.Should().NotBeNullOrEmpty();
     }
 
-    private static Conversation CreateConversation(UserId user1Id, UserId user2Id)
-        => ApplicationTestBuilders.CreateConversation(user1Id, user2Id);
-
-    private static Message CreateConversationMessage(
-        ConversationId conversationId,
-        UserId authorUserId,
-        string content,
-        DateTime createdAtUtc)
-        => ApplicationTestBuilders.CreateConversationMessage(conversationId, authorUserId, content: content, createdAtUtc: createdAtUtc);
 }

@@ -60,7 +60,7 @@ public sealed class SearchConversationMessagesHandlerTests
         var user1 = UserId.New();
         var user2 = UserId.New();
         var outsider = UserId.New();
-        var conversation = CreateConversation(user1, user2);
+        var conversation = ApplicationTestBuilders.CreateConversation(user1, user2);
 
         _conversationRepositoryMock
             .Setup(x => x.GetByIdAsync(conversation.Id, It.IsAny<CancellationToken>()))
@@ -81,7 +81,7 @@ public sealed class SearchConversationMessagesHandlerTests
     {
         var user1 = UserId.New();
         var user2 = UserId.New();
-        var conversation = CreateConversation(user1, user2);
+        var conversation = ApplicationTestBuilders.CreateConversation(user1, user2);
         var before = new DateTime(2026, 3, 8, 12, 0, 0, DateTimeKind.Utc);
         var after = before.AddHours(-2);
         var item = CreateSearchItem(
@@ -126,9 +126,6 @@ public sealed class SearchConversationMessagesHandlerTests
         response.Data.Items[0].Attachments.Should().BeEmpty();
         response.Data.NextCursor.Should().NotBeNullOrWhiteSpace();
     }
-
-    private static Conversation CreateConversation(UserId user1Id, UserId user2Id)
-        => ApplicationTestBuilders.CreateConversation(user1Id, user2Id);
 
     private static SearchConversationMessagesItem CreateSearchItem(
         UserId authorUserId,

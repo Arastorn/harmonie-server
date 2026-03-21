@@ -91,7 +91,7 @@ public sealed class EditConversationMessageHandlerTests
         var participantOne = UserId.New();
         var participantTwo = UserId.New();
         var outsider = UserId.New();
-        var conversation = CreateConversation(participantOne, participantTwo);
+        var conversation = ApplicationTestBuilders.CreateConversation(participantOne, participantTwo);
 
         _conversationRepositoryMock
             .Setup(x => x.GetByIdAsync(conversation.Id, It.IsAny<CancellationToken>()))
@@ -114,7 +114,7 @@ public sealed class EditConversationMessageHandlerTests
     {
         var participantOne = UserId.New();
         var participantTwo = UserId.New();
-        var conversation = CreateConversation(participantOne, participantTwo);
+        var conversation = ApplicationTestBuilders.CreateConversation(participantOne, participantTwo);
         var messageId = MessageId.New();
 
         _conversationRepositoryMock
@@ -142,9 +142,9 @@ public sealed class EditConversationMessageHandlerTests
     {
         var participantOne = UserId.New();
         var participantTwo = UserId.New();
-        var conversation = CreateConversation(participantOne, participantTwo);
+        var conversation = ApplicationTestBuilders.CreateConversation(participantOne, participantTwo);
         var messageId = MessageId.New();
-        var messageFromOtherConversation = CreateConversationMessage(ConversationId.New(), participantOne);
+        var messageFromOtherConversation = ApplicationTestBuilders.CreateConversationMessage(ConversationId.New(), participantOne);
 
         _conversationRepositoryMock
             .Setup(x => x.GetByIdAsync(conversation.Id, It.IsAny<CancellationToken>()))
@@ -171,9 +171,9 @@ public sealed class EditConversationMessageHandlerTests
     {
         var participantOne = UserId.New();
         var participantTwo = UserId.New();
-        var conversation = CreateConversation(participantOne, participantTwo);
+        var conversation = ApplicationTestBuilders.CreateConversation(participantOne, participantTwo);
         var messageId = MessageId.New();
-        var message = CreateConversationMessage(conversation.Id, participantTwo);
+        var message = ApplicationTestBuilders.CreateConversationMessage(conversation.Id, participantTwo);
 
         _conversationRepositoryMock
             .Setup(x => x.GetByIdAsync(conversation.Id, It.IsAny<CancellationToken>()))
@@ -200,9 +200,9 @@ public sealed class EditConversationMessageHandlerTests
     {
         var participantOne = UserId.New();
         var participantTwo = UserId.New();
-        var conversation = CreateConversation(participantOne, participantTwo);
+        var conversation = ApplicationTestBuilders.CreateConversation(participantOne, participantTwo);
         var messageId = MessageId.New();
-        var message = CreateConversationMessage(conversation.Id, participantOne);
+        var message = ApplicationTestBuilders.CreateConversationMessage(conversation.Id, participantOne);
 
         _conversationRepositoryMock
             .Setup(x => x.GetByIdAsync(conversation.Id, It.IsAny<CancellationToken>()))
@@ -232,9 +232,9 @@ public sealed class EditConversationMessageHandlerTests
     {
         var participantOne = UserId.New();
         var participantTwo = UserId.New();
-        var conversation = CreateConversation(participantOne, participantTwo);
+        var conversation = ApplicationTestBuilders.CreateConversation(participantOne, participantTwo);
         var messageId = MessageId.New();
-        var message = CreateConversationMessage(conversation.Id, participantOne);
+        var message = ApplicationTestBuilders.CreateConversationMessage(conversation.Id, participantOne);
 
         _conversationRepositoryMock
             .Setup(x => x.GetByIdAsync(conversation.Id, It.IsAny<CancellationToken>()))
@@ -275,9 +275,9 @@ public sealed class EditConversationMessageHandlerTests
     {
         var participantOne = UserId.New();
         var participantTwo = UserId.New();
-        var conversation = CreateConversation(participantOne, participantTwo);
+        var conversation = ApplicationTestBuilders.CreateConversation(participantOne, participantTwo);
         var messageId = MessageId.New();
-        var message = CreateConversationMessage(conversation.Id, participantOne);
+        var message = ApplicationTestBuilders.CreateConversationMessage(conversation.Id, participantOne);
 
         _conversationRepositoryMock
             .Setup(x => x.GetByIdAsync(conversation.Id, It.IsAny<CancellationToken>()))
@@ -304,9 +304,4 @@ public sealed class EditConversationMessageHandlerTests
         _transactionMock.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    private static Conversation CreateConversation(UserId user1Id, UserId user2Id)
-        => ApplicationTestBuilders.CreateConversation(user1Id, user2Id);
-
-    private static Message CreateConversationMessage(ConversationId conversationId, UserId authorUserId)
-        => ApplicationTestBuilders.CreateConversationMessage(conversationId, authorUserId);
 }

@@ -73,7 +73,7 @@ public sealed class RemoveChannelReactionHandlerTests
     [Fact]
     public async Task HandleAsync_WhenChannelIsVoice_ShouldReturnChannelNotText()
     {
-        var channel = CreateChannel(GuildChannelType.Voice);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Voice);
         var callerId = UserId.New();
 
         _guildChannelRepositoryMock
@@ -90,7 +90,7 @@ public sealed class RemoveChannelReactionHandlerTests
     [Fact]
     public async Task HandleAsync_WhenCallerIsNotMember_ShouldReturnChannelAccessDenied()
     {
-        var channel = CreateChannel(GuildChannelType.Text);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);
         var callerId = UserId.New();
 
         _guildChannelRepositoryMock
@@ -107,7 +107,7 @@ public sealed class RemoveChannelReactionHandlerTests
     [Fact]
     public async Task HandleAsync_WhenMessageDoesNotExist_ShouldReturnReactionMessageNotFound()
     {
-        var channel = CreateChannel(GuildChannelType.Text);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);
         var callerId = UserId.New();
         var messageId = MessageId.New();
 
@@ -129,10 +129,10 @@ public sealed class RemoveChannelReactionHandlerTests
     [Fact]
     public async Task HandleAsync_WhenMessageBelongsToAnotherChannel_ShouldReturnReactionMessageNotFound()
     {
-        var channel = CreateChannel(GuildChannelType.Text);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);
         var callerId = UserId.New();
         var messageId = MessageId.New();
-        var messageFromOtherChannel = CreateMessage(GuildChannelId.New(), callerId);
+        var messageFromOtherChannel = ApplicationTestBuilders.CreateChannelMessage(GuildChannelId.New(), callerId, content: "original content");
 
         _guildChannelRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(channel.Id, callerId, It.IsAny<CancellationToken>()))
@@ -152,10 +152,10 @@ public sealed class RemoveChannelReactionHandlerTests
     [Fact]
     public async Task HandleAsync_WhenMemberRemovesReaction_ShouldReturnSuccess()
     {
-        var channel = CreateChannel(GuildChannelType.Text);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);
         var callerId = UserId.New();
         var messageId = MessageId.New();
-        var message = CreateMessage(channel.Id, callerId);
+        var message = ApplicationTestBuilders.CreateChannelMessage(channel.Id, callerId, content: "original content");
 
         _guildChannelRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(channel.Id, callerId, It.IsAny<CancellationToken>()))
@@ -174,10 +174,10 @@ public sealed class RemoveChannelReactionHandlerTests
     [Fact]
     public async Task HandleAsync_WhenMemberRemovesReaction_ShouldDeleteCommitAndNotify()
     {
-        var channel = CreateChannel(GuildChannelType.Text);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);
         var callerId = UserId.New();
         var messageId = MessageId.New();
-        var message = CreateMessage(channel.Id, callerId);
+        var message = ApplicationTestBuilders.CreateChannelMessage(channel.Id, callerId, content: "original content");
 
         _guildChannelRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(channel.Id, callerId, It.IsAny<CancellationToken>()))
@@ -212,10 +212,10 @@ public sealed class RemoveChannelReactionHandlerTests
     [Fact]
     public async Task HandleAsync_WhenNotifierThrows_ShouldStillSucceed()
     {
-        var channel = CreateChannel(GuildChannelType.Text);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);
         var callerId = UserId.New();
         var messageId = MessageId.New();
-        var message = CreateMessage(channel.Id, callerId);
+        var message = ApplicationTestBuilders.CreateChannelMessage(channel.Id, callerId, content: "original content");
 
         _guildChannelRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(channel.Id, callerId, It.IsAny<CancellationToken>()))
@@ -235,9 +235,4 @@ public sealed class RemoveChannelReactionHandlerTests
         _transactionMock.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    private static GuildChannel CreateChannel(GuildChannelType type)
-        => ApplicationTestBuilders.CreateChannel(type);
-
-    private static Message CreateMessage(GuildChannelId channelId, UserId authorId)
-        => ApplicationTestBuilders.CreateChannelMessage(channelId, authorId, content: "original content");
 }

@@ -72,7 +72,7 @@ public sealed class UploadFileHandlerTests
     [Fact]
     public async Task HandleAsync_WhenObjectStorageUploadFails_ShouldReturnServiceUnavailable()
     {
-        var user = CreateUser();
+        var user = ApplicationTestBuilders.CreateUser();
 
         _userRepositoryMock
             .Setup(x => x.GetByIdAsync(user.Id, It.IsAny<CancellationToken>()))
@@ -101,7 +101,7 @@ public sealed class UploadFileHandlerTests
     [Fact]
     public async Task HandleAsync_WithValidRequest_ShouldUploadPersistAndCommit()
     {
-        var user = CreateUser();
+        var user = ApplicationTestBuilders.CreateUser();
         UploadedFile? persistedFile = null;
 
         _userRepositoryMock
@@ -141,7 +141,7 @@ public sealed class UploadFileHandlerTests
     [Fact]
     public async Task HandleAsync_WhenPersistenceFails_ShouldDeleteUploadedObject()
     {
-        var user = CreateUser();
+        var user = ApplicationTestBuilders.CreateUser();
         string? uploadedStorageKey = null;
 
         _userRepositoryMock
@@ -177,6 +177,4 @@ public sealed class UploadFileHandlerTests
     private static MemoryStream CreateStream(string content)
         => new(System.Text.Encoding.UTF8.GetBytes(content));
 
-    private static User CreateUser()
-        => ApplicationTestBuilders.CreateUser();
 }

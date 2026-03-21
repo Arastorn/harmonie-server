@@ -89,7 +89,7 @@ public sealed class EditMessageHandlerTests
     [Fact]
     public async Task HandleAsync_WhenChannelIsVoice_ShouldReturnChannelNotText()
     {
-        var channel = CreateChannel(GuildChannelType.Voice);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Voice);
         var callerId = UserId.New();
 
         _guildChannelRepositoryMock
@@ -111,7 +111,7 @@ public sealed class EditMessageHandlerTests
     [Fact]
     public async Task HandleAsync_WhenCallerIsNotMember_ShouldReturnChannelAccessDenied()
     {
-        var channel = CreateChannel(GuildChannelType.Text);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);
         var callerId = UserId.New();
 
         _guildChannelRepositoryMock
@@ -133,7 +133,7 @@ public sealed class EditMessageHandlerTests
     [Fact]
     public async Task HandleAsync_WhenMessageDoesNotExist_ShouldReturnMessageNotFound()
     {
-        var channel = CreateChannel(GuildChannelType.Text);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);
         var callerId = UserId.New();
         var messageId = MessageId.New();
 
@@ -160,10 +160,10 @@ public sealed class EditMessageHandlerTests
     [Fact]
     public async Task HandleAsync_WhenMessageBelongsToAnotherChannel_ShouldReturnMessageNotFound()
     {
-        var channel = CreateChannel(GuildChannelType.Text);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);
         var callerId = UserId.New();
         var messageId = MessageId.New();
-        var messageFromOtherChannel = CreateMessage(GuildChannelId.New(), callerId);
+        var messageFromOtherChannel = ApplicationTestBuilders.CreateChannelMessage(GuildChannelId.New(), callerId, content: "original content");
 
         _guildChannelRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(channel.Id, callerId, It.IsAny<CancellationToken>()))
@@ -188,11 +188,11 @@ public sealed class EditMessageHandlerTests
     [Fact]
     public async Task HandleAsync_WhenCallerIsNotAuthor_ShouldReturnEditForbidden()
     {
-        var channel = CreateChannel(GuildChannelType.Text);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);
         var callerId = UserId.New();
         var authorId = UserId.New();
         var messageId = MessageId.New();
-        var message = CreateMessage(channel.Id, authorId);
+        var message = ApplicationTestBuilders.CreateChannelMessage(channel.Id, authorId, content: "original content");
 
         _guildChannelRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(channel.Id, callerId, It.IsAny<CancellationToken>()))
@@ -217,10 +217,10 @@ public sealed class EditMessageHandlerTests
     [Fact]
     public async Task HandleAsync_WhenAuthorEditsOwnMessage_ShouldReturnUpdatedMessage()
     {
-        var channel = CreateChannel(GuildChannelType.Text);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);
         var authorId = UserId.New();
         var messageId = MessageId.New();
-        var message = CreateMessage(channel.Id, authorId);
+        var message = ApplicationTestBuilders.CreateChannelMessage(channel.Id, authorId, content: "original content");
 
         _guildChannelRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(channel.Id, authorId, It.IsAny<CancellationToken>()))
@@ -247,10 +247,10 @@ public sealed class EditMessageHandlerTests
     [Fact]
     public async Task HandleAsync_WhenAuthorEditsOwnMessage_ShouldPersistAndCommit()
     {
-        var channel = CreateChannel(GuildChannelType.Text);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);
         var authorId = UserId.New();
         var messageId = MessageId.New();
-        var message = CreateMessage(channel.Id, authorId);
+        var message = ApplicationTestBuilders.CreateChannelMessage(channel.Id, authorId, content: "original content");
 
         _guildChannelRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(channel.Id, authorId, It.IsAny<CancellationToken>()))
@@ -278,10 +278,10 @@ public sealed class EditMessageHandlerTests
     [Fact]
     public async Task HandleAsync_WhenAuthorEditsOwnMessage_ShouldNotifyMessageUpdated()
     {
-        var channel = CreateChannel(GuildChannelType.Text);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);
         var authorId = UserId.New();
         var messageId = MessageId.New();
-        var message = CreateMessage(channel.Id, authorId);
+        var message = ApplicationTestBuilders.CreateChannelMessage(channel.Id, authorId, content: "original content");
 
         _guildChannelRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(channel.Id, authorId, It.IsAny<CancellationToken>()))
@@ -311,10 +311,10 @@ public sealed class EditMessageHandlerTests
     [Fact]
     public async Task HandleAsync_WhenNotifierThrows_ShouldStillSucceed()
     {
-        var channel = CreateChannel(GuildChannelType.Text);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);
         var authorId = UserId.New();
         var messageId = MessageId.New();
-        var message = CreateMessage(channel.Id, authorId);
+        var message = ApplicationTestBuilders.CreateChannelMessage(channel.Id, authorId, content: "original content");
 
         _guildChannelRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(channel.Id, authorId, It.IsAny<CancellationToken>()))
@@ -337,9 +337,4 @@ public sealed class EditMessageHandlerTests
         response.Success.Should().BeTrue();
     }
 
-    private static GuildChannel CreateChannel(GuildChannelType type)
-        => ApplicationTestBuilders.CreateChannel(type);
-
-    private static Message CreateMessage(GuildChannelId channelId, UserId authorId)
-        => ApplicationTestBuilders.CreateChannelMessage(channelId, authorId, content: "original content");
 }

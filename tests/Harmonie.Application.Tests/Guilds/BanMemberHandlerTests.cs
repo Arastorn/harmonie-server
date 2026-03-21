@@ -67,7 +67,7 @@ public sealed class BanMemberHandlerTests
     [Fact]
     public async Task HandleAsync_WhenCallerIsNotAdmin_ShouldReturnAccessDenied()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var callerId = UserId.New();
         var targetId = UserId.New();
 
@@ -85,7 +85,7 @@ public sealed class BanMemberHandlerTests
     public async Task HandleAsync_WhenBanSelf_ShouldReturnCannotBanSelf()
     {
         var ownerId = UserId.New();
-        var guild = CreateGuild(ownerId);
+        var guild = ApplicationTestBuilders.CreateGuild(ownerId);
 
         _guildRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, ownerId, It.IsAny<CancellationToken>()))
@@ -102,7 +102,7 @@ public sealed class BanMemberHandlerTests
     {
         var ownerId = UserId.New();
         var callerId = UserId.New();
-        var guild = CreateGuild(ownerId);
+        var guild = ApplicationTestBuilders.CreateGuild(ownerId);
 
         _guildRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, callerId, It.IsAny<CancellationToken>()))
@@ -120,7 +120,7 @@ public sealed class BanMemberHandlerTests
         var ownerId = UserId.New();
         var callerId = UserId.New();
         var targetId = UserId.New();
-        var guild = CreateGuild(ownerId);
+        var guild = ApplicationTestBuilders.CreateGuild(ownerId);
 
         _guildRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, callerId, It.IsAny<CancellationToken>()))
@@ -141,7 +141,7 @@ public sealed class BanMemberHandlerTests
     {
         var ownerId = UserId.New();
         var targetId = UserId.New();
-        var guild = CreateGuild(ownerId);
+        var guild = ApplicationTestBuilders.CreateGuild(ownerId);
 
         _guildRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, ownerId, It.IsAny<CancellationToken>()))
@@ -171,7 +171,7 @@ public sealed class BanMemberHandlerTests
     {
         var ownerId = UserId.New();
         var targetId = UserId.New();
-        var guild = CreateGuild(ownerId);
+        var guild = ApplicationTestBuilders.CreateGuild(ownerId);
 
         _guildRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, ownerId, It.IsAny<CancellationToken>()))
@@ -196,7 +196,7 @@ public sealed class BanMemberHandlerTests
     {
         var ownerId = UserId.New();
         var targetId = UserId.New();
-        var guild = CreateGuild(ownerId);
+        var guild = ApplicationTestBuilders.CreateGuild(ownerId);
 
         _guildRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, ownerId, It.IsAny<CancellationToken>()))
@@ -232,7 +232,7 @@ public sealed class BanMemberHandlerTests
     {
         var ownerId = UserId.New();
         var targetId = UserId.New();
-        var guild = CreateGuild(ownerId);
+        var guild = ApplicationTestBuilders.CreateGuild(ownerId);
 
         _guildRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, ownerId, It.IsAny<CancellationToken>()))
@@ -260,7 +260,7 @@ public sealed class BanMemberHandlerTests
     {
         var ownerId = UserId.New();
         var targetId = UserId.New();
-        var guild = CreateGuild(ownerId);
+        var guild = ApplicationTestBuilders.CreateGuild(ownerId);
 
         _guildRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, ownerId, It.IsAny<CancellationToken>()))
@@ -292,7 +292,7 @@ public sealed class BanMemberHandlerTests
     {
         var ownerId = UserId.New();
         var targetId = UserId.New();
-        var guild = CreateGuild(ownerId);
+        var guild = ApplicationTestBuilders.CreateGuild(ownerId);
 
         _guildRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, ownerId, It.IsAny<CancellationToken>()))
@@ -316,6 +316,4 @@ public sealed class BanMemberHandlerTests
             Times.Never);
     }
 
-    private static Guild CreateGuild(UserId? ownerId = null)
-        => ApplicationTestBuilders.CreateGuild(ownerId);
 }

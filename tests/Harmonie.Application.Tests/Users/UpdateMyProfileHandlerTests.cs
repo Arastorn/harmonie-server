@@ -38,7 +38,7 @@ public sealed class UpdateMyProfileHandlerTests
     [Fact]
     public async Task HandleAsync_WhenUserExistsAndRequestIsPartial_ShouldUpdateOnlyProvidedField()
     {
-        var user = CreateUser();
+        var user = ApplicationTestBuilders.CreateUser();
         user.UpdateDisplayName("Initial Name");
         user.UpdateBio("Initial bio");
         var avatarFileId = UploadedFileId.New();
@@ -79,7 +79,7 @@ public sealed class UpdateMyProfileHandlerTests
     [Fact]
     public async Task HandleAsync_WhenFieldIsExplicitlyNull_ShouldResetToNull()
     {
-        var user = CreateUser();
+        var user = ApplicationTestBuilders.CreateUser();
         user.UpdateDisplayName("Alice");
         user.UpdateBio("Existing bio");
         user.UpdateAvatarFile(UploadedFileId.New());
@@ -121,7 +121,7 @@ public sealed class UpdateMyProfileHandlerTests
     [Fact]
     public async Task HandleAsync_WhenDomainInvariantFails_ShouldReturnStableValidationFailure()
     {
-        var user = CreateUser();
+        var user = ApplicationTestBuilders.CreateUser();
         var request = new UpdateMyProfileRequest
         {
             DisplayName = new string('x', 101),
@@ -179,7 +179,7 @@ public sealed class UpdateMyProfileHandlerTests
     [Fact]
     public async Task HandleAsync_WhenThemeIsSet_ShouldUpdateTheme()
     {
-        var user = CreateUser();
+        var user = ApplicationTestBuilders.CreateUser();
         var request = new UpdateMyProfileRequest
         {
             Theme = "dark",
@@ -208,7 +208,7 @@ public sealed class UpdateMyProfileHandlerTests
     [Fact]
     public async Task HandleAsync_WhenLanguageIsExplicitlyNull_ShouldClearLanguage()
     {
-        var user = CreateUser();
+        var user = ApplicationTestBuilders.CreateUser();
         user.UpdateLanguage("fr");
 
         var request = new UpdateMyProfileRequest
@@ -231,7 +231,7 @@ public sealed class UpdateMyProfileHandlerTests
     [Fact]
     public async Task HandleAsync_WhenAvatarAppearanceIsSet_ShouldUpdateAvatarFields()
     {
-        var user = CreateUser();
+        var user = ApplicationTestBuilders.CreateUser();
         var request = new UpdateMyProfileRequest
         {
             AvatarIsSet = true,
@@ -260,7 +260,7 @@ public sealed class UpdateMyProfileHandlerTests
     [Fact]
     public async Task HandleAsync_WhenAvatarAppearanceIsPartial_ShouldOnlyUpdateProvidedSubFields()
     {
-        var user = CreateUser();
+        var user = ApplicationTestBuilders.CreateUser();
         user.UpdateAvatarColor("#INITIAL");
         user.UpdateAvatarIcon("heart");
         user.UpdateAvatarBg("#000000");
@@ -301,7 +301,7 @@ public sealed class UpdateMyProfileHandlerTests
     [Fact]
     public async Task HandleAsync_WhenNoFieldIsSet_ShouldNotCallRepository()
     {
-        var user = CreateUser();
+        var user = ApplicationTestBuilders.CreateUser();
         var request = new UpdateMyProfileRequest();
 
         _userRepositoryMock
@@ -322,7 +322,7 @@ public sealed class UpdateMyProfileHandlerTests
     [Fact]
     public async Task HandleAsync_WhenAllAvatarFieldsAreNull_ShouldReturnNullAvatar()
     {
-        var user = CreateUser();
+        var user = ApplicationTestBuilders.CreateUser();
         var request = new UpdateMyProfileRequest();
 
         _userRepositoryMock
@@ -338,5 +338,4 @@ public sealed class UpdateMyProfileHandlerTests
         response.Data.Language.Should().BeNull();
     }
 
-    private static Domain.Entities.Users.User CreateUser() => ApplicationTestBuilders.CreateUser();
 }

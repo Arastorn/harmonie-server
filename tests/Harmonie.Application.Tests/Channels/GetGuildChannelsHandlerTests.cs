@@ -51,7 +51,7 @@ public sealed class GetGuildChannelsHandlerTests
     [Fact]
     public async Task HandleAsync_WhenUserIsNotMember_ShouldReturnAccessDenied()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var userId = UserId.New();
 
         _guildRepositoryMock
@@ -68,7 +68,7 @@ public sealed class GetGuildChannelsHandlerTests
     [Fact]
     public async Task HandleAsync_WithValidMember_ShouldReturnChannels()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var userId = UserId.New();
         var textChannel = CreateChannel(guild.Id, "general", GuildChannelType.Text, true, 0);
         var voiceChannel = CreateChannel(guild.Id, "General Voice", GuildChannelType.Voice, true, 1);
@@ -91,9 +91,6 @@ public sealed class GetGuildChannelsHandlerTests
         response.Data.Channels[0].Type.Should().Be("Text");
         response.Data.Channels[1].Type.Should().Be("Voice");
     }
-
-    private static Guild CreateGuild()
-        => ApplicationTestBuilders.CreateGuild();
 
     private static GuildChannel CreateChannel(
         GuildId guildId,

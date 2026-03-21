@@ -79,7 +79,7 @@ public sealed class SendMessageHandlerTests
     [Fact]
     public async Task HandleAsync_WhenChannelIsVoice_ShouldReturnNotText()
     {
-        var channel = CreateChannel(GuildChannelType.Voice);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Voice);
         var userId = UserId.New();
         var request = new SendMessageRequest("hello");
 
@@ -98,7 +98,7 @@ public sealed class SendMessageHandlerTests
     [Fact]
     public async Task HandleAsync_WhenUserIsNotMember_ShouldReturnAccessDenied()
     {
-        var channel = CreateChannel(GuildChannelType.Text);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);
         var userId = UserId.New();
         var request = new SendMessageRequest("hello");
 
@@ -131,7 +131,7 @@ public sealed class SendMessageHandlerTests
     [Fact]
     public async Task HandleAsync_WithValidRequest_ShouldPersistTrimmedContentCommitAndNotify()
     {
-        var channel = CreateChannel(GuildChannelType.Text);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);
         var userId = UserId.New();
         var request = new SendMessageRequest("  hello team  ");
 
@@ -171,9 +171,9 @@ public sealed class SendMessageHandlerTests
     [Fact]
     public async Task HandleAsync_WithOwnedAttachmentFiles_ShouldPersistAttachmentsAndReturnThem()
     {
-        var channel = CreateChannel(GuildChannelType.Text);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);
         var userId = UserId.New();
-        var attachment = CreateUploadedFile(userId);
+        var attachment = ApplicationTestBuilders.CreateUploadedFile(uploaderUserId: userId, fileName: "report.pdf", contentType: "application/pdf");
 
         _guildChannelRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(channel.Id, userId, It.IsAny<CancellationToken>()))
@@ -206,7 +206,7 @@ public sealed class SendMessageHandlerTests
     [Fact]
     public async Task HandleAsync_WhenNotifierThrows_ShouldStillSucceed()
     {
-        var channel = CreateChannel(GuildChannelType.Text);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);
         var userId = UserId.New();
         var request = new SendMessageRequest("hello");
 
@@ -235,7 +235,7 @@ public sealed class SendMessageHandlerTests
     [Fact]
     public async Task HandleAsync_WhenRequestTokenCanceledAfterCommit_ShouldNotifyWithIndependentToken()
     {
-        var channel = CreateChannel(GuildChannelType.Text);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);
         var userId = UserId.New();
         var request = new SendMessageRequest("hello");
         using var requestCts = new CancellationTokenSource();
@@ -273,12 +273,4 @@ public sealed class SendMessageHandlerTests
             Times.Once);
     }
 
-    private static GuildChannel CreateChannel(GuildChannelType type)
-        => ApplicationTestBuilders.CreateChannel(type);
-
-    private static UploadedFile CreateUploadedFile(UserId uploaderUserId)
-        => ApplicationTestBuilders.CreateUploadedFile(
-            uploaderUserId: uploaderUserId,
-            fileName: "report.pdf",
-            contentType: "application/pdf");
 }

@@ -78,7 +78,7 @@ public sealed class DeleteConversationMessageAttachmentHandlerTests
         var participantOne = UserId.New();
         var participantTwo = UserId.New();
         var outsider = UserId.New();
-        var conversation = CreateConversation(participantOne, participantTwo);
+        var conversation = ApplicationTestBuilders.CreateConversation(participantOne, participantTwo);
 
         _conversationRepositoryMock
             .Setup(x => x.GetByIdAsync(conversation.Id, It.IsAny<CancellationToken>()))
@@ -100,9 +100,9 @@ public sealed class DeleteConversationMessageAttachmentHandlerTests
     {
         var participantOne = UserId.New();
         var participantTwo = UserId.New();
-        var conversation = CreateConversation(participantOne, participantTwo);
+        var conversation = ApplicationTestBuilders.CreateConversation(participantOne, participantTwo);
         var attachmentId = UploadedFileId.New();
-        var message = CreateConversationMessage(conversation.Id, participantTwo, attachmentId);
+        var message = ApplicationTestBuilders.CreateConversationMessage(conversation.Id, participantTwo, content: "hello", attachments: [new MessageAttachment(attachmentId, "notes.txt", "text/plain", 12)]);
 
         _conversationRepositoryMock
             .Setup(x => x.GetByIdAsync(conversation.Id, It.IsAny<CancellationToken>()))
@@ -124,8 +124,9 @@ public sealed class DeleteConversationMessageAttachmentHandlerTests
     {
         var participantOne = UserId.New();
         var participantTwo = UserId.New();
-        var conversation = CreateConversation(participantOne, participantTwo);
-        var message = CreateConversationMessage(conversation.Id, participantOne, UploadedFileId.New());
+        var conversation = ApplicationTestBuilders.CreateConversation(participantOne, participantTwo);
+        var otherAttachmentId = UploadedFileId.New();
+        var message = ApplicationTestBuilders.CreateConversationMessage(conversation.Id, participantOne, content: "hello", attachments: [new MessageAttachment(otherAttachmentId, "notes.txt", "text/plain", 12)]);
         var missingAttachmentId = UploadedFileId.New();
 
         _conversationRepositoryMock
@@ -152,10 +153,10 @@ public sealed class DeleteConversationMessageAttachmentHandlerTests
     {
         var participantOne = UserId.New();
         var participantTwo = UserId.New();
-        var conversation = CreateConversation(participantOne, participantTwo);
+        var conversation = ApplicationTestBuilders.CreateConversation(participantOne, participantTwo);
         var attachmentId = UploadedFileId.New();
-        var message = CreateConversationMessage(conversation.Id, participantOne, attachmentId);
-        var uploadedFile = CreateUploadedFile(attachmentId, participantOne);
+        var message = ApplicationTestBuilders.CreateConversationMessage(conversation.Id, participantOne, content: "hello", attachments: [new MessageAttachment(attachmentId, "notes.txt", "text/plain", 12)]);
+        var uploadedFile = ApplicationTestBuilders.CreateUploadedFile(id: attachmentId, uploaderUserId: participantOne, fileName: "notes.txt", contentType: "text/plain", sizeBytes: 12, storageKey: "attachments/file.txt");
         var sequence = new MockSequence();
 
         _conversationRepositoryMock
@@ -217,25 +218,4 @@ public sealed class DeleteConversationMessageAttachmentHandlerTests
             Times.Once);
     }
 
-    private static Conversation CreateConversation(UserId user1Id, UserId user2Id)
-        => ApplicationTestBuilders.CreateConversation(user1Id, user2Id);
-
-    private static Message CreateConversationMessage(
-        ConversationId conversationId,
-        UserId authorId,
-        UploadedFileId attachmentId)
-        => ApplicationTestBuilders.CreateConversationMessage(
-            conversationId,
-            authorId,
-            content: "hello",
-            attachments: [new MessageAttachment(attachmentId, "notes.txt", "text/plain", 12)]);
-
-    private static UploadedFile CreateUploadedFile(UploadedFileId attachmentId, UserId uploaderUserId)
-        => ApplicationTestBuilders.CreateUploadedFile(
-            id: attachmentId,
-            uploaderUserId: uploaderUserId,
-            fileName: "notes.txt",
-            contentType: "text/plain",
-            sizeBytes: 12,
-            storageKey: "attachments/file.txt");
 }

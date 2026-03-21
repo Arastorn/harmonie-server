@@ -43,7 +43,7 @@ public sealed class TransferOwnershipHandlerTests
     public async Task HandleAsync_WhenCallerTransfersToSelf_ShouldReturnOwnerTransferToSelf()
     {
         var ownerId = UserId.New();
-        var guild = CreateGuild(ownerId);
+        var guild = ApplicationTestBuilders.CreateGuild(ownerId);
 
         var response = await _handler.HandleAsync(guild.Id, ownerId, ownerId);
 
@@ -73,7 +73,7 @@ public sealed class TransferOwnershipHandlerTests
     public async Task HandleAsync_WhenCallerIsNotOwner_ShouldReturnAccessDenied()
     {
         var ownerId = UserId.New();
-        var guild = CreateGuild(ownerId);
+        var guild = ApplicationTestBuilders.CreateGuild(ownerId);
         var callerId = UserId.New();
         var newOwnerId = UserId.New();
 
@@ -91,7 +91,7 @@ public sealed class TransferOwnershipHandlerTests
     public async Task HandleAsync_WhenNewOwnerIsNotMember_ShouldReturnMemberNotFound()
     {
         var ownerId = UserId.New();
-        var guild = CreateGuild(ownerId);
+        var guild = ApplicationTestBuilders.CreateGuild(ownerId);
         var newOwnerId = UserId.New();
 
         _guildRepositoryMock
@@ -109,7 +109,7 @@ public sealed class TransferOwnershipHandlerTests
     public async Task HandleAsync_WhenNewOwnerIsMember_ShouldSucceedAndCommitTransaction()
     {
         var ownerId = UserId.New();
-        var guild = CreateGuild(ownerId);
+        var guild = ApplicationTestBuilders.CreateGuild(ownerId);
         var newOwnerId = UserId.New();
 
         _guildRepositoryMock
@@ -147,7 +147,7 @@ public sealed class TransferOwnershipHandlerTests
     public async Task HandleAsync_WhenNewOwnerIsAlreadyAdmin_ShouldSucceed()
     {
         var ownerId = UserId.New();
-        var guild = CreateGuild(ownerId);
+        var guild = ApplicationTestBuilders.CreateGuild(ownerId);
         var newOwnerId = UserId.New();
 
         _guildRepositoryMock
@@ -171,7 +171,7 @@ public sealed class TransferOwnershipHandlerTests
     public async Task HandleAsync_WhenMemberDeletedConcurrently_ShouldReturnMemberNotFoundAndNotCommit()
     {
         var ownerId = UserId.New();
-        var guild = CreateGuild(ownerId);
+        var guild = ApplicationTestBuilders.CreateGuild(ownerId);
         var newOwnerId = UserId.New();
 
         _guildRepositoryMock
@@ -195,6 +195,4 @@ public sealed class TransferOwnershipHandlerTests
         _transactionMock.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    private static Guild CreateGuild(UserId? ownerId = null)
-        => ApplicationTestBuilders.CreateGuild(ownerId);
 }

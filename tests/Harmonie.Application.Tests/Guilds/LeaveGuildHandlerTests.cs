@@ -53,7 +53,7 @@ public sealed class LeaveGuildHandlerTests
     [Fact]
     public async Task HandleAsync_WhenUserIsNotMember_ShouldReturnForbidden()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var userId = UserId.New();
 
         _guildRepositoryMock
@@ -71,7 +71,7 @@ public sealed class LeaveGuildHandlerTests
     public async Task HandleAsync_WhenUserIsOwner_ShouldReturnConflict()
     {
         var ownerId = UserId.New();
-        var guild = CreateGuild(ownerId);
+        var guild = ApplicationTestBuilders.CreateGuild(ownerId);
 
         _guildRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, ownerId, It.IsAny<CancellationToken>()))
@@ -87,7 +87,7 @@ public sealed class LeaveGuildHandlerTests
     [Fact]
     public async Task HandleAsync_WhenMemberLeaves_ShouldReturnSuccess()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var memberId = UserId.New();
 
         _guildRepositoryMock
@@ -112,7 +112,7 @@ public sealed class LeaveGuildHandlerTests
     [Fact]
     public async Task HandleAsync_WhenAdminNonOwnerLeaves_ShouldReturnSuccess()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var adminId = UserId.New();
 
         _guildRepositoryMock
@@ -134,6 +134,4 @@ public sealed class LeaveGuildHandlerTests
             Times.Once);
     }
 
-    private static Guild CreateGuild(UserId? ownerId = null)
-        => ApplicationTestBuilders.CreateGuild(ownerId);
 }

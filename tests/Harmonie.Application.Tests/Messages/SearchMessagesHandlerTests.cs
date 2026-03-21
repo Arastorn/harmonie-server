@@ -43,7 +43,7 @@ public sealed class SearchMessagesHandlerTests
     public async Task HandleAsync_WhenCursorIsInvalid_ShouldReturnValidationFailure()
     {
         var ownerId = UserId.New();
-        var guild = CreateGuild(ownerId);
+        var guild = ApplicationTestBuilders.CreateGuild(ownerId);
 
         _guildRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, ownerId, It.IsAny<CancellationToken>()))
@@ -88,7 +88,7 @@ public sealed class SearchMessagesHandlerTests
     {
         var ownerId = UserId.New();
         var currentUserId = UserId.New();
-        var guild = CreateGuild(ownerId);
+        var guild = ApplicationTestBuilders.CreateGuild(ownerId);
 
         _guildRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, currentUserId, It.IsAny<CancellationToken>()))
@@ -108,8 +108,8 @@ public sealed class SearchMessagesHandlerTests
     public async Task HandleAsync_WhenChannelFilterIsVoice_ShouldReturnNotText()
     {
         var ownerId = UserId.New();
-        var guild = CreateGuild(ownerId);
-        var channel = CreateChannel(guild.Id, GuildChannelType.Voice, "voice-room");
+        var guild = ApplicationTestBuilders.CreateGuild(ownerId);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Voice, guildId: guild.Id, name: "voice-room");
 
         _guildRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, ownerId, It.IsAny<CancellationToken>()))
@@ -138,8 +138,8 @@ public sealed class SearchMessagesHandlerTests
     {
         var ownerId = UserId.New();
         var authorId = UserId.New();
-        var guild = CreateGuild(ownerId);
-        var channel = CreateChannel(guild.Id, GuildChannelType.Text, "deployments");
+        var guild = ApplicationTestBuilders.CreateGuild(ownerId);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text, guildId: guild.Id, name: "deployments");
         var before = new DateTime(2026, 3, 8, 12, 0, 0, DateTimeKind.Utc);
         var after = before.AddHours(-1);
         var item = CreateSearchItem(
@@ -194,12 +194,6 @@ public sealed class SearchMessagesHandlerTests
         response.Data.Items[0].Attachments.Should().BeEmpty();
         response.Data.NextCursor.Should().NotBeNullOrWhiteSpace();
     }
-
-    private static Guild CreateGuild(UserId ownerId)
-        => ApplicationTestBuilders.CreateGuild(ownerId);
-
-    private static GuildChannel CreateChannel(GuildId guildId, GuildChannelType type, string name)
-        => ApplicationTestBuilders.CreateChannel(type, guildId: guildId, name: name);
 
     private static SearchGuildMessagesItem CreateSearchItem(
         GuildChannelId channelId,

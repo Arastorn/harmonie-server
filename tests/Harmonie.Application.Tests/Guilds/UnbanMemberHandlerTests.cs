@@ -60,7 +60,7 @@ public sealed class UnbanMemberHandlerTests
     [Fact]
     public async Task HandleAsync_WhenCallerIsNotAdmin_ShouldReturnAccessDenied()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var callerId = UserId.New();
         var targetId = UserId.New();
 
@@ -77,7 +77,7 @@ public sealed class UnbanMemberHandlerTests
     [Fact]
     public async Task HandleAsync_WhenCallerIsNotMember_ShouldReturnAccessDenied()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var callerId = UserId.New();
         var targetId = UserId.New();
 
@@ -96,7 +96,7 @@ public sealed class UnbanMemberHandlerTests
     {
         var ownerId = UserId.New();
         var targetId = UserId.New();
-        var guild = CreateGuild(ownerId);
+        var guild = ApplicationTestBuilders.CreateGuild(ownerId);
 
         _guildRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, ownerId, It.IsAny<CancellationToken>()))
@@ -117,7 +117,7 @@ public sealed class UnbanMemberHandlerTests
     {
         var ownerId = UserId.New();
         var targetId = UserId.New();
-        var guild = CreateGuild(ownerId);
+        var guild = ApplicationTestBuilders.CreateGuild(ownerId);
 
         _guildRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, ownerId, It.IsAny<CancellationToken>()))
@@ -140,6 +140,4 @@ public sealed class UnbanMemberHandlerTests
             Times.Once);
     }
 
-    private static Guild CreateGuild(UserId? ownerId = null)
-        => ApplicationTestBuilders.CreateGuild(ownerId);
 }

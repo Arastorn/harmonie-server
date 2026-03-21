@@ -35,7 +35,7 @@ public sealed class UpdateUserStatusHandlerTests
     [Fact]
     public async Task HandleAsync_WithValidStatus_ShouldUpdateAndReturnStatus()
     {
-        var user = CreateUser();
+        var user = ApplicationTestBuilders.CreateUser();
         var request = new UpdateUserStatusRequest("dnd");
 
         _userRepositoryMock
@@ -91,7 +91,7 @@ public sealed class UpdateUserStatusHandlerTests
     [Fact]
     public async Task HandleAsync_WithInvalidStatus_ShouldReturnValidationFailure()
     {
-        var user = CreateUser();
+        var user = ApplicationTestBuilders.CreateUser();
         var request = new UpdateUserStatusRequest("away");
 
         _userRepositoryMock
@@ -118,10 +118,10 @@ public sealed class UpdateUserStatusHandlerTests
     [Fact]
     public async Task HandleAsync_WithInvisible_ShouldBroadcastOfflineToGuilds()
     {
-        var user = CreateUser();
+        var user = ApplicationTestBuilders.CreateUser();
         var request = new UpdateUserStatusRequest("invisible");
         var guildId = GuildId.New();
-        var guild = CreateGuild(guildId, user.Id);
+        var guild = ApplicationTestBuilders.CreateGuild(user.Id, guildId);
 
         _userRepositoryMock
             .Setup(x => x.GetByIdAsync(user.Id, It.IsAny<CancellationToken>()))
@@ -153,10 +153,10 @@ public sealed class UpdateUserStatusHandlerTests
     [Fact]
     public async Task HandleAsync_WithOnline_ShouldBroadcastOnlineToGuilds()
     {
-        var user = CreateUser();
+        var user = ApplicationTestBuilders.CreateUser();
         var request = new UpdateUserStatusRequest("online");
         var guildId = GuildId.New();
-        var guild = CreateGuild(guildId, user.Id);
+        var guild = ApplicationTestBuilders.CreateGuild(user.Id, guildId);
 
         _userRepositoryMock
             .Setup(x => x.GetByIdAsync(user.Id, It.IsAny<CancellationToken>()))
@@ -184,7 +184,7 @@ public sealed class UpdateUserStatusHandlerTests
     [Fact]
     public async Task HandleAsync_WhenUserHasNoGuilds_ShouldNotBroadcast()
     {
-        var user = CreateUser();
+        var user = ApplicationTestBuilders.CreateUser();
         var request = new UpdateUserStatusRequest("idle");
 
         _userRepositoryMock
@@ -206,8 +206,4 @@ public sealed class UpdateUserStatusHandlerTests
             Times.Never);
     }
 
-    private static Domain.Entities.Users.User CreateUser() => ApplicationTestBuilders.CreateUser();
-
-    private static Domain.Entities.Guilds.Guild CreateGuild(GuildId guildId, UserId ownerId)
-        => ApplicationTestBuilders.CreateGuild(ownerId, guildId);
 }

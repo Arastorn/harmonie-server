@@ -83,7 +83,7 @@ public sealed class OpenConversationHandlerTests
         var callerUserId = UserId.New();
         var targetUserId = UserId.New();
         var targetUser = CreateUser(targetUserId, "target");
-        var conversation = CreateConversation(callerUserId, targetUserId);
+        var conversation = ApplicationTestBuilders.CreateConversation(callerUserId, targetUserId);
 
         _userRepositoryMock
             .Setup(x => x.GetByIdAsync(targetUserId, It.IsAny<CancellationToken>()))
@@ -109,7 +109,7 @@ public sealed class OpenConversationHandlerTests
         var callerUserId = UserId.New();
         var targetUserId = UserId.New();
         var targetUser = CreateUser(targetUserId, "target");
-        var conversation = CreateConversation(callerUserId, targetUserId);
+        var conversation = ApplicationTestBuilders.CreateConversation(callerUserId, targetUserId);
 
         _userRepositoryMock
             .Setup(x => x.GetByIdAsync(targetUserId, It.IsAny<CancellationToken>()))
@@ -161,6 +161,4 @@ public sealed class OpenConversationHandlerTests
             updatedAtUtc: DateTime.UtcNow);
     }
 
-    private static Conversation CreateConversation(UserId callerUserId, UserId targetUserId)
-        => ApplicationTestBuilders.CreateConversation(callerUserId, targetUserId);
 }

@@ -75,7 +75,7 @@ public sealed class DeleteGuildHandlerTests
     [Fact]
     public async Task HandleAsync_WhenCallerIsNotOwner_ShouldReturnAccessDenied()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var callerId = UserId.New();
 
         _guildRepositoryMock
@@ -93,7 +93,7 @@ public sealed class DeleteGuildHandlerTests
     [Fact]
     public async Task HandleAsync_WhenOwnerDeletesGuild_ShouldDeleteGuildAndCommit()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var ownerId = guild.OwnerUserId;
 
         _guildRepositoryMock
@@ -119,7 +119,7 @@ public sealed class DeleteGuildHandlerTests
     [Fact]
     public async Task HandleAsync_WhenOwnerDeletesGuild_ShouldNotifyAfterCommit()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var ownerId = guild.OwnerUserId;
         var sequence = new MockSequence();
 
@@ -153,9 +153,9 @@ public sealed class DeleteGuildHandlerTests
     public async Task HandleAsync_WhenGuildHasIconFile_ShouldDeleteStoredObjectAfterCommit()
     {
         var iconFileId = UploadedFileId.From(Guid.Parse("b0c7172f-7770-4c05-af10-2ac1a3381995"));
-        var guild = CreateGuild(iconFileId);
+        var guild = ApplicationTestBuilders.CreateGuild(iconFileId: iconFileId);
         var ownerId = guild.OwnerUserId;
-        var uploadedFile = CreateUploadedFile("guild-icon.png", "uploads/2026/03/icon.png");
+        var uploadedFile = ApplicationTestBuilders.CreateUploadedFile(fileName: "guild-icon.png", storageKey: "uploads/2026/03/icon.png", contentType: "image/png", sizeBytes: 128, purpose: UploadPurpose.GuildIcon);
 
         _guildRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, ownerId, It.IsAny<CancellationToken>()))
@@ -179,7 +179,7 @@ public sealed class DeleteGuildHandlerTests
     [Fact]
     public async Task HandleAsync_WhenNotificationFails_ShouldStillDeleteGuild()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var ownerId = guild.OwnerUserId;
 
         _guildRepositoryMock
@@ -201,14 +201,4 @@ public sealed class DeleteGuildHandlerTests
             Times.Once);
     }
 
-    private static Guild CreateGuild(UploadedFileId? iconFileId = null)
-        => ApplicationTestBuilders.CreateGuild(iconFileId: iconFileId);
-
-    private static UploadedFile CreateUploadedFile(string fileName, string storageKey)
-        => ApplicationTestBuilders.CreateUploadedFile(
-            fileName: fileName,
-            storageKey: storageKey,
-            contentType: "image/png",
-            sizeBytes: 128,
-            purpose: UploadPurpose.GuildIcon);
 }

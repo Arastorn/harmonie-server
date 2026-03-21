@@ -51,7 +51,7 @@ public sealed class UpdateMemberRoleHandlerTests
     [Fact]
     public async Task HandleAsync_WhenCallerIsNotMember_ShouldReturnAccessDenied()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var callerId = UserId.New();
         var targetId = UserId.New();
 
@@ -69,7 +69,7 @@ public sealed class UpdateMemberRoleHandlerTests
     [Fact]
     public async Task HandleAsync_WhenCallerIsNotAdmin_ShouldReturnAccessDenied()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var callerId = UserId.New();
         var targetId = UserId.New();
 
@@ -87,7 +87,7 @@ public sealed class UpdateMemberRoleHandlerTests
     [Fact]
     public async Task HandleAsync_WhenTargetIsNotMember_ShouldReturnMemberNotFound()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var callerId = UserId.New();
         var targetId = UserId.New();
 
@@ -110,7 +110,7 @@ public sealed class UpdateMemberRoleHandlerTests
     public async Task HandleAsync_WhenTargetIsOwner_ShouldReturnOwnerRoleCannotBeChanged()
     {
         var ownerId = UserId.New();
-        var guild = CreateGuild(ownerId);
+        var guild = ApplicationTestBuilders.CreateGuild(ownerId);
         var callerId = UserId.New();
 
         _guildRepositoryMock
@@ -131,7 +131,7 @@ public sealed class UpdateMemberRoleHandlerTests
     [Fact]
     public async Task HandleAsync_WhenPromotingMemberToAdmin_ShouldSucceed()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var callerId = UserId.New();
         var targetId = UserId.New();
 
@@ -161,7 +161,7 @@ public sealed class UpdateMemberRoleHandlerTests
     [Fact]
     public async Task HandleAsync_WhenDemotingAdminToMember_ShouldSucceed()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var callerId = UserId.New();
         var targetId = UserId.New();
 
@@ -188,6 +188,4 @@ public sealed class UpdateMemberRoleHandlerTests
             Times.Once);
     }
 
-    private static Guild CreateGuild(UserId? ownerId = null)
-        => ApplicationTestBuilders.CreateGuild(ownerId);
 }

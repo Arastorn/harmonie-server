@@ -33,7 +33,7 @@ public sealed class InviteMemberHandlerTests
     [Fact]
     public async Task HandleAsync_WhenInviterIsNotAdmin_ShouldReturnForbidden()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var inviterUserId = UserId.New();
         var request = new InviteMemberRequest(UserId.New().ToString());
 
@@ -51,7 +51,7 @@ public sealed class InviteMemberHandlerTests
     [Fact]
     public async Task HandleAsync_WhenTargetUserDoesNotExist_ShouldReturnNotFound()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var inviterUserId = UserId.New();
         var targetUserId = UserId.New();
         var request = new InviteMemberRequest(targetUserId.ToString());
@@ -74,7 +74,7 @@ public sealed class InviteMemberHandlerTests
     [Fact]
     public async Task HandleAsync_WhenTargetAlreadyMember_ShouldReturnConflict()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var inviterUserId = UserId.New();
         var targetUserId = UserId.New();
         var request = new InviteMemberRequest(targetUserId.ToString());
@@ -97,7 +97,7 @@ public sealed class InviteMemberHandlerTests
     [Fact]
     public async Task HandleAsync_WithValidRequest_ShouldSucceed()
     {
-        var guild = CreateGuild();
+        var guild = ApplicationTestBuilders.CreateGuild();
         var inviterUserId = UserId.New();
         var targetUserId = UserId.New();
         var request = new InviteMemberRequest(targetUserId.ToString());
@@ -124,5 +124,4 @@ public sealed class InviteMemberHandlerTests
         response.Data.Role.Should().Be(GuildRole.Member.ToString());
     }
 
-    private static Guild CreateGuild() => ApplicationTestBuilders.CreateGuild();
 }

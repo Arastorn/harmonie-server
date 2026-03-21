@@ -64,7 +64,7 @@ public sealed class AcknowledgeChannelReadHandlerTests
     [Fact]
     public async Task HandleAsync_WhenChannelIsVoice_ShouldReturnChannelNotText()
     {
-        var channel = CreateChannel(GuildChannelType.Voice);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Voice);
         var callerId = UserId.New();
 
         _guildChannelRepositoryMock
@@ -81,7 +81,7 @@ public sealed class AcknowledgeChannelReadHandlerTests
     [Fact]
     public async Task HandleAsync_WhenCallerIsNotMember_ShouldReturnChannelAccessDenied()
     {
-        var channel = CreateChannel(GuildChannelType.Text);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);
         var callerId = UserId.New();
 
         _guildChannelRepositoryMock
@@ -98,7 +98,7 @@ public sealed class AcknowledgeChannelReadHandlerTests
     [Fact]
     public async Task HandleAsync_WhenMessageIdProvidedAndNotFound_ShouldReturnMessageNotFound()
     {
-        var channel = CreateChannel(GuildChannelType.Text);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);
         var callerId = UserId.New();
         var messageId = MessageId.New();
 
@@ -120,10 +120,10 @@ public sealed class AcknowledgeChannelReadHandlerTests
     [Fact]
     public async Task HandleAsync_WhenMessageBelongsToAnotherChannel_ShouldReturnMessageNotFound()
     {
-        var channel = CreateChannel(GuildChannelType.Text);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);
         var callerId = UserId.New();
         var messageId = MessageId.New();
-        var messageFromOtherChannel = CreateChannelMessage(GuildChannelId.New(), callerId);
+        var messageFromOtherChannel = ApplicationTestBuilders.CreateChannelMessage(GuildChannelId.New(), callerId);
 
         _guildChannelRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(channel.Id, callerId, It.IsAny<CancellationToken>()))
@@ -143,10 +143,10 @@ public sealed class AcknowledgeChannelReadHandlerTests
     [Fact]
     public async Task HandleAsync_WhenMessageIdProvided_ShouldUpsertAndCommit()
     {
-        var channel = CreateChannel(GuildChannelType.Text);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);
         var callerId = UserId.New();
         var messageId = MessageId.New();
-        var message = CreateChannelMessage(channel.Id, callerId);
+        var message = ApplicationTestBuilders.CreateChannelMessage(channel.Id, callerId);
 
         _guildChannelRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(channel.Id, callerId, It.IsAny<CancellationToken>()))
@@ -172,7 +172,7 @@ public sealed class AcknowledgeChannelReadHandlerTests
     [Fact]
     public async Task HandleAsync_WhenNullMessageIdAndChannelHasMessages_ShouldUpsertWithLatest()
     {
-        var channel = CreateChannel(GuildChannelType.Text);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);
         var callerId = UserId.New();
         var latestMessageId = MessageId.New();
 
@@ -200,7 +200,7 @@ public sealed class AcknowledgeChannelReadHandlerTests
     [Fact]
     public async Task HandleAsync_WhenNullMessageIdAndChannelIsEmpty_ShouldReturnSuccessWithoutUpsert()
     {
-        var channel = CreateChannel(GuildChannelType.Text);
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);
         var callerId = UserId.New();
 
         _guildChannelRepositoryMock
@@ -222,9 +222,4 @@ public sealed class AcknowledgeChannelReadHandlerTests
         _unitOfWorkMock.Verify(x => x.BeginAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    private static GuildChannel CreateChannel(GuildChannelType type)
-        => ApplicationTestBuilders.CreateChannel(type);
-
-    private static Message CreateChannelMessage(GuildChannelId channelId, UserId authorId)
-        => ApplicationTestBuilders.CreateChannelMessage(channelId, authorId);
 }
