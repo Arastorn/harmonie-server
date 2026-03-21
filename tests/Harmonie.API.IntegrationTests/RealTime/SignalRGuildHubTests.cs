@@ -45,15 +45,18 @@ public sealed class SignalRGuildHubTests : IClassFixture<HarmonieWebApplicationF
         inviteResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
         await using var connection = CreateHubConnection(member.AccessToken);
+        var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var eventReceived = new TaskCompletionSource<SignalRGuildDeletedEvent>(
             TaskCreationOptions.RunContinuationsAsynchronously);
 
+        connection.On("Ready", () => ready.TrySetResult());
         connection.On<SignalRGuildDeletedEvent>("GuildDeleted", payload =>
         {
             eventReceived.TrySetResult(payload);
         });
 
         await connection.StartAsync();
+        await ready.Task;
 
         var deleteGuildResponse = await _client.SendAuthorizedDeleteAsync(
             $"/api/guilds/{createGuildPayload.GuildId}",
