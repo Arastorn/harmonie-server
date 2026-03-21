@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 
 namespace Harmonie.API.IntegrationTests.Common;
 
@@ -8,10 +8,12 @@ public sealed class HarmonieWebApplicationFactory : WebApplicationFactory<Progra
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.ConfigureLogging(logging =>
+        builder.ConfigureAppConfiguration((_, config) =>
         {
-            logging.ClearProviders();
-            logging.SetMinimumLevel(LogLevel.Warning);
+            config.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Serilog:MinimumLevel:Default"] = "Fatal"
+            });
         });
     }
 }
