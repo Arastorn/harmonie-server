@@ -12,7 +12,8 @@ public sealed class HarmonieWebApplicationFactory : WebApplicationFactory<Progra
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["Serilog:MinimumLevel:Default"] = "Fatal"
+                ["Serilog:MinimumLevel:Default"] = "Fatal",
+                ["Serilog:MinimumLevel:Override:Microsoft.AspNetCore"] = "Fatal"
             });
         });
     }
