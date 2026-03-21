@@ -22,6 +22,7 @@ public static class ApplicationErrorCodes
         public const string MinLength = "VALIDATION_MIN_LENGTH";
         public const string MaxLength = "VALIDATION_MAX_LENGTH";
         public const string OutOfRange = "VALIDATION_OUT_OF_RANGE";
+        public const string WrongEnumValue = "VALIDATION_WRONG_ENUM_VALUE";
     }
 
     public static class Auth

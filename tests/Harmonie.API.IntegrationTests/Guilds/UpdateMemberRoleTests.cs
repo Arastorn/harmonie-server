@@ -201,7 +201,7 @@ public sealed class UpdateMemberRoleTests : IClassFixture<WebApplicationFactory<
 
         var error = await updateRoleResponse.Content.ReadFromJsonAsync<ApplicationError>();
         error.Should().NotBeNull();
-        error!.Code.Should().Be(ApplicationErrorCodes.Common.ValidationFailed);
+        error!.Code.Should().Be(ApplicationErrorCodes.Validation.WrongEnumValue);
     }
 
     private async Task<HttpResponseMessage> SendAuthorizedPutRawAsync(
