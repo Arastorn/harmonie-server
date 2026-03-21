@@ -1,9 +1,15 @@
-using Harmonie.Application.Interfaces;
+using Harmonie.Application.Interfaces.Channels;
+using Harmonie.Application.Interfaces.Common;
+using Harmonie.Application.Interfaces.Guilds;
+using Harmonie.Application.Interfaces.Users;
 using Harmonie.Domain.Enums;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Domain.ValueObjects.Channels;
+using Harmonie.Domain.ValueObjects.Conversations;
+using Harmonie.Domain.ValueObjects.Guilds;
+using Harmonie.Domain.ValueObjects.Users;
 using Microsoft.AspNetCore.SignalR;
 
-namespace Harmonie.API.RealTime;
+namespace Harmonie.API.RealTime.Common;
 
 public sealed class SignalRRealtimeGroupManager : IRealtimeGroupManager
 {

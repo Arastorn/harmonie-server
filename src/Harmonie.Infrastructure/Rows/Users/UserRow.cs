@@ -1,4 +1,4 @@
-namespace Harmonie.Infrastructure.Rows;
+namespace Harmonie.Infrastructure.Rows.Users;
 
 public sealed record UserRow(
     Guid Id,

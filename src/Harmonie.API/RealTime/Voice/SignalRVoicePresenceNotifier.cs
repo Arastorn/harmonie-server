@@ -1,7 +1,8 @@
-using Harmonie.Application.Interfaces;
+using Harmonie.API.RealTime.Common;
+using Harmonie.Application.Interfaces.Voice;
 using Microsoft.AspNetCore.SignalR;
 
-namespace Harmonie.API.RealTime;
+namespace Harmonie.API.RealTime.Voice;
 
 public sealed class SignalRVoicePresenceNotifier : IVoicePresenceNotifier
 {

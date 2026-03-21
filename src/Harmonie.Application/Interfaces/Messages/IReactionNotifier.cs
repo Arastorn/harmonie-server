@@ -1,6 +1,10 @@
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Domain.ValueObjects.Guilds;
+using Harmonie.Domain.ValueObjects.Channels;
+using Harmonie.Domain.ValueObjects.Conversations;
+using Harmonie.Domain.ValueObjects.Messages;
+using Harmonie.Domain.ValueObjects.Users;
 
-namespace Harmonie.Application.Interfaces;
+namespace Harmonie.Application.Interfaces.Messages;
 
 public interface IReactionNotifier
 {

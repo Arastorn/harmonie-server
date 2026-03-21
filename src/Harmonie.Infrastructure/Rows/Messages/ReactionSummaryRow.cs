@@ -1,4 +1,4 @@
-namespace Harmonie.Infrastructure.Rows;
+namespace Harmonie.Infrastructure.Rows.Messages;
 
 internal sealed class ReactionSummaryRow
 {

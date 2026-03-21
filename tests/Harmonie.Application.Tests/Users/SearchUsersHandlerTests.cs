@@ -1,15 +1,18 @@
 using FluentAssertions;
 using Harmonie.Application.Common;
 using Harmonie.Application.Features.Users.SearchUsers;
-using Harmonie.Application.Interfaces;
-using Harmonie.Domain.Entities;
+using Harmonie.Application.Interfaces.Guilds;
+using Harmonie.Application.Interfaces.Users;
+using Harmonie.Domain.Entities.Guilds;
 using Harmonie.Domain.Enums;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Domain.ValueObjects.Guilds;
+using Harmonie.Domain.ValueObjects.Uploads;
+using Harmonie.Domain.ValueObjects.Users;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
-namespace Harmonie.Application.Tests;
+namespace Harmonie.Application.Tests.Users;
 
 public sealed class SearchUsersHandlerTests
 {

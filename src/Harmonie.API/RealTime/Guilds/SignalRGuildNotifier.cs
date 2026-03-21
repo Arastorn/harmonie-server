@@ -1,7 +1,8 @@
-using Harmonie.Application.Interfaces;
+using Harmonie.API.RealTime.Common;
+using Harmonie.Application.Interfaces.Guilds;
 using Microsoft.AspNetCore.SignalR;
 
-namespace Harmonie.API.RealTime;
+namespace Harmonie.API.RealTime.Guilds;
 
 public sealed class SignalRGuildNotifier : IGuildNotifier
 {

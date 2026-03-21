@@ -1,6 +1,7 @@
 using Harmonie.Application.Common;
-using Harmonie.Application.Interfaces;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Application.Common.Auth;
+using Harmonie.Application.Interfaces.Auth;
+using Harmonie.Domain.ValueObjects.Users;
 using Microsoft.Extensions.Logging;
 
 namespace Harmonie.Application.Features.Auth.Logout;

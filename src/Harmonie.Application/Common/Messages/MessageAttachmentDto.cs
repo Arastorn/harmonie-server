@@ -1,6 +1,6 @@
-using Harmonie.Domain.Entities;
+using Harmonie.Domain.Entities.Messages;
 
-namespace Harmonie.Application.Common;
+namespace Harmonie.Application.Common.Messages;
 
 public sealed record MessageAttachmentDto(
     string FileId,

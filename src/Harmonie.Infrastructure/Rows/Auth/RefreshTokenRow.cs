@@ -1,4 +1,4 @@
-namespace Harmonie.Infrastructure.Rows;
+namespace Harmonie.Infrastructure.Rows.Auth;
 
 public sealed record RefreshTokenRow(
     Guid Id,

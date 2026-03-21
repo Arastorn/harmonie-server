@@ -1,8 +1,11 @@
 using Harmonie.Application.Common;
-using Harmonie.Application.Interfaces;
-using Harmonie.Domain.Entities;
+using Harmonie.Application.Common.Uploads;
+using Harmonie.Application.Interfaces.Common;
+using Harmonie.Application.Interfaces.Uploads;
+using Harmonie.Application.Interfaces.Users;
+using Harmonie.Domain.Entities.Uploads;
 using Harmonie.Domain.Enums;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Domain.ValueObjects.Users;
 using Microsoft.Extensions.Logging;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;

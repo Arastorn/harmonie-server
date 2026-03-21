@@ -1,10 +1,12 @@
 using Dapper;
-using Harmonie.Application.Interfaces;
-using Harmonie.Domain.Entities;
-using Harmonie.Domain.ValueObjects;
-using Harmonie.Infrastructure.Rows;
+using Harmonie.Application.Interfaces.Conversations;
+using Harmonie.Domain.Entities.Conversations;
+using Harmonie.Domain.ValueObjects.Conversations;
+using Harmonie.Domain.ValueObjects.Users;
+using Harmonie.Infrastructure.Persistence.Common;
+using Harmonie.Infrastructure.Rows.Conversations;
 
-namespace Harmonie.Infrastructure.Persistence;
+namespace Harmonie.Infrastructure.Persistence.Conversations;
 
 public sealed class ConversationRepository : IConversationRepository
 {

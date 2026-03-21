@@ -1,6 +1,6 @@
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Domain.ValueObjects.Guilds;
 
-namespace Harmonie.Application.Interfaces;
+namespace Harmonie.Application.Interfaces.Guilds;
 
 public interface IGuildNotifier
 {

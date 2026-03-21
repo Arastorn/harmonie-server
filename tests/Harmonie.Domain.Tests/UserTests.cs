@@ -1,6 +1,7 @@
 using FluentAssertions;
-using Harmonie.Domain.Entities;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Domain.Entities.Users;
+using Harmonie.Domain.ValueObjects.Uploads;
+using Harmonie.Domain.ValueObjects.Users;
 using Xunit;
 
 namespace Harmonie.Domain.Tests;

@@ -1,6 +1,12 @@
+using Harmonie.API.RealTime.Channels;
+using Harmonie.API.RealTime.Conversations;
+using Harmonie.API.RealTime.Guilds;
+using Harmonie.API.RealTime.Messages;
+using Harmonie.API.RealTime.Users;
+using Harmonie.API.RealTime.Voice;
 using Saunter.Attributes;
 
-namespace Harmonie.API.RealTime;
+namespace Harmonie.API.RealTime.Common;
 
 /// <summary>
 /// AsyncAPI documentation for the RealtimeHub SignalR hub.

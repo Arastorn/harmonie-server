@@ -1,4 +1,4 @@
-namespace Harmonie.Application.Common;
+namespace Harmonie.Application.Common.Messages;
 
 public sealed record MessageReactionDto(
     string Emoji,

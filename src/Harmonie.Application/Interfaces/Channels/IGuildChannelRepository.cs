@@ -1,8 +1,10 @@
-using Harmonie.Domain.Entities;
+using Harmonie.Domain.Entities.Guilds;
 using Harmonie.Domain.Enums;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Domain.ValueObjects.Guilds;
+using Harmonie.Domain.ValueObjects.Channels;
+using Harmonie.Domain.ValueObjects.Users;
 
-namespace Harmonie.Application.Interfaces;
+namespace Harmonie.Application.Interfaces.Channels;
 
 public sealed record ChannelAccessContext(
     GuildChannel Channel,

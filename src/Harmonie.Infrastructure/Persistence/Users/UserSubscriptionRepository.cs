@@ -1,8 +1,12 @@
 using Dapper;
-using Harmonie.Application.Interfaces;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Application.Interfaces.Users;
+using Harmonie.Domain.ValueObjects.Guilds;
+using Harmonie.Domain.ValueObjects.Channels;
+using Harmonie.Domain.ValueObjects.Conversations;
+using Harmonie.Domain.ValueObjects.Users;
+using Harmonie.Infrastructure.Persistence.Common;
 
-namespace Harmonie.Infrastructure.Persistence;
+namespace Harmonie.Infrastructure.Persistence.Users;
 
 public sealed class UserSubscriptionRepository : IUserSubscriptionRepository
 {

@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
 using Harmonie.Domain.Common;
 
-namespace Harmonie.Domain.ValueObjects;
+namespace Harmonie.Domain.ValueObjects.Users;
 
 /// <summary>
 /// Username value object with validation rules.

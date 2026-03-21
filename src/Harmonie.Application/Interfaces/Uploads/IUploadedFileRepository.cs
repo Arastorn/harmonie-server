@@ -1,7 +1,7 @@
-using Harmonie.Domain.Entities;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Domain.Entities.Uploads;
+using Harmonie.Domain.ValueObjects.Uploads;
 
-namespace Harmonie.Application.Interfaces;
+namespace Harmonie.Application.Interfaces.Uploads;
 
 public interface IUploadedFileRepository
 {

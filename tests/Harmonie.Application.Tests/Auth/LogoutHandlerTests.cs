@@ -1,13 +1,14 @@
 using FluentAssertions;
 using Harmonie.Application.Common;
+using Harmonie.Application.Common.Auth;
 using Harmonie.Application.Features.Auth.Logout;
-using Harmonie.Application.Interfaces;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Application.Interfaces.Auth;
+using Harmonie.Domain.ValueObjects.Users;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
-namespace Harmonie.Application.Tests;
+namespace Harmonie.Application.Tests.Auth;
 
 /// <summary>
 /// Tests for LogoutHandler.

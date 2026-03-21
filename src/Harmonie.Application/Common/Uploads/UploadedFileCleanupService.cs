@@ -1,8 +1,8 @@
-using Harmonie.Application.Interfaces;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Application.Interfaces.Uploads;
+using Harmonie.Domain.ValueObjects.Uploads;
 using Microsoft.Extensions.Logging;
 
-namespace Harmonie.Application.Common;
+namespace Harmonie.Application.Common.Uploads;
 
 public sealed class UploadedFileCleanupService
 {

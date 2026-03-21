@@ -1,12 +1,13 @@
 using FluentAssertions;
 using Harmonie.Application.Features.Conversations.ListConversations;
-using Harmonie.Application.Interfaces;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Application.Interfaces.Conversations;
+using Harmonie.Domain.ValueObjects.Conversations;
+using Harmonie.Domain.ValueObjects.Users;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
-namespace Harmonie.Application.Tests;
+namespace Harmonie.Application.Tests.Conversations;
 
 public sealed class ListConversationsHandlerTests
 {

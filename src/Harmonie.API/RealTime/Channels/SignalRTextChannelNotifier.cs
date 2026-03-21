@@ -1,8 +1,9 @@
-using Harmonie.Application.Common;
-using Harmonie.Application.Interfaces;
+using Harmonie.API.RealTime.Common;
+using Harmonie.Application.Common.Messages;
+using Harmonie.Application.Interfaces.Channels;
 using Microsoft.AspNetCore.SignalR;
 
-namespace Harmonie.API.RealTime;
+namespace Harmonie.API.RealTime.Channels;
 
 public sealed class SignalRTextChannelNotifier : ITextChannelNotifier
 {

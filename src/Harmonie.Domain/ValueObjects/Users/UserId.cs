@@ -1,4 +1,4 @@
-namespace Harmonie.Domain.ValueObjects;
+namespace Harmonie.Domain.ValueObjects.Users;
 
 /// <summary>
 /// Strongly-typed identifier for User entities.

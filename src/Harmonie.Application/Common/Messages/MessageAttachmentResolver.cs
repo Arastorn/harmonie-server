@@ -1,9 +1,10 @@
-using Harmonie.Application.Interfaces;
-using Harmonie.Domain.Entities;
+using Harmonie.Application.Interfaces.Uploads;
+using Harmonie.Domain.Entities.Messages;
 using Harmonie.Domain.Enums;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Domain.ValueObjects.Uploads;
+using Harmonie.Domain.ValueObjects.Users;
 
-namespace Harmonie.Application.Common;
+namespace Harmonie.Application.Common.Messages;
 
 public sealed class MessageAttachmentResolver
 {

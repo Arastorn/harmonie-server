@@ -1,8 +1,9 @@
 using Harmonie.Domain.Common;
 using Harmonie.Domain.Enums;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Domain.ValueObjects.Uploads;
+using Harmonie.Domain.ValueObjects.Users;
 
-namespace Harmonie.Domain.Entities;
+namespace Harmonie.Domain.Entities.Uploads;
 
 public sealed class UploadedFile : Entity<UploadedFileId>
 {

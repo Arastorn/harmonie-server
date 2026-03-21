@@ -1,7 +1,8 @@
 using Harmonie.Domain.Common;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Domain.ValueObjects.Uploads;
+using Harmonie.Domain.ValueObjects.Users;
 
-namespace Harmonie.Domain.Entities;
+namespace Harmonie.Domain.Entities.Users;
 
 /// <summary>
 /// User aggregate root.

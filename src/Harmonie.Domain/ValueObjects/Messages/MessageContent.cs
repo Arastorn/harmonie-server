@@ -1,6 +1,6 @@
 using Harmonie.Domain.Common;
 
-namespace Harmonie.Domain.ValueObjects;
+namespace Harmonie.Domain.ValueObjects.Messages;
 
 /// <summary>
 /// Message content normalized and validated before persistence.

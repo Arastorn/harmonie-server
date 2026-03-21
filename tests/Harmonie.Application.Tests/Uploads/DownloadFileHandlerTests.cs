@@ -1,15 +1,16 @@
 using FluentAssertions;
 using Harmonie.Application.Common;
 using Harmonie.Application.Features.Uploads.DownloadFile;
-using Harmonie.Application.Interfaces;
-using Harmonie.Domain.Entities;
+using Harmonie.Application.Interfaces.Uploads;
+using Harmonie.Domain.Entities.Uploads;
 using Harmonie.Domain.Enums;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Domain.ValueObjects.Uploads;
+using Harmonie.Domain.ValueObjects.Users;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
-namespace Harmonie.Application.Tests;
+namespace Harmonie.Application.Tests.Uploads;
 
 public sealed class DownloadFileHandlerTests
 {

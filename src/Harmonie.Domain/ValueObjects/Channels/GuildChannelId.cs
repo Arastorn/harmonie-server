@@ -1,4 +1,4 @@
-namespace Harmonie.Domain.ValueObjects;
+namespace Harmonie.Domain.ValueObjects.Channels;
 
 /// <summary>
 /// Strongly-typed identifier for guild channels.

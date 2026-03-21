@@ -1,7 +1,9 @@
-using Harmonie.Domain.Entities;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Domain.Entities.Guilds;
+using Harmonie.Domain.ValueObjects.Guilds;
+using Harmonie.Domain.ValueObjects.Uploads;
+using Harmonie.Domain.ValueObjects.Users;
 
-namespace Harmonie.Application.Interfaces;
+namespace Harmonie.Application.Interfaces.Guilds;
 
 public interface IGuildInviteRepository
 {

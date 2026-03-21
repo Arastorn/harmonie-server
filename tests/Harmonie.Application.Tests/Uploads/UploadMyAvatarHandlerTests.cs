@@ -1,16 +1,19 @@
 using FluentAssertions;
 using Harmonie.Application.Common;
+using Harmonie.Application.Common.Uploads;
 using Harmonie.Application.Features.Users.UploadMyAvatar;
-using Harmonie.Application.Interfaces;
-using Harmonie.Domain.Entities;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Application.Interfaces.Common;
+using Harmonie.Application.Interfaces.Uploads;
+using Harmonie.Application.Interfaces.Users;
+using Harmonie.Domain.Entities.Users;
+using Harmonie.Domain.ValueObjects.Users;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Xunit;
 
-namespace Harmonie.Application.Tests;
+namespace Harmonie.Application.Tests.Uploads;
 
 public sealed class UploadMyAvatarHandlerTests
 {

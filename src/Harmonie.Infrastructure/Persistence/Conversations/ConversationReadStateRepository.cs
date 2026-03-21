@@ -1,8 +1,11 @@
 using Dapper;
-using Harmonie.Application.Interfaces;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Application.Interfaces.Conversations;
+using Harmonie.Domain.ValueObjects.Conversations;
+using Harmonie.Domain.ValueObjects.Messages;
+using Harmonie.Domain.ValueObjects.Users;
+using Harmonie.Infrastructure.Persistence.Common;
 
-namespace Harmonie.Infrastructure.Persistence;
+namespace Harmonie.Infrastructure.Persistence.Conversations;
 
 public sealed class ConversationReadStateRepository : IConversationReadStateRepository
 {

@@ -1,6 +1,7 @@
 using Harmonie.Application.Common;
-using Harmonie.Application.Interfaces;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Application.Interfaces.Uploads;
+using Harmonie.Domain.ValueObjects.Uploads;
+using Harmonie.Domain.ValueObjects.Users;
 using Microsoft.Extensions.Logging;
 
 namespace Harmonie.Application.Features.Uploads.DownloadFile;

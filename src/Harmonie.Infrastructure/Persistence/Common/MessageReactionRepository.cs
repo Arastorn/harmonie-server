@@ -1,8 +1,9 @@
 using Dapper;
-using Harmonie.Application.Interfaces;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Application.Interfaces.Messages;
+using Harmonie.Domain.ValueObjects.Messages;
+using Harmonie.Domain.ValueObjects.Users;
 
-namespace Harmonie.Infrastructure.Persistence;
+namespace Harmonie.Infrastructure.Persistence.Common;
 
 public sealed class MessageReactionRepository : IMessageReactionRepository
 {

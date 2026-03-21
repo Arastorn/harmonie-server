@@ -1,14 +1,17 @@
 using FluentAssertions;
 using Harmonie.Application.Common;
 using Harmonie.Application.Features.Guilds.AcceptInvite;
-using Harmonie.Application.Interfaces;
+using Harmonie.Application.Interfaces.Common;
+using Harmonie.Application.Interfaces.Guilds;
+using Harmonie.Domain.Entities.Guilds;
 using Harmonie.Domain.Enums;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Domain.ValueObjects.Guilds;
+using Harmonie.Domain.ValueObjects.Users;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
-namespace Harmonie.Application.Tests;
+namespace Harmonie.Application.Tests.Guilds;
 
 public sealed class AcceptInviteHandlerTests
 {
@@ -129,7 +132,7 @@ public sealed class AcceptInviteHandlerTests
             .ReturnsAsync(false);
 
         _guildMemberRepositoryMock
-            .Setup(x => x.TryAddAsync(It.IsAny<Domain.Entities.GuildMember>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.TryAddAsync(It.IsAny<GuildMember>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
         var response = await _handler.HandleAsync(InviteCode, _callerId);
@@ -164,7 +167,7 @@ public sealed class AcceptInviteHandlerTests
             .ReturnsAsync(false);
 
         _guildMemberRepositoryMock
-            .Setup(x => x.TryAddAsync(It.IsAny<Domain.Entities.GuildMember>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.TryAddAsync(It.IsAny<GuildMember>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
         var response = await _handler.HandleAsync(InviteCode, _callerId);

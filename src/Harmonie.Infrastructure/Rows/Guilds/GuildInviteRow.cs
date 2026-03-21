@@ -1,4 +1,4 @@
-namespace Harmonie.Infrastructure.Rows;
+namespace Harmonie.Infrastructure.Rows.Guilds;
 
 public sealed class GuildInviteRow
 {

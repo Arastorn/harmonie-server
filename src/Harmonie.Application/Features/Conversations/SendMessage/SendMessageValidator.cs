@@ -1,5 +1,5 @@
 using FluentValidation;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Domain.ValueObjects.Messages;
 
 namespace Harmonie.Application.Features.Conversations.SendMessage;
 

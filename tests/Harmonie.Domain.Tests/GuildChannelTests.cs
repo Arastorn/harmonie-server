@@ -1,7 +1,7 @@
 using FluentAssertions;
-using Harmonie.Domain.Entities;
+using Harmonie.Domain.Entities.Guilds;
 using Harmonie.Domain.Enums;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Domain.ValueObjects.Guilds;
 using Xunit;
 
 namespace Harmonie.Domain.Tests;

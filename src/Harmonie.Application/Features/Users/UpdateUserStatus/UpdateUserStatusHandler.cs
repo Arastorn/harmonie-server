@@ -1,6 +1,7 @@
 using Harmonie.Application.Common;
-using Harmonie.Application.Interfaces;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Application.Interfaces.Guilds;
+using Harmonie.Application.Interfaces.Users;
+using Harmonie.Domain.ValueObjects.Users;
 using Microsoft.Extensions.Logging;
 
 namespace Harmonie.Application.Features.Users.UpdateUserStatus;

@@ -1,10 +1,11 @@
 using System.Collections.Concurrent;
-using Harmonie.Application.Interfaces;
-using Harmonie.Domain.ValueObjects;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+using Harmonie.Application.Interfaces.Common;
+using Harmonie.Application.Interfaces.Guilds;
+using Harmonie.Application.Interfaces.Users;
+using Harmonie.Domain.ValueObjects.Users;
 
-namespace Harmonie.API.RealTime;
+
+namespace Harmonie.API.RealTime.Common;
 
 public sealed class ConnectionTracker : IConnectionTracker, IDisposable
 {

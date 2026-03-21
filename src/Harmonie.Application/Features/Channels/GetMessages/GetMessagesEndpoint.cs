@@ -1,6 +1,6 @@
 using FluentValidation;
 using Harmonie.Application.Common;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Domain.ValueObjects.Channels;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

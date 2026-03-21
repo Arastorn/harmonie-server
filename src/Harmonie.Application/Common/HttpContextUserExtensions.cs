@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Domain.ValueObjects.Users;
 using Microsoft.AspNetCore.Http;
 
 namespace Harmonie.Application.Common;

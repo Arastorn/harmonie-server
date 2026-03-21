@@ -1,7 +1,11 @@
 using Harmonie.Domain.Common;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Domain.ValueObjects.Channels;
+using Harmonie.Domain.ValueObjects.Conversations;
+using Harmonie.Domain.ValueObjects.Messages;
+using Harmonie.Domain.ValueObjects.Uploads;
+using Harmonie.Domain.ValueObjects.Users;
 
-namespace Harmonie.Domain.Entities;
+namespace Harmonie.Domain.Entities.Messages;
 
 public sealed class Message : Entity<MessageId>
 {

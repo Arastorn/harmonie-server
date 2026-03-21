@@ -1,6 +1,6 @@
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Domain.ValueObjects.Messages;
 
-namespace Harmonie.Application.Common;
+namespace Harmonie.Application.Common.Messages;
 
 public static class MessageContentErrorCodeResolver
 {

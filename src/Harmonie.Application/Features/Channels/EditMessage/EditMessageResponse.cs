@@ -1,4 +1,5 @@
 using Harmonie.Application.Common;
+using Harmonie.Application.Common.Messages;
 
 namespace Harmonie.Application.Features.Channels.EditMessage;
 

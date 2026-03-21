@@ -1,14 +1,20 @@
 using FluentAssertions;
 using Harmonie.Application.Common;
 using Harmonie.Application.Features.Conversations.EditMessage;
-using Harmonie.Application.Interfaces;
-using Harmonie.Domain.Entities;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Application.Interfaces.Common;
+using Harmonie.Application.Interfaces.Conversations;
+using Harmonie.Application.Interfaces.Messages;
+using Harmonie.Domain.Entities.Conversations;
+using Harmonie.Domain.Entities.Messages;
+using Harmonie.Domain.ValueObjects.Conversations;
+using Harmonie.Domain.ValueObjects.Messages;
+using Harmonie.Domain.ValueObjects.Users;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
-namespace Harmonie.Application.Tests;
+
+namespace Harmonie.Application.Tests.Messages;
 
 public sealed class EditConversationMessageHandlerTests
 {

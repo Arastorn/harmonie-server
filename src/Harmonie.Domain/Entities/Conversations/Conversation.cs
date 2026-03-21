@@ -1,7 +1,8 @@
 using Harmonie.Domain.Common;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Domain.ValueObjects.Conversations;
+using Harmonie.Domain.ValueObjects.Users;
 
-namespace Harmonie.Domain.Entities;
+namespace Harmonie.Domain.Entities.Conversations;
 
 public sealed class Conversation : Entity<ConversationId>
 {

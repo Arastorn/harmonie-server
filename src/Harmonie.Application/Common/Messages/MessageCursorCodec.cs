@@ -1,7 +1,7 @@
-using Harmonie.Application.Interfaces;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Application.Interfaces.Messages;
+using Harmonie.Domain.ValueObjects.Messages;
 
-namespace Harmonie.Application.Common;
+namespace Harmonie.Application.Common.Messages;
 
 public static class MessageCursorCodec
 {

@@ -1,4 +1,4 @@
-namespace Harmonie.Application.Common;
+namespace Harmonie.Application.Common.Auth;
 
 /// <summary>
 /// Standardized refresh token revocation reasons persisted in storage.

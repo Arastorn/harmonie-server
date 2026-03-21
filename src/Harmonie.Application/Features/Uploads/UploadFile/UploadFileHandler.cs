@@ -1,6 +1,6 @@
 using Harmonie.Application.Common;
 using Harmonie.Application.Interfaces.Common;
-using Harmonie.Application.Interfaces.Uploads
+using Harmonie.Application.Interfaces.Uploads;
 using Harmonie.Application.Interfaces.Users;
 using Harmonie.Domain.Entities.Uploads;
 using Harmonie.Domain.Enums;

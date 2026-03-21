@@ -1,6 +1,6 @@
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Domain.ValueObjects.Users;
 
-namespace Harmonie.Application.Interfaces;
+namespace Harmonie.Application.Interfaces.Common;
 
 public interface IConnectionTracker
 {

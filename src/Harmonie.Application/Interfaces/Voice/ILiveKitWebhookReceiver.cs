@@ -1,4 +1,4 @@
-namespace Harmonie.Application.Interfaces;
+namespace Harmonie.Application.Interfaces.Voice;
 
 public interface ILiveKitWebhookReceiver
 {

@@ -1,4 +1,4 @@
-namespace Harmonie.Domain.ValueObjects;
+namespace Harmonie.Domain.ValueObjects.Messages;
 
 public sealed record MessageId
 {

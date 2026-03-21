@@ -1,7 +1,10 @@
-using Harmonie.Application.Common;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Application.Common.Messages;
+using Harmonie.Domain.ValueObjects.Guilds;
+using Harmonie.Domain.ValueObjects.Channels;
+using Harmonie.Domain.ValueObjects.Messages;
+using Harmonie.Domain.ValueObjects.Users;
 
-namespace Harmonie.Application.Interfaces;
+namespace Harmonie.Application.Interfaces.Channels;
 
 public interface ITextChannelNotifier
 {

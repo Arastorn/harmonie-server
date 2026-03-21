@@ -1,11 +1,14 @@
 using System.Text;
 using Dapper;
-using Harmonie.Application.Interfaces;
-using Harmonie.Domain.Entities;
-using Harmonie.Domain.ValueObjects;
-using Harmonie.Infrastructure.Rows;
+using Harmonie.Application.Interfaces.Users;
+using Harmonie.Domain.Entities.Users;
+using Harmonie.Domain.ValueObjects.Guilds;
+using Harmonie.Domain.ValueObjects.Uploads;
+using Harmonie.Domain.ValueObjects.Users;
+using Harmonie.Infrastructure.Persistence.Common;
+using Harmonie.Infrastructure.Rows.Users;
 
-namespace Harmonie.Infrastructure.Persistence;
+namespace Harmonie.Infrastructure.Persistence.Users;
 
 public sealed class UserRepository : IUserRepository
 {

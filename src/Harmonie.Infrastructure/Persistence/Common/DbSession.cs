@@ -1,6 +1,6 @@
 using Npgsql;
 
-namespace Harmonie.Infrastructure.Persistence;
+namespace Harmonie.Infrastructure.Persistence.Common;
 
 public sealed class DbSession : IAsyncDisposable
 {

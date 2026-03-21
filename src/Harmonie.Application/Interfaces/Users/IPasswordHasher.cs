@@ -1,4 +1,4 @@
-namespace Harmonie.Application.Interfaces;
+namespace Harmonie.Application.Interfaces.Users;
 
 /// <summary>
 /// Interface for password hashing operations.

@@ -1,7 +1,11 @@
 using Harmonie.Application.Common;
-using Harmonie.Application.Interfaces;
+using Harmonie.Application.Interfaces.Channels;
+using Harmonie.Application.Interfaces.Common;
+using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Domain.Enums;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Domain.ValueObjects.Channels;
+using Harmonie.Domain.ValueObjects.Messages;
+using Harmonie.Domain.ValueObjects.Users;
 using Microsoft.Extensions.Logging;
 
 namespace Harmonie.Application.Features.Channels.RemoveReaction;

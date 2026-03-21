@@ -1,4 +1,4 @@
-namespace Harmonie.Domain.ValueObjects;
+namespace Harmonie.Domain.ValueObjects.Uploads;
 
 public sealed record UploadedFileId
 {

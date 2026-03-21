@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
 using Harmonie.Domain.Common;
 
-namespace Harmonie.Domain.ValueObjects;
+namespace Harmonie.Domain.ValueObjects.Users;
 
 /// <summary>
 /// Email address value object with validation.

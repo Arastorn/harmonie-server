@@ -1,14 +1,17 @@
 using FluentAssertions;
 using Harmonie.Application.Common;
 using Harmonie.Application.Features.Guilds.CreateGuild;
-using Harmonie.Application.Interfaces;
-using Harmonie.Domain.Entities;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Application.Interfaces.Channels;
+using Harmonie.Application.Interfaces.Common;
+using Harmonie.Application.Interfaces.Guilds;
+using Harmonie.Domain.Entities.Guilds;
+using Harmonie.Domain.ValueObjects.Uploads;
+using Harmonie.Domain.ValueObjects.Users;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
-namespace Harmonie.Application.Tests;
+namespace Harmonie.Application.Tests.Guilds;
 
 public sealed class CreateGuildHandlerTests
 {

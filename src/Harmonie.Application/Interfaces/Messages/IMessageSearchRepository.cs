@@ -1,6 +1,5 @@
-using Harmonie.Domain.ValueObjects;
 
-namespace Harmonie.Application.Interfaces;
+namespace Harmonie.Application.Interfaces.Messages;
 
 public interface IMessageSearchRepository
 {

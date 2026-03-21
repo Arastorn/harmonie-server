@@ -1,13 +1,15 @@
 using FluentAssertions;
 using Harmonie.Application.Common;
 using Harmonie.Application.Features.Auth.Login;
-using Harmonie.Application.Interfaces;
-using Harmonie.Domain.Entities;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Application.Interfaces.Auth;
+using Harmonie.Application.Interfaces.Common;
+using Harmonie.Application.Interfaces.Users;
+using Harmonie.Domain.Entities.Users;
+using Harmonie.Domain.ValueObjects.Users;
 using Moq;
 using Xunit;
 
-namespace Harmonie.Application.Tests;
+namespace Harmonie.Application.Tests.Auth;
 
 /// <summary>
 /// Tests for LoginHandler.

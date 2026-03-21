@@ -1,6 +1,6 @@
-using Harmonie.Application.Interfaces;
+using Harmonie.Application.Interfaces.Common;
 
-namespace Harmonie.Infrastructure.Persistence;
+namespace Harmonie.Infrastructure.Persistence.Common;
 
 public sealed class UnitOfWork : IUnitOfWork
 {

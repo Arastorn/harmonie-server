@@ -1,7 +1,8 @@
-using Harmonie.Domain.Entities;
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Domain.Entities.Conversations;
+using Harmonie.Domain.ValueObjects.Conversations;
+using Harmonie.Domain.ValueObjects.Users;
 
-namespace Harmonie.Application.Interfaces;
+namespace Harmonie.Application.Interfaces.Conversations;
 
 public sealed record ConversationGetOrCreateResult(Conversation Conversation, bool WasCreated);
 

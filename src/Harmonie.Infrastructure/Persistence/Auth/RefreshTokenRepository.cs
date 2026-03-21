@@ -1,11 +1,12 @@
 using Dapper;
-using Harmonie.Application.Common;
-using Harmonie.Application.Interfaces;
-using Harmonie.Domain.ValueObjects;
-using Harmonie.Infrastructure.Rows;
+using Harmonie.Application.Common.Auth;
+using Harmonie.Application.Interfaces.Auth;
+using Harmonie.Domain.ValueObjects.Users;
+using Harmonie.Infrastructure.Persistence.Common;
+using Harmonie.Infrastructure.Rows.Auth;
 using Npgsql;
 
-namespace Harmonie.Infrastructure.Persistence;
+namespace Harmonie.Infrastructure.Persistence.Auth;
 
 public sealed class RefreshTokenRepository : IRefreshTokenRepository
 {

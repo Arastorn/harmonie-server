@@ -1,4 +1,4 @@
-namespace Harmonie.Application.Interfaces;
+namespace Harmonie.Application.Interfaces.Common;
 
 /// <summary>
 /// Coordinates transactional boundaries for application use cases.

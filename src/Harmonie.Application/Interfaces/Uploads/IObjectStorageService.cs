@@ -1,4 +1,4 @@
-namespace Harmonie.Application.Interfaces;
+namespace Harmonie.Application.Interfaces.Uploads;
 
 public sealed record ObjectStorageUploadRequest(
     string StorageKey,

@@ -1,6 +1,6 @@
-using Harmonie.Domain.ValueObjects;
+using Harmonie.Domain.ValueObjects.Uploads;
 
-namespace Harmonie.Domain.Entities;
+namespace Harmonie.Domain.Entities.Messages;
 
 public sealed record MessageAttachment(
     UploadedFileId FileId,

@@ -1,7 +1,8 @@
-using Harmonie.Application.Interfaces;
+using Harmonie.API.RealTime.Common;
+using Harmonie.Application.Interfaces.Users;
 using Microsoft.AspNetCore.SignalR;
 
-namespace Harmonie.API.RealTime;
+namespace Harmonie.API.RealTime.Users;
 
 public sealed class SignalRUserPresenceNotifier : IUserPresenceNotifier
 {
