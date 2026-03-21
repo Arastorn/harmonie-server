@@ -4,7 +4,6 @@ using FluentAssertions;
 using Harmonie.API.IntegrationTests.Common;
 using Harmonie.Application.Common;
 using Harmonie.Application.Features.Auth.Register;
-using Harmonie.Application.Features.Conversations.OpenConversation;
 using Harmonie.Application.Features.Guilds.CreateGuild;
 using Harmonie.Application.Features.Guilds.GetGuildChannels;
 using Harmonie.Application.Features.Guilds.InviteMember;
@@ -186,7 +185,7 @@ public sealed class SignalRTypingIndicatorHubTests : IClassFixture<WebApplicatio
         var participantOne = await AuthTestHelper.RegisterAsync(_client);
         var participantTwo = await AuthTestHelper.RegisterAsync(_client);
         var outsider = await AuthTestHelper.RegisterAsync(_client);
-        var conversationId = await OpenConversationAsync(participantOne.AccessToken, participantTwo.UserId);
+        var conversationId = await ConversationTestHelper.OpenConversationAsync(_client, participantOne.AccessToken, participantTwo.UserId);
 
         await using var connection = CreateHubConnection(outsider.AccessToken);
         await StartAndWaitReadyAsync(connection);
@@ -202,7 +201,7 @@ public sealed class SignalRTypingIndicatorHubTests : IClassFixture<WebApplicatio
     {
         var sender = await AuthTestHelper.RegisterAsync(_client);
         var receiver = await AuthTestHelper.RegisterAsync(_client);
-        var conversationId = await OpenConversationAsync(sender.AccessToken, receiver.UserId);
+        var conversationId = await ConversationTestHelper.OpenConversationAsync(_client, sender.AccessToken, receiver.UserId);
 
         await using var receiverConnection = CreateHubConnection(receiver.AccessToken);
         var typingReceived = new TaskCompletionSource<SignalRConversationUserTypingEvent>(
@@ -234,7 +233,7 @@ public sealed class SignalRTypingIndicatorHubTests : IClassFixture<WebApplicatio
     {
         var sender = await AuthTestHelper.RegisterAsync(_client);
         var receiver = await AuthTestHelper.RegisterAsync(_client);
-        var conversationId = await OpenConversationAsync(sender.AccessToken, receiver.UserId);
+        var conversationId = await ConversationTestHelper.OpenConversationAsync(_client, sender.AccessToken, receiver.UserId);
 
         var eventsReceived = 0;
         await using var receiverConnection = CreateHubConnection(receiver.AccessToken);
@@ -280,19 +279,6 @@ public sealed class SignalRTypingIndicatorHubTests : IClassFixture<WebApplicatio
                 options.HttpMessageHandlerFactory = _ => _factory.Server.CreateHandler();
             })
             .Build();
-    }
-
-    private async Task<string> OpenConversationAsync(string accessToken, string targetUserId)
-    {
-        var response = await _client.SendAuthorizedPostAsync(
-            "/api/conversations",
-            new OpenConversationRequest(targetUserId),
-            accessToken);
-        response.StatusCode.Should().BeOneOf(HttpStatusCode.Created, HttpStatusCode.OK);
-
-        var payload = await response.Content.ReadFromJsonAsync<OpenConversationResponse>();
-        payload.Should().NotBeNull();
-        return payload!.ConversationId;
     }
 
     private sealed record SignalRUserTypingEvent(

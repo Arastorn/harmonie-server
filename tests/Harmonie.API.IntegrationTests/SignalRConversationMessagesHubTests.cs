@@ -4,7 +4,6 @@ using FluentAssertions;
 using Harmonie.API.IntegrationTests.Common;
 using Harmonie.Application.Features.Conversations.DeleteMessage;
 using Harmonie.Application.Features.Conversations.EditMessage;
-using Harmonie.Application.Features.Conversations.OpenConversation;
 using Harmonie.Application.Features.Conversations.SendMessage;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -30,7 +29,7 @@ public sealed class SignalRConversationMessagesHubTests : IClassFixture<WebAppli
     {
         var sender = await AuthTestHelper.RegisterAsync(_client);
         var receiver = await AuthTestHelper.RegisterAsync(_client);
-        var conversationId = await OpenConversationAsync(sender.AccessToken, receiver.UserId);
+        var conversationId = await ConversationTestHelper.OpenConversationAsync(_client, sender.AccessToken, receiver.UserId);
 
         await using var connection = CreateHubConnection(receiver.AccessToken);
         var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -71,7 +70,7 @@ public sealed class SignalRConversationMessagesHubTests : IClassFixture<WebAppli
     {
         var sender = await AuthTestHelper.RegisterAsync(_client);
         var receiver = await AuthTestHelper.RegisterAsync(_client);
-        var conversationId = await OpenConversationAsync(sender.AccessToken, receiver.UserId);
+        var conversationId = await ConversationTestHelper.OpenConversationAsync(_client, sender.AccessToken, receiver.UserId);
 
         var sendResponse = await _client.SendAuthorizedPostAsync(
             $"/api/conversations/{conversationId}/messages",
@@ -118,7 +117,7 @@ public sealed class SignalRConversationMessagesHubTests : IClassFixture<WebAppli
     {
         var sender = await AuthTestHelper.RegisterAsync(_client);
         var receiver = await AuthTestHelper.RegisterAsync(_client);
-        var conversationId = await OpenConversationAsync(sender.AccessToken, receiver.UserId);
+        var conversationId = await ConversationTestHelper.OpenConversationAsync(_client, sender.AccessToken, receiver.UserId);
 
         var sendResponse = await _client.SendAuthorizedPostAsync(
             $"/api/conversations/{conversationId}/messages",
@@ -170,19 +169,6 @@ public sealed class SignalRConversationMessagesHubTests : IClassFixture<WebAppli
                 options.HttpMessageHandlerFactory = _ => _factory.Server.CreateHandler();
             })
             .Build();
-    }
-
-    private async Task<string> OpenConversationAsync(string accessToken, string targetUserId)
-    {
-        var response = await _client.SendAuthorizedPostAsync(
-            "/api/conversations",
-            new OpenConversationRequest(targetUserId),
-            accessToken);
-        response.StatusCode.Should().BeOneOf(HttpStatusCode.Created, HttpStatusCode.OK);
-
-        var payload = await response.Content.ReadFromJsonAsync<OpenConversationResponse>();
-        payload.Should().NotBeNull();
-        return payload!.ConversationId;
     }
 
     private sealed record SignalRConversationMessageCreatedEvent(

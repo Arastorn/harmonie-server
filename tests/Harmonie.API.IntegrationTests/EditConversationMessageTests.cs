@@ -4,8 +4,6 @@ using FluentAssertions;
 using Harmonie.API.IntegrationTests.Common;
 using Harmonie.Application.Common;
 using Harmonie.Application.Features.Conversations.EditMessage;
-using Harmonie.Application.Features.Conversations.OpenConversation;
-using Harmonie.Application.Features.Conversations.SendMessage;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
 
@@ -25,8 +23,8 @@ public sealed class EditConversationMessageTests : IClassFixture<WebApplicationF
     {
         var caller = await AuthTestHelper.RegisterAsync(_client);
         var target = await AuthTestHelper.RegisterAsync(_client);
-        var conversationId = await OpenConversationAsync(caller.AccessToken, target.UserId);
-        var message = await SendConversationMessageAsync(conversationId, "original direct", caller.AccessToken);
+        var conversationId = await ConversationTestHelper.OpenConversationAsync(_client, caller.AccessToken, target.UserId);
+        var message = await ConversationTestHelper.SendConversationMessageAsync(_client, conversationId, "original direct", caller.AccessToken);
 
         var response = await _client.SendAuthorizedPatchAsync(
             $"/api/conversations/{conversationId}/messages/{message.MessageId}",
@@ -67,8 +65,8 @@ public sealed class EditConversationMessageTests : IClassFixture<WebApplicationF
         var participantOne = await AuthTestHelper.RegisterAsync(_client);
         var participantTwo = await AuthTestHelper.RegisterAsync(_client);
         var outsider = await AuthTestHelper.RegisterAsync(_client);
-        var conversationId = await OpenConversationAsync(participantOne.AccessToken, participantTwo.UserId);
-        var message = await SendConversationMessageAsync(conversationId, "original direct", participantOne.AccessToken);
+        var conversationId = await ConversationTestHelper.OpenConversationAsync(_client, participantOne.AccessToken, participantTwo.UserId);
+        var message = await ConversationTestHelper.SendConversationMessageAsync(_client, conversationId, "original direct", participantOne.AccessToken);
 
         var response = await _client.SendAuthorizedPatchAsync(
             $"/api/conversations/{conversationId}/messages/{message.MessageId}",
@@ -87,8 +85,8 @@ public sealed class EditConversationMessageTests : IClassFixture<WebApplicationF
     {
         var participantOne = await AuthTestHelper.RegisterAsync(_client);
         var participantTwo = await AuthTestHelper.RegisterAsync(_client);
-        var conversationId = await OpenConversationAsync(participantOne.AccessToken, participantTwo.UserId);
-        var message = await SendConversationMessageAsync(conversationId, "original direct", participantOne.AccessToken);
+        var conversationId = await ConversationTestHelper.OpenConversationAsync(_client, participantOne.AccessToken, participantTwo.UserId);
+        var message = await ConversationTestHelper.SendConversationMessageAsync(_client, conversationId, "original direct", participantOne.AccessToken);
 
         var response = await _client.SendAuthorizedPatchAsync(
             $"/api/conversations/{conversationId}/messages/{message.MessageId}",
@@ -107,7 +105,7 @@ public sealed class EditConversationMessageTests : IClassFixture<WebApplicationF
     {
         var caller = await AuthTestHelper.RegisterAsync(_client);
         var target = await AuthTestHelper.RegisterAsync(_client);
-        var conversationId = await OpenConversationAsync(caller.AccessToken, target.UserId);
+        var conversationId = await ConversationTestHelper.OpenConversationAsync(_client, caller.AccessToken, target.UserId);
 
         var response = await _client.SendAuthorizedPatchAsync(
             $"/api/conversations/{conversationId}/messages/{Guid.NewGuid()}",
@@ -131,32 +129,4 @@ public sealed class EditConversationMessageTests : IClassFixture<WebApplicationF
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
-    private async Task<string> OpenConversationAsync(string accessToken, string targetUserId)
-    {
-        var response = await _client.SendAuthorizedPostAsync(
-            "/api/conversations",
-            new OpenConversationRequest(targetUserId),
-            accessToken);
-        response.StatusCode.Should().BeOneOf(HttpStatusCode.Created, HttpStatusCode.OK);
-
-        var payload = await response.Content.ReadFromJsonAsync<OpenConversationResponse>();
-        payload.Should().NotBeNull();
-        return payload!.ConversationId;
-    }
-
-    private async Task<SendMessageResponse> SendConversationMessageAsync(
-        string conversationId,
-        string content,
-        string accessToken)
-    {
-        var response = await _client.SendAuthorizedPostAsync(
-            $"/api/conversations/{conversationId}/messages",
-            new SendMessageRequest(content),
-            accessToken);
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-
-        var payload = await response.Content.ReadFromJsonAsync<SendMessageResponse>();
-        payload.Should().NotBeNull();
-        return payload!;
-    }
 }

@@ -8,6 +8,39 @@ namespace Harmonie.API.IntegrationTests.Common;
 
 public static class ChannelTestHelper
 {
+    public static async Task<(string GuildId, string ChannelId)> CreateGuildAndChannelAsync(
+        HttpClient client,
+        string accessToken)
+    {
+        var guildName = $"guild{Guid.NewGuid():N}"[..16];
+        var guildId = await GuildTestHelper.CreateGuildAndGetIdAsync(client, accessToken, guildName);
+        var channelId = await CreateChannelAndGetIdAsync(
+            client,
+            accessToken,
+            $"chan{Guid.NewGuid():N}"[..16],
+            guildId,
+            position: 1);
+        return (guildId, channelId);
+    }
+
+    public static async Task<SendMessageResponse> SendChannelMessageAsync(
+        HttpClient client,
+        string channelId,
+        string content,
+        string accessToken)
+    {
+        var response = await client.SendAuthorizedPostAsync(
+            $"/api/channels/{channelId}/messages",
+            new SendMessageRequest(content),
+            accessToken);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var payload = await response.Content.ReadFromJsonAsync<SendMessageResponse>();
+        payload.Should().NotBeNull();
+        return payload!;
+    }
+
+
     public static async Task<string> CreateChannelAndGetIdAsync(
         HttpClient client,
         string accessToken,
