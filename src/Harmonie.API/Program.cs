@@ -2,10 +2,12 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
+using Harmonie.API.Endpoints;
 using Harmonie.API.Middleware;
 using Harmonie.Application;
 using Harmonie.Application.Common;
 using Harmonie.API.Configuration;
+using Harmonie.Application.Features.Uploads.UploadFile;
 using Harmonie.API.RealTime.Channels;
 using Harmonie.API.RealTime.Common;
 using Harmonie.API.RealTime.Conversations;
@@ -13,66 +15,6 @@ using Harmonie.API.RealTime.Guilds;
 using Harmonie.API.RealTime.Messages;
 using Harmonie.API.RealTime.Users;
 using Harmonie.API.RealTime.Voice;
-using Harmonie.Application.Features.Auth.Login;
-using Harmonie.Application.Features.Auth.LogoutAll;
-using Harmonie.Application.Features.Auth.Logout;
-using Harmonie.Application.Features.Auth.RefreshToken;
-using Harmonie.Application.Features.Auth.Register;
-using Harmonie.Application.Features.Channels.DeleteChannel;
-using Harmonie.Application.Features.Channels.DeleteMessageAttachment;
-using ChannelDeleteMessage = Harmonie.Application.Features.Channels.DeleteMessage.DeleteMessageEndpoint;
-using ChannelEditMessage = Harmonie.Application.Features.Channels.EditMessage.EditMessageEndpoint;
-using ChannelGetMessages = Harmonie.Application.Features.Channels.GetMessages.GetMessagesEndpoint;
-using Harmonie.Application.Features.Channels.JoinVoiceChannel;
-using ChannelSendMessage = Harmonie.Application.Features.Channels.SendMessage.SendMessageEndpoint;
-using Harmonie.Application.Features.Channels.UpdateChannel;
-using ConversationDeleteMessageAttachment = Harmonie.Application.Features.Conversations.DeleteMessageAttachment.DeleteMessageAttachmentEndpoint;
-using ConversationDeleteMessage = Harmonie.Application.Features.Conversations.DeleteMessage.DeleteMessageEndpoint;
-using ConversationEditMessage = Harmonie.Application.Features.Conversations.EditMessage.EditMessageEndpoint;
-using ConversationGetMessages = Harmonie.Application.Features.Conversations.GetMessages.GetMessagesEndpoint;
-using Harmonie.Application.Features.Conversations.ListConversations;
-using Harmonie.Application.Features.Conversations.OpenConversation;
-using Harmonie.Application.Features.Conversations.SearchConversationMessages;
-using ConversationSendMessage = Harmonie.Application.Features.Conversations.SendMessage.SendMessageEndpoint;
-using Harmonie.Application.Features.Channels.AcknowledgeRead;
-using ConversationAcknowledgeRead = Harmonie.Application.Features.Conversations.AcknowledgeRead.AcknowledgeReadEndpoint;
-using ChannelAddReaction = Harmonie.Application.Features.Channels.AddReaction.AddReactionEndpoint;
-using ChannelRemoveReaction = Harmonie.Application.Features.Channels.RemoveReaction.RemoveReactionEndpoint;
-using ConversationAddReaction = Harmonie.Application.Features.Conversations.AddReaction.AddReactionEndpoint;
-using ConversationRemoveReaction = Harmonie.Application.Features.Conversations.RemoveReaction.RemoveReactionEndpoint;
-using Harmonie.Application.Features.Guilds.CreateChannel;
-using Harmonie.Application.Features.Guilds.CreateGuild;
-using Harmonie.Application.Features.Guilds.AcceptInvite;
-using Harmonie.Application.Features.Guilds.BanMember;
-using Harmonie.Application.Features.Guilds.ListBans;
-using Harmonie.Application.Features.Guilds.UnbanMember;
-using Harmonie.Application.Features.Guilds.CreateGuildInvite;
-using Harmonie.Application.Features.Guilds.DeleteGuild;
-using Harmonie.Application.Features.Guilds.DeleteGuildIcon;
-using Harmonie.Application.Features.Guilds.ListGuildInvites;
-using Harmonie.Application.Features.Guilds.GetGuildChannels;
-using Harmonie.Application.Features.Guilds.ReorderChannels;
-using Harmonie.Application.Features.Guilds.PreviewInvite;
-using Harmonie.Application.Features.Guilds.RevokeInvite;
-using Harmonie.Application.Features.Guilds.GetGuildVoiceParticipants;
-using Harmonie.Application.Features.Guilds.GetGuildMembers;
-using Harmonie.Application.Features.Guilds.InviteMember;
-using Harmonie.Application.Features.Guilds.LeaveGuild;
-using Harmonie.Application.Features.Guilds.ListUserGuilds;
-using Harmonie.Application.Features.Guilds.RemoveMember;
-using Harmonie.Application.Features.Guilds.SearchMessages;
-using Harmonie.Application.Features.Guilds.TransferOwnership;
-using Harmonie.Application.Features.Guilds.UpdateGuild;
-using Harmonie.Application.Features.Guilds.UpdateMemberRole;
-using Harmonie.Application.Features.Uploads.DownloadFile;
-using Harmonie.Application.Features.Users.DeleteMyAvatar;
-using Harmonie.Application.Features.Users.GetMyProfile;
-using Harmonie.Application.Features.Users.SearchUsers;
-using Harmonie.Application.Features.Users.UpdateMyProfile;
-using Harmonie.Application.Features.Users.UpdateUserStatus;
-using Harmonie.Application.Features.Users.UploadMyAvatar;
-using Harmonie.Application.Features.Uploads.UploadFile;
-using Harmonie.Application.Features.Voice.HandleLiveKitWebhook;
 using Harmonie.Application.Interfaces.Channels;
 using Harmonie.Application.Interfaces.Common;
 using Harmonie.Application.Interfaces.Conversations;
@@ -283,10 +225,7 @@ app.UseAuthorization();
 app.UseMiddleware<AuthenticatedUserContextMiddleware>();
 app.UseRateLimiter();
 
-// ============================================================
-// MAP ENDPOINTS - Vertical Slice Architecture
-// ============================================================
-
+// Map endpoints
 app.MapHealthChecks("/health", new HealthCheckOptions
 {
     ResponseWriter = WriteHealthCheckResponseAsync
@@ -294,76 +233,14 @@ app.MapHealthChecks("/health", new HealthCheckOptions
 .WithName("HealthCheck")
 .WithTags("System");
 
-// Auth endpoints
-RegisterEndpoint.Map(app);
-LoginEndpoint.Map(app);
-LogoutEndpoint.Map(app);
-LogoutAllEndpoint.Map(app);
-RefreshTokenEndpoint.Map(app);
-CreateChannelEndpoint.Map(app);
-CreateGuildEndpoint.Map(app);
-CreateGuildInviteEndpoint.Map(app);
-ListGuildInvitesEndpoint.Map(app);
-PreviewInviteEndpoint.Map(app);
-AcceptInviteEndpoint.Map(app);
-RevokeInviteEndpoint.Map(app);
-DeleteGuildEndpoint.Map(app);
-DeleteGuildIconEndpoint.Map(app);
-ListUserGuildsEndpoint.Map(app);
-InviteMemberEndpoint.Map(app);
-GetGuildChannelsEndpoint.Map(app);
-ReorderChannelsEndpoint.Map(app);
-GetGuildVoiceParticipantsEndpoint.Map(app);
-GetGuildMembersEndpoint.Map(app);
-SearchMessagesEndpoint.Map(app);
-LeaveGuildEndpoint.Map(app);
-RemoveMemberEndpoint.Map(app);
-BanMemberEndpoint.Map(app);
-ListBansEndpoint.Map(app);
-UnbanMemberEndpoint.Map(app);
-UpdateMemberRoleEndpoint.Map(app);
-TransferOwnershipEndpoint.Map(app);
-UpdateGuildEndpoint.Map(app);
-ChannelSendMessage.Map(app);
-ChannelGetMessages.Map(app);
-JoinVoiceChannelEndpoint.Map(app);
-HandleLiveKitWebhookEndpoint.Map(app);
-UpdateChannelEndpoint.Map(app);
-DeleteChannelEndpoint.Map(app);
-DeleteMessageAttachmentEndpoint.Map(app);
-ChannelEditMessage.Map(app);
-ChannelDeleteMessage.Map(app);
-DeleteMyAvatarEndpoint.Map(app);
-GetMyProfileEndpoint.Map(app);
-SearchUsersEndpoint.Map(app);
-UpdateMyProfileEndpoint.Map(app);
-UpdateUserStatusEndpoint.Map(app);
-UploadMyAvatarEndpoint.Map(app);
-UploadFileEndpoint.Map(app);
-DownloadFileEndpoint.Map(app);
-OpenConversationEndpoint.Map(app);
-ListConversationsEndpoint.Map(app);
-ConversationGetMessages.Map(app);
-SearchConversationMessagesEndpoint.Map(app);
-ConversationEditMessage.Map(app);
-ConversationDeleteMessage.Map(app);
-ConversationDeleteMessageAttachment.Map(app);
-ConversationSendMessage.Map(app);
-AcknowledgeReadEndpoint.Map(app);
-ChannelAddReaction.Map(app);
-ChannelRemoveReaction.Map(app);
-ConversationAcknowledgeRead.Map(app);
-ConversationAddReaction.Map(app);
-ConversationRemoveReaction.Map(app);
+app.MapAuthEndpoints();
+app.MapGuildEndpoints();
+app.MapChannelEndpoints();
+app.MapConversationEndpoints();
+app.MapUserEndpoints();
+app.MapUploadEndpoints();
+app.MapVoiceEndpoints();
 app.MapHub<RealtimeHub>("/hubs/realtime");
-
-// Future endpoints will be added here as features are developed
-// Example:
-// GuildEndpoints.Map(app);
-// ChannelEndpoints.Map(app);
-// MessageEndpoints.Map(app);
-
-// ============================================================
 
 app.Run();
 

@@ -79,8 +79,8 @@ When picking up a GitHub issue:
 
 1. Create a new folder under `src/Harmonie.Application/Features`.
 2. Add request/validator/handler/response/endpoint files.
-3. Register handler in `src/Harmonie.Application/DependencyInjection.cs`.
-4. Map endpoint in `src/Harmonie.API/Program.cs`.
+3. Register handler in the appropriate `src/Harmonie.Application/Registration/*Registration.cs` file.
+4. Map endpoint in the appropriate `src/Harmonie.API/Endpoints/*Endpoints.cs` file.
 5. Add or update tests.
 6. Update docs if behavior changed.
 7. Compare against at least 2 existing features and align conventions before considering the work done.
