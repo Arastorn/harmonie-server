@@ -42,7 +42,7 @@ public static class GetMessagesEndpoint
 
         var currentUserId = httpContext.GetRequiredAuthenticatedUserId();
 
-        var response = await handler.HandleAsync(new GetChannelMessagesInput(channelId, request), currentUserId, cancellationToken);
+        var response = await handler.HandleAsync(new GetChannelMessagesInput(channelId, request.Before, request.Limit), currentUserId, cancellationToken);
         return response.ToHttpResult();
     }
 }

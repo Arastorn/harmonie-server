@@ -8,7 +8,7 @@ using Harmonie.Domain.ValueObjects.Users;
 
 namespace Harmonie.Application.Features.Channels.GetMessages;
 
-public sealed record GetChannelMessagesInput(GuildChannelId ChannelId, GetMessagesRequest Request);
+public sealed record GetChannelMessagesInput(GuildChannelId ChannelId, string? Before = null, int? Limit = null);
 
 public sealed class GetMessagesHandler : IAuthenticatedHandler<GetChannelMessagesInput, GetMessagesResponse>
 {
@@ -31,15 +31,15 @@ public sealed class GetMessagesHandler : IAuthenticatedHandler<GetChannelMessage
         CancellationToken cancellationToken = default)
     {
         MessageCursor? beforeCursor = null;
-        if (request.Request.Before is not null)
+        if (request.Before is not null)
         {
-            if (!MessageCursorCodec.TryParse(request.Request.Before, out var parsedCursor) || parsedCursor is null)
+            if (!MessageCursorCodec.TryParse(request.Before, out var parsedCursor) || parsedCursor is null)
             {
                 return ApplicationResponse<GetMessagesResponse>.Fail(
                     ApplicationErrorCodes.Common.ValidationFailed,
                     "Request validation failed",
                     EndpointExtensions.SingleValidationError(
-                        nameof(request.Request.Before),
+                        nameof(request.Before),
                         ApplicationErrorCodes.Validation.InvalidFormat,
                         "Before cursor is invalid"));
             }
@@ -47,7 +47,7 @@ public sealed class GetMessagesHandler : IAuthenticatedHandler<GetChannelMessage
             beforeCursor = parsedCursor;
         }
 
-        var limit = request.Request.Limit ?? DefaultLimit;
+        var limit = request.Limit ?? DefaultLimit;
 
         var ctx = await _guildChannelRepository.GetWithCallerRoleAsync(request.ChannelId, currentUserId, cancellationToken);
         if (ctx is null)

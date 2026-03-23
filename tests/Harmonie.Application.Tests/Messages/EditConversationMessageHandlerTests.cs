@@ -52,7 +52,7 @@ public sealed class EditConversationMessageHandlerTests
     public async Task HandleAsync_WithEmptyContent_ShouldReturnMessageContentEmpty()
     {
         var response = await _handler.HandleAsync(
-            new EditConversationMessageInput(ConversationId.New(), MessageId.New(), new EditMessageRequest("   ")),
+            new EditConversationMessageInput(ConversationId.New(), MessageId.New(), "   "),
             UserId.New());
 
         response.Success.Should().BeFalse();
@@ -72,7 +72,7 @@ public sealed class EditConversationMessageHandlerTests
             .ReturnsAsync((Conversation?)null);
 
         var response = await _handler.HandleAsync(
-            new EditConversationMessageInput(conversationId, MessageId.New(), new EditMessageRequest("updated content")),
+            new EditConversationMessageInput(conversationId, MessageId.New(), "updated content"),
             callerId);
 
         response.Success.Should().BeFalse();
@@ -94,7 +94,7 @@ public sealed class EditConversationMessageHandlerTests
             .ReturnsAsync(conversation);
 
         var response = await _handler.HandleAsync(
-            new EditConversationMessageInput(conversation.Id, MessageId.New(), new EditMessageRequest("updated content")),
+            new EditConversationMessageInput(conversation.Id, MessageId.New(), "updated content"),
             outsider);
 
         response.Success.Should().BeFalse();
@@ -120,7 +120,7 @@ public sealed class EditConversationMessageHandlerTests
             .ReturnsAsync((Message?)null);
 
         var response = await _handler.HandleAsync(
-            new EditConversationMessageInput(conversation.Id, messageId, new EditMessageRequest("updated content")),
+            new EditConversationMessageInput(conversation.Id, messageId, "updated content"),
             participantOne);
 
         response.Success.Should().BeFalse();
@@ -147,7 +147,7 @@ public sealed class EditConversationMessageHandlerTests
             .ReturnsAsync(messageFromOtherConversation);
 
         var response = await _handler.HandleAsync(
-            new EditConversationMessageInput(conversation.Id, messageId, new EditMessageRequest("updated content")),
+            new EditConversationMessageInput(conversation.Id, messageId, "updated content"),
             participantOne);
 
         response.Success.Should().BeFalse();
@@ -174,7 +174,7 @@ public sealed class EditConversationMessageHandlerTests
             .ReturnsAsync(message);
 
         var response = await _handler.HandleAsync(
-            new EditConversationMessageInput(conversation.Id, messageId, new EditMessageRequest("updated content")),
+            new EditConversationMessageInput(conversation.Id, messageId, "updated content"),
             participantOne);
 
         response.Success.Should().BeFalse();
@@ -201,7 +201,7 @@ public sealed class EditConversationMessageHandlerTests
             .ReturnsAsync(message);
 
         var response = await _handler.HandleAsync(
-            new EditConversationMessageInput(conversation.Id, messageId, new EditMessageRequest("  updated content  ")),
+            new EditConversationMessageInput(conversation.Id, messageId, "  updated content  "),
             participantOne);
 
         response.Success.Should().BeTrue();
@@ -231,7 +231,7 @@ public sealed class EditConversationMessageHandlerTests
             .ReturnsAsync(message);
 
         var response = await _handler.HandleAsync(
-            new EditConversationMessageInput(conversation.Id, messageId, new EditMessageRequest("updated content")),
+            new EditConversationMessageInput(conversation.Id, messageId, "updated content"),
             participantOne);
 
         response.Success.Should().BeTrue();
@@ -278,7 +278,7 @@ public sealed class EditConversationMessageHandlerTests
             .ThrowsAsync(new InvalidOperationException("SignalR unavailable"));
 
         var response = await _handler.HandleAsync(
-            new EditConversationMessageInput(conversation.Id, messageId, new EditMessageRequest("updated content")),
+            new EditConversationMessageInput(conversation.Id, messageId, "updated content"),
             participantOne);
 
         response.Success.Should().BeTrue();

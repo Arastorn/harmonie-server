@@ -45,7 +45,7 @@ public static class SendMessageEndpoint
 
         var currentUserId = httpContext.GetRequiredAuthenticatedUserId();
 
-        var response = await handler.HandleAsync(new SendConversationMessageInput(conversationId, request), currentUserId, cancellationToken);
+        var response = await handler.HandleAsync(new SendConversationMessageInput(conversationId, request.Content, request.AttachmentFileIds), currentUserId, cancellationToken);
         return response.ToCreatedHttpResult(
             data => $"/api/conversations/{data.ConversationId}/messages/{data.MessageId}");
     }

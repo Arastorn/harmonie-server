@@ -42,7 +42,7 @@ public static class ReorderChannelsEndpoint
 
         var callerId = httpContext.GetRequiredAuthenticatedUserId();
 
-        var response = await handler.HandleAsync(new ReorderChannelsInput(guildId, request), callerId, cancellationToken);
+        var response = await handler.HandleAsync(new ReorderChannelsInput(guildId, request.Channels), callerId, cancellationToken);
         return response.ToHttpResult();
     }
 }

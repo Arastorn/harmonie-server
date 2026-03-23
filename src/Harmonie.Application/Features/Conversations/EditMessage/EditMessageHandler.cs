@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Harmonie.Application.Features.Conversations.EditMessage;
 
-public sealed record EditConversationMessageInput(ConversationId ConversationId, MessageId MessageId, EditMessageRequest Request);
+public sealed record EditConversationMessageInput(ConversationId ConversationId, MessageId MessageId, string Content);
 
 public sealed class EditMessageHandler : IAuthenticatedHandler<EditConversationMessageInput, EditMessageResponse>
 {
@@ -41,10 +41,10 @@ public sealed class EditMessageHandler : IAuthenticatedHandler<EditConversationM
         UserId currentUserId,
         CancellationToken cancellationToken = default)
     {
-        var contentResult = MessageContent.Create(request.Request.Content);
+        var contentResult = MessageContent.Create(request.Content);
         if (contentResult.IsFailure || contentResult.Value is null)
         {
-            var code = MessageContentErrorCodeResolver.Resolve(request.Request.Content);
+            var code = MessageContentErrorCodeResolver.Resolve(request.Content);
             return ApplicationResponse<EditMessageResponse>.Fail(
                 code,
                 contentResult.Error ?? "Message content is invalid");

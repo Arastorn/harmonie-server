@@ -8,7 +8,7 @@ using Harmonie.Domain.ValueObjects.Users;
 
 namespace Harmonie.Application.Features.Guilds.CreateGuildInvite;
 
-public sealed record CreateGuildInviteInput(GuildId GuildId, CreateGuildInviteRequest Request);
+public sealed record CreateGuildInviteInput(GuildId GuildId, int? MaxUses = null, int? ExpiresInHours = null);
 
 public sealed class CreateGuildInviteHandler : IAuthenticatedHandler<CreateGuildInviteInput, CreateGuildInviteResponse>
 {
@@ -31,9 +31,7 @@ public sealed class CreateGuildInviteHandler : IAuthenticatedHandler<CreateGuild
         UserId currentUserId,
         CancellationToken cancellationToken = default)
     {
-        var (guildId, request) = input;
-
-        var guildAccess = await _guildRepository.GetWithCallerRoleAsync(guildId, currentUserId, cancellationToken);
+        var guildAccess = await _guildRepository.GetWithCallerRoleAsync(input.GuildId, currentUserId, cancellationToken);
         if (guildAccess is null)
         {
             return ApplicationResponse<CreateGuildInviteResponse>.Fail(
@@ -48,7 +46,7 @@ public sealed class CreateGuildInviteHandler : IAuthenticatedHandler<CreateGuild
                 "Only guild administrators can create invite links");
         }
 
-        var inviteResult = GuildInvite.Create(guildId, currentUserId, request.MaxUses, request.ExpiresInHours);
+        var inviteResult = GuildInvite.Create(input.GuildId, currentUserId, input.MaxUses, input.ExpiresInHours);
         if (inviteResult.IsFailure || inviteResult.Value is null)
         {
             return ApplicationResponse<CreateGuildInviteResponse>.Fail(
@@ -65,7 +63,7 @@ public sealed class CreateGuildInviteHandler : IAuthenticatedHandler<CreateGuild
         var payload = new CreateGuildInviteResponse(
             InviteId: invite.Id.ToString(),
             Code: invite.Code,
-            GuildId: guildId.ToString(),
+            GuildId: input.GuildId.ToString(),
             CreatorId: currentUserId.ToString(),
             MaxUses: invite.MaxUses,
             UsesCount: invite.UsesCount,

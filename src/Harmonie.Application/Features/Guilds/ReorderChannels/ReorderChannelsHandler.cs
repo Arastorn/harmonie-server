@@ -9,7 +9,7 @@ using Harmonie.Domain.ValueObjects.Users;
 
 namespace Harmonie.Application.Features.Guilds.ReorderChannels;
 
-public sealed record ReorderChannelsInput(GuildId GuildId, ReorderChannelsRequest Request);
+public sealed record ReorderChannelsInput(GuildId GuildId, IReadOnlyList<ReorderChannelsItemRequest> Channels);
 
 public sealed class ReorderChannelsHandler : IAuthenticatedHandler<ReorderChannelsInput, ReorderChannelsResponse>
 {
@@ -32,9 +32,7 @@ public sealed class ReorderChannelsHandler : IAuthenticatedHandler<ReorderChanne
         UserId currentUserId,
         CancellationToken cancellationToken = default)
     {
-        var (guildId, request) = input;
-
-        var ctx = await _guildRepository.GetWithCallerRoleAsync(guildId, currentUserId, cancellationToken);
+        var ctx = await _guildRepository.GetWithCallerRoleAsync(input.GuildId, currentUserId, cancellationToken);
         if (ctx is null)
         {
             return ApplicationResponse<ReorderChannelsResponse>.Fail(
@@ -56,14 +54,14 @@ public sealed class ReorderChannelsHandler : IAuthenticatedHandler<ReorderChanne
                 "Only guild admins can reorder channels");
         }
 
-        var channels = await _guildChannelRepository.GetByGuildIdAsync(guildId, cancellationToken);
+        var channels = await _guildChannelRepository.GetByGuildIdAsync(input.GuildId, cancellationToken);
 
         var channelMap = channels.ToDictionary(c => c.Id);
 
-        var parsedItems = new List<(GuildChannelId Id, int Position)>(request.Channels.Count);
+        var parsedItems = new List<(GuildChannelId Id, int Position)>(input.Channels.Count);
         var seenIds = new HashSet<GuildChannelId>();
 
-        foreach (var item in request.Channels)
+        foreach (var item in input.Channels)
         {
             if (!GuildChannelId.TryParse(item.ChannelId, out var parsedId) || parsedId is null)
             {
@@ -108,10 +106,10 @@ public sealed class ReorderChannelsHandler : IAuthenticatedHandler<ReorderChanne
 
         await transaction.CommitAsync(cancellationToken);
 
-        var updatedChannels = await _guildChannelRepository.GetByGuildIdAsync(guildId, cancellationToken);
+        var updatedChannels = await _guildChannelRepository.GetByGuildIdAsync(input.GuildId, cancellationToken);
 
         var payload = new ReorderChannelsResponse(
-            GuildId: guildId.ToString(),
+            GuildId: input.GuildId.ToString(),
             Channels: updatedChannels.Select(c => new ReorderChannelsItemResponse(
                 ChannelId: c.Id.ToString(),
                 Name: c.Name,

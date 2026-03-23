@@ -43,7 +43,7 @@ public static class InviteMemberEndpoint
 
         var currentUserId = httpContext.GetRequiredAuthenticatedUserId();
 
-        var response = await handler.HandleAsync(new InviteMemberInput(guildId, request), currentUserId, cancellationToken);
+        var response = await handler.HandleAsync(new InviteMemberInput(guildId, request.UserId), currentUserId, cancellationToken);
         return response.ToHttpResult();
     }
 }

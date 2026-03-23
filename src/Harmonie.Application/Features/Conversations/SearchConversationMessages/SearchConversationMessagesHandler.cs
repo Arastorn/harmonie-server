@@ -9,7 +9,7 @@ using Harmonie.Domain.ValueObjects.Users;
 
 namespace Harmonie.Application.Features.Conversations.SearchConversationMessages;
 
-public sealed record SearchConversationMessagesInput(ConversationId ConversationId, SearchConversationMessagesRequest Request);
+public sealed record SearchConversationMessagesInput(ConversationId ConversationId, string? Q = null, string? Before = null, string? After = null, string? Cursor = null, int? Limit = null);
 
 public sealed class SearchConversationMessagesHandler : IAuthenticatedHandler<SearchConversationMessagesInput, SearchConversationMessagesResponse>
 {
@@ -31,7 +31,7 @@ public sealed class SearchConversationMessagesHandler : IAuthenticatedHandler<Se
         UserId currentUserId,
         CancellationToken cancellationToken = default)
     {
-        if (request.Request.Q is not string rawQuery || string.IsNullOrWhiteSpace(rawQuery))
+        if (request.Q is not string rawQuery || string.IsNullOrWhiteSpace(rawQuery))
         {
             return ApplicationResponse<SearchConversationMessagesResponse>.Fail(
                 ApplicationErrorCodes.Common.InvalidState,
@@ -39,15 +39,15 @@ public sealed class SearchConversationMessagesHandler : IAuthenticatedHandler<Se
         }
 
         MessageCursor? cursor = null;
-        if (request.Request.Cursor is not null)
+        if (request.Cursor is not null)
         {
-            if (!MessageCursorCodec.TryParse(request.Request.Cursor, out var parsedCursor) || parsedCursor is null)
+            if (!MessageCursorCodec.TryParse(request.Cursor, out var parsedCursor) || parsedCursor is null)
             {
                 return ApplicationResponse<SearchConversationMessagesResponse>.Fail(
                     ApplicationErrorCodes.Common.ValidationFailed,
                     "Request validation failed",
                     EndpointExtensions.SingleValidationError(
-                        nameof(request.Request.Cursor),
+                        nameof(request.Cursor),
                         ApplicationErrorCodes.Validation.InvalidFormat,
                         "Cursor is invalid"));
             }
@@ -56,15 +56,15 @@ public sealed class SearchConversationMessagesHandler : IAuthenticatedHandler<Se
         }
 
         DateTime? beforeCreatedAtUtc = null;
-        if (request.Request.Before is not null)
+        if (request.Before is not null)
         {
-            if (!TryParseUtcDateTime(request.Request.Before, out var parsedBefore))
+            if (!TryParseUtcDateTime(request.Before, out var parsedBefore))
             {
                 return ApplicationResponse<SearchConversationMessagesResponse>.Fail(
                     ApplicationErrorCodes.Common.ValidationFailed,
                     "Request validation failed",
                     EndpointExtensions.SingleValidationError(
-                        nameof(request.Request.Before),
+                        nameof(request.Before),
                         ApplicationErrorCodes.Validation.InvalidFormat,
                         "Before must be a valid ISO 8601 date/time"));
             }
@@ -73,15 +73,15 @@ public sealed class SearchConversationMessagesHandler : IAuthenticatedHandler<Se
         }
 
         DateTime? afterCreatedAtUtc = null;
-        if (request.Request.After is not null)
+        if (request.After is not null)
         {
-            if (!TryParseUtcDateTime(request.Request.After, out var parsedAfter))
+            if (!TryParseUtcDateTime(request.After, out var parsedAfter))
             {
                 return ApplicationResponse<SearchConversationMessagesResponse>.Fail(
                     ApplicationErrorCodes.Common.ValidationFailed,
                     "Request validation failed",
                     EndpointExtensions.SingleValidationError(
-                        nameof(request.Request.After),
+                        nameof(request.After),
                         ApplicationErrorCodes.Validation.InvalidFormat,
                         "After must be a valid ISO 8601 date/time"));
             }
@@ -97,7 +97,7 @@ public sealed class SearchConversationMessagesHandler : IAuthenticatedHandler<Se
                 ApplicationErrorCodes.Common.ValidationFailed,
                 "Request validation failed",
                 EndpointExtensions.SingleValidationError(
-                    nameof(request.Request.After),
+                    nameof(request.After),
                     ApplicationErrorCodes.Validation.OutOfRange,
                     "After must be earlier than or equal to before"));
         }
@@ -117,7 +117,7 @@ public sealed class SearchConversationMessagesHandler : IAuthenticatedHandler<Se
                 "You do not have access to this conversation");
         }
 
-        var limit = request.Request.Limit ?? DefaultLimit;
+        var limit = request.Limit ?? DefaultLimit;
         var page = await _directMessageRepository.SearchConversationMessagesAsync(
             new SearchConversationMessagesQuery(
                 ConversationId: request.ConversationId,

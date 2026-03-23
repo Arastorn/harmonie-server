@@ -7,7 +7,7 @@ using Harmonie.Domain.ValueObjects.Users;
 
 namespace Harmonie.Application.Features.Channels.UpdateChannel;
 
-public sealed record UpdateChannelInput(GuildChannelId ChannelId, UpdateChannelRequest Request);
+public sealed record UpdateChannelInput(GuildChannelId ChannelId, string? Name = null, int? Position = null);
 
 public sealed class UpdateChannelHandler : IAuthenticatedHandler<UpdateChannelInput, UpdateChannelResponse>
 {
@@ -51,11 +51,11 @@ public sealed class UpdateChannelHandler : IAuthenticatedHandler<UpdateChannelIn
 
         var channel = ctx.Channel;
 
-        if (request.Request.Name is not null)
+        if (request.Name is not null)
         {
             var nameConflict = await _guildChannelRepository.ExistsByNameInGuildAsync(
                 channel.GuildId,
-                request.Request.Name.Trim(),
+                request.Name.Trim(),
                 request.ChannelId,
                 cancellationToken);
 
@@ -66,7 +66,7 @@ public sealed class UpdateChannelHandler : IAuthenticatedHandler<UpdateChannelIn
                     "A channel with this name already exists in this guild");
             }
 
-            var nameResult = channel.UpdateName(request.Request.Name);
+            var nameResult = channel.UpdateName(request.Name);
             if (nameResult.IsFailure)
             {
                 return ApplicationResponse<UpdateChannelResponse>.Fail(
@@ -75,9 +75,9 @@ public sealed class UpdateChannelHandler : IAuthenticatedHandler<UpdateChannelIn
             }
         }
 
-        if (request.Request.Position is not null)
+        if (request.Position is not null)
         {
-            var positionResult = channel.UpdatePosition(request.Request.Position.Value);
+            var positionResult = channel.UpdatePosition(request.Position.Value);
             if (positionResult.IsFailure)
             {
                 return ApplicationResponse<UpdateChannelResponse>.Fail(
@@ -86,7 +86,7 @@ public sealed class UpdateChannelHandler : IAuthenticatedHandler<UpdateChannelIn
             }
         }
 
-        if (request.Request.Name is not null || request.Request.Position is not null)
+        if (request.Name is not null || request.Position is not null)
         {
             await using var transaction = await _unitOfWork.BeginAsync(cancellationToken);
             await _guildChannelRepository.UpdateAsync(channel, cancellationToken);

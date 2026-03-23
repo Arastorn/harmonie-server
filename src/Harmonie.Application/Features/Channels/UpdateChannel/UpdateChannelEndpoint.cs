@@ -59,7 +59,7 @@ public static class UpdateChannelEndpoint
 
         var callerId = httpContext.GetRequiredAuthenticatedUserId();
 
-        var response = await handler.HandleAsync(new UpdateChannelInput(channelId, request), callerId, cancellationToken);
+        var response = await handler.HandleAsync(new UpdateChannelInput(channelId, request.Name, request.Position), callerId, cancellationToken);
         return response.ToHttpResult();
     }
 }

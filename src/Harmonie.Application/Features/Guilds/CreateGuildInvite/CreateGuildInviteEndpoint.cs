@@ -41,7 +41,7 @@ public static class CreateGuildInviteEndpoint
 
         var currentUserId = httpContext.GetRequiredAuthenticatedUserId();
 
-        var response = await handler.HandleAsync(new CreateGuildInviteInput(guildId, request), currentUserId, cancellationToken);
+        var response = await handler.HandleAsync(new CreateGuildInviteInput(guildId, request.MaxUses, request.ExpiresInHours), currentUserId, cancellationToken);
         return response.ToCreatedHttpResult(data => $"/api/guilds/{data.GuildId}/invites/{data.InviteId}");
     }
 }

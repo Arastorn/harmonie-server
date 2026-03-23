@@ -43,7 +43,10 @@ public static class SearchMessagesEndpoint
 
         var currentUserId = httpContext.GetRequiredAuthenticatedUserId();
 
-        var response = await handler.HandleAsync(new SearchMessagesInput(guildId, request), currentUserId, cancellationToken);
+        var response = await handler.HandleAsync(
+            new SearchMessagesInput(guildId, request.Q, request.ChannelId, request.AuthorId, request.Before, request.After, request.Cursor, request.Limit),
+            currentUserId,
+            cancellationToken);
         return response.ToHttpResult();
     }
 }

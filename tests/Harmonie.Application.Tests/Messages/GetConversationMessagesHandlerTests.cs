@@ -35,7 +35,7 @@ public sealed class GetConversationMessagesHandlerTests
     public async Task HandleAsync_WhenCursorIsInvalid_ShouldReturnValidationFailure()
     {
         var response = await _handler.HandleAsync(
-            new GetConversationMessagesInput(ConversationId.New(), new GetMessagesRequest { Cursor = "invalid-cursor", Limit = 50 }),
+            new GetConversationMessagesInput(ConversationId.New(), Cursor: "invalid-cursor", Limit: 50),
             UserId.New());
 
         response.Success.Should().BeFalse();
@@ -54,7 +54,7 @@ public sealed class GetConversationMessagesHandlerTests
             .ReturnsAsync((Conversation?)null);
 
         var response = await _handler.HandleAsync(
-            new GetConversationMessagesInput(conversationId, new GetMessagesRequest { Limit = 50 }),
+            new GetConversationMessagesInput(conversationId, Limit: 50),
             userId);
 
         response.Success.Should().BeFalse();
@@ -75,7 +75,7 @@ public sealed class GetConversationMessagesHandlerTests
             .ReturnsAsync(conversation);
 
         var response = await _handler.HandleAsync(
-            new GetConversationMessagesInput(conversation.Id, new GetMessagesRequest { Limit = 50 }),
+            new GetConversationMessagesInput(conversation.Id, Limit: 50),
             outsider);
 
         response.Success.Should().BeFalse();
@@ -110,7 +110,7 @@ public sealed class GetConversationMessagesHandlerTests
                 new Dictionary<Guid, IReadOnlyList<MessageReactionSummary>>()));
 
         var response = await _handler.HandleAsync(
-            new GetConversationMessagesInput(conversation.Id, new GetMessagesRequest { Limit = 50 }),
+            new GetConversationMessagesInput(conversation.Id, Limit: 50),
             participantOne);
 
         response.Success.Should().BeTrue();

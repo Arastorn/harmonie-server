@@ -7,7 +7,7 @@ using Harmonie.Domain.ValueObjects.Users;
 
 namespace Harmonie.Application.Features.Guilds.InviteMember;
 
-public sealed record InviteMemberInput(GuildId GuildId, InviteMemberRequest Request);
+public sealed record InviteMemberInput(GuildId GuildId, string TargetUserId);
 
 public sealed class InviteMemberHandler : IAuthenticatedHandler<InviteMemberInput, InviteMemberResponse>
 {
@@ -27,21 +27,19 @@ public sealed class InviteMemberHandler : IAuthenticatedHandler<InviteMemberInpu
         UserId currentUserId,
         CancellationToken cancellationToken = default)
     {
-        var (guildId, request) = input;
-
-        if (!UserId.TryParse(request.UserId, out var invitedUserId) || invitedUserId is null)
+        if (!UserId.TryParse(input.TargetUserId, out var invitedUserId) || invitedUserId is null)
         {
             return ApplicationResponse<InviteMemberResponse>.Fail(
                 ApplicationErrorCodes.Common.ValidationFailed,
                 "Request validation failed",
                 EndpointExtensions.SingleValidationError(
-                    nameof(request.UserId),
+                    nameof(input.TargetUserId),
                     ApplicationErrorCodes.Validation.InvalidFormat,
                     "User ID must be a valid non-empty GUID"));
         }
 
         var guildAccess = await _guildRepository.GetWithCallerRoleAsync(
-            guildId,
+            input.GuildId,
             currentUserId,
             cancellationToken);
         if (guildAccess is null)
@@ -59,7 +57,7 @@ public sealed class InviteMemberHandler : IAuthenticatedHandler<InviteMemberInpu
         }
 
         var targetLookup = await _guildMemberRepository.GetInviteMemberTargetLookupAsync(
-            guildId,
+            input.GuildId,
             invitedUserId,
             cancellationToken);
         if (!targetLookup.UserExists)
@@ -77,7 +75,7 @@ public sealed class InviteMemberHandler : IAuthenticatedHandler<InviteMemberInpu
         }
 
         var memberResult = GuildMember.Create(
-            guildId,
+            input.GuildId,
             invitedUserId,
             GuildRole.Member,
             invitedByUserId: currentUserId);
@@ -97,7 +95,7 @@ public sealed class InviteMemberHandler : IAuthenticatedHandler<InviteMemberInpu
         }
 
         var payload = new InviteMemberResponse(
-            GuildId: guildId.ToString(),
+            GuildId: input.GuildId.ToString(),
             UserId: invitedUserId.ToString(),
             Role: GuildRole.Member.ToString(),
             JoinedAtUtc: memberResult.Value.JoinedAtUtc);

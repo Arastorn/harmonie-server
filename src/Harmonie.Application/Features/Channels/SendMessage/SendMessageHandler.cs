@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Harmonie.Application.Features.Channels.SendMessage;
 
-public sealed record SendChannelMessageInput(GuildChannelId ChannelId, SendMessageRequest Request);
+public sealed record SendChannelMessageInput(GuildChannelId ChannelId, string Content, IReadOnlyList<string>? AttachmentFileIds = null);
 
 public sealed class SendMessageHandler : IAuthenticatedHandler<SendChannelMessageInput, SendMessageResponse>
 {
@@ -46,10 +46,10 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendChannelMessag
         UserId currentUserId,
         CancellationToken cancellationToken = default)
     {
-        var contentResult = MessageContent.Create(request.Request.Content);
+        var contentResult = MessageContent.Create(request.Content);
         if (contentResult.IsFailure || contentResult.Value is null)
         {
-            var code = MessageContentErrorCodeResolver.Resolve(request.Request.Content);
+            var code = MessageContentErrorCodeResolver.Resolve(request.Content);
             return ApplicationResponse<SendMessageResponse>.Fail(
                 code,
                 contentResult.Error ?? "Message content is invalid");
@@ -78,7 +78,7 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendChannelMessag
         }
 
         var attachmentResolution = await _messageAttachmentResolver.ResolveAsync(
-            request.Request.AttachmentFileIds,
+            request.AttachmentFileIds,
             currentUserId,
             cancellationToken);
         if (!attachmentResolution.Success)
@@ -87,7 +87,7 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendChannelMessag
                 ApplicationErrorCodes.Common.ValidationFailed,
                 "Request validation failed",
                 EndpointExtensions.SingleValidationError(
-                    nameof(request.Request.AttachmentFileIds),
+                    nameof(request.AttachmentFileIds),
                     ApplicationErrorCodes.Validation.Invalid,
                     attachmentResolution.Error ?? "Attachments are invalid"));
         }

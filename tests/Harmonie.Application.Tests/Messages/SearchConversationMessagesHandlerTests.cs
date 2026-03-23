@@ -43,7 +43,7 @@ public sealed class SearchConversationMessagesHandlerTests
             .ReturnsAsync((Conversation?)null);
 
         var response = await _handler.HandleAsync(
-            new SearchConversationMessagesInput(conversationId, new SearchConversationMessagesRequest { Q = "deploy" }),
+            new SearchConversationMessagesInput(conversationId, Q: "deploy"),
             currentUserId);
 
         response.Success.Should().BeFalse();
@@ -64,7 +64,7 @@ public sealed class SearchConversationMessagesHandlerTests
             .ReturnsAsync(conversation);
 
         var response = await _handler.HandleAsync(
-            new SearchConversationMessagesInput(conversation.Id, new SearchConversationMessagesRequest { Q = "deploy" }),
+            new SearchConversationMessagesInput(conversation.Id, Q: "deploy"),
             outsider);
 
         response.Success.Should().BeFalse();
@@ -102,13 +102,11 @@ public sealed class SearchConversationMessagesHandlerTests
             .ReturnsAsync(new SearchConversationMessagesPage([item], nextCursor));
 
         var response = await _handler.HandleAsync(
-            new SearchConversationMessagesInput(conversation.Id, new SearchConversationMessagesRequest
-            {
-                Q = " deploy ",
-                Before = before.ToString("O"),
-                After = after.ToString("O"),
-                Limit = 10
-            }),
+            new SearchConversationMessagesInput(conversation.Id,
+                Q: " deploy ",
+                Before: before.ToString("O"),
+                After: after.ToString("O"),
+                Limit: 10),
             user1);
 
         response.Success.Should().BeTrue();

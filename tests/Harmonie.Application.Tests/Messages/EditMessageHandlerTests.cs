@@ -53,7 +53,7 @@ public sealed class EditMessageHandlerTests
     public async Task HandleAsync_WithEmptyContent_ShouldReturnMessageContentEmpty()
     {
         var response = await _handler.HandleAsync(
-            new EditChannelMessageInput(GuildChannelId.New(), MessageId.New(), new EditMessageRequest("   ")),
+            new EditChannelMessageInput(GuildChannelId.New(), MessageId.New(), "   "),
             UserId.New());
 
         response.Success.Should().BeFalse();
@@ -73,7 +73,7 @@ public sealed class EditMessageHandlerTests
             .ReturnsAsync((ChannelAccessContext?)null);
 
         var response = await _handler.HandleAsync(
-            new EditChannelMessageInput(channelId, MessageId.New(), new EditMessageRequest("updated content")),
+            new EditChannelMessageInput(channelId, MessageId.New(), "updated content"),
             callerId);
 
         response.Success.Should().BeFalse();
@@ -93,7 +93,7 @@ public sealed class EditMessageHandlerTests
             .ReturnsAsync(new ChannelAccessContext(channel, GuildRole.Member));
 
         var response = await _handler.HandleAsync(
-            new EditChannelMessageInput(channel.Id, MessageId.New(), new EditMessageRequest("updated content")),
+            new EditChannelMessageInput(channel.Id, MessageId.New(), "updated content"),
             callerId);
 
         response.Success.Should().BeFalse();
@@ -113,7 +113,7 @@ public sealed class EditMessageHandlerTests
             .ReturnsAsync(new ChannelAccessContext(channel, CallerRole: null));
 
         var response = await _handler.HandleAsync(
-            new EditChannelMessageInput(channel.Id, MessageId.New(), new EditMessageRequest("updated content")),
+            new EditChannelMessageInput(channel.Id, MessageId.New(), "updated content"),
             callerId);
 
         response.Success.Should().BeFalse();
@@ -138,7 +138,7 @@ public sealed class EditMessageHandlerTests
             .ReturnsAsync((Message?)null);
 
         var response = await _handler.HandleAsync(
-            new EditChannelMessageInput(channel.Id, messageId, new EditMessageRequest("updated content")),
+            new EditChannelMessageInput(channel.Id, messageId, "updated content"),
             callerId);
 
         response.Success.Should().BeFalse();
@@ -164,7 +164,7 @@ public sealed class EditMessageHandlerTests
             .ReturnsAsync(messageFromOtherChannel);
 
         var response = await _handler.HandleAsync(
-            new EditChannelMessageInput(channel.Id, messageId, new EditMessageRequest("updated content")),
+            new EditChannelMessageInput(channel.Id, messageId, "updated content"),
             callerId);
 
         response.Success.Should().BeFalse();
@@ -191,7 +191,7 @@ public sealed class EditMessageHandlerTests
             .ReturnsAsync(message);
 
         var response = await _handler.HandleAsync(
-            new EditChannelMessageInput(channel.Id, messageId, new EditMessageRequest("updated content")),
+            new EditChannelMessageInput(channel.Id, messageId, "updated content"),
             callerId);
 
         response.Success.Should().BeFalse();
@@ -217,7 +217,7 @@ public sealed class EditMessageHandlerTests
             .ReturnsAsync(message);
 
         var response = await _handler.HandleAsync(
-            new EditChannelMessageInput(channel.Id, messageId, new EditMessageRequest("  updated content  ")),
+            new EditChannelMessageInput(channel.Id, messageId, "  updated content  "),
             authorId);
 
         response.Success.Should().BeTrue();
@@ -245,7 +245,7 @@ public sealed class EditMessageHandlerTests
             .ReturnsAsync(message);
 
         await _handler.HandleAsync(
-            new EditChannelMessageInput(channel.Id, messageId, new EditMessageRequest("updated content")),
+            new EditChannelMessageInput(channel.Id, messageId, "updated content"),
             authorId);
 
         _channelMessageRepositoryMock.Verify(
@@ -274,7 +274,7 @@ public sealed class EditMessageHandlerTests
             .ReturnsAsync(message);
 
         var response = await _handler.HandleAsync(
-            new EditChannelMessageInput(channel.Id, messageId, new EditMessageRequest("updated content")),
+            new EditChannelMessageInput(channel.Id, messageId, "updated content"),
             authorId);
 
         response.Success.Should().BeTrue();
@@ -309,7 +309,7 @@ public sealed class EditMessageHandlerTests
             .ThrowsAsync(new InvalidOperationException("SignalR unavailable"));
 
         var response = await _handler.HandleAsync(
-            new EditChannelMessageInput(channel.Id, messageId, new EditMessageRequest("updated content")),
+            new EditChannelMessageInput(channel.Id, messageId, "updated content"),
             authorId);
 
         response.Success.Should().BeTrue();

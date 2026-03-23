@@ -7,7 +7,7 @@ using Harmonie.Domain.ValueObjects.Users;
 
 namespace Harmonie.Application.Features.Conversations.GetMessages;
 
-public sealed record GetConversationMessagesInput(ConversationId ConversationId, GetMessagesRequest Request);
+public sealed record GetConversationMessagesInput(ConversationId ConversationId, string? Cursor = null, int? Limit = null);
 
 public sealed class GetMessagesHandler : IAuthenticatedHandler<GetConversationMessagesInput, GetMessagesResponse>
 {
@@ -30,15 +30,15 @@ public sealed class GetMessagesHandler : IAuthenticatedHandler<GetConversationMe
         CancellationToken cancellationToken = default)
     {
         MessageCursor? cursor = null;
-        if (request.Request.Cursor is not null)
+        if (request.Cursor is not null)
         {
-            if (!MessageCursorCodec.TryParse(request.Request.Cursor, out var parsedCursor) || parsedCursor is null)
+            if (!MessageCursorCodec.TryParse(request.Cursor, out var parsedCursor) || parsedCursor is null)
             {
                 return ApplicationResponse<GetMessagesResponse>.Fail(
                     ApplicationErrorCodes.Common.ValidationFailed,
                     "Request validation failed",
                     EndpointExtensions.SingleValidationError(
-                        nameof(request.Request.Cursor),
+                        nameof(request.Cursor),
                         ApplicationErrorCodes.Validation.InvalidFormat,
                         "Cursor is invalid"));
             }
@@ -46,7 +46,7 @@ public sealed class GetMessagesHandler : IAuthenticatedHandler<GetConversationMe
             cursor = parsedCursor;
         }
 
-        var limit = request.Request.Limit ?? DefaultLimit;
+        var limit = request.Limit ?? DefaultLimit;
 
         var conversation = await _conversationRepository.GetByIdAsync(request.ConversationId, cancellationToken);
         if (conversation is null)

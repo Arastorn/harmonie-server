@@ -40,7 +40,7 @@ public static class GetMessagesEndpoint
 
         var currentUserId = httpContext.GetRequiredAuthenticatedUserId();
 
-        var response = await handler.HandleAsync(new GetConversationMessagesInput(conversationId, request), currentUserId, cancellationToken);
+        var response = await handler.HandleAsync(new GetConversationMessagesInput(conversationId, request.Cursor, request.Limit), currentUserId, cancellationToken);
         return response.ToHttpResult();
     }
 }

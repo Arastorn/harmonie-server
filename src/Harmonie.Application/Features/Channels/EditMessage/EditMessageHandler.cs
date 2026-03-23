@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Harmonie.Application.Features.Channels.EditMessage;
 
-public sealed record EditChannelMessageInput(GuildChannelId ChannelId, MessageId MessageId, EditMessageRequest Request);
+public sealed record EditChannelMessageInput(GuildChannelId ChannelId, MessageId MessageId, string Content);
 
 public sealed class EditMessageHandler : IAuthenticatedHandler<EditChannelMessageInput, EditMessageResponse>
 {
@@ -42,10 +42,10 @@ public sealed class EditMessageHandler : IAuthenticatedHandler<EditChannelMessag
         UserId currentUserId,
         CancellationToken cancellationToken = default)
     {
-        var contentResult = MessageContent.Create(request.Request.Content);
+        var contentResult = MessageContent.Create(request.Content);
         if (contentResult.IsFailure || contentResult.Value is null)
         {
-            var code = MessageContentErrorCodeResolver.Resolve(request.Request.Content);
+            var code = MessageContentErrorCodeResolver.Resolve(request.Content);
             return ApplicationResponse<EditMessageResponse>.Fail(
                 code,
                 contentResult.Error ?? "Message content is invalid");
