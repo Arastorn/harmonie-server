@@ -53,13 +53,7 @@ public sealed class UpdateMyProfileHandler
 
         if (request.AvatarFileIdIsSet)
         {
-            if (!TryParseUploadedFileId(request.AvatarFileId, out var avatarFileId))
-            {
-                return BuildValidationFailure(
-                    nameof(request.AvatarFileId),
-                    "Avatar file ID is invalid");
-            }
-
+            var avatarFileId = request.AvatarFileId.HasValue ? UploadedFileId.From(request.AvatarFileId.Value) : null;
             var result = user.UpdateAvatarFile(avatarFileId);
             if (result.IsFailure)
                 return BuildValidationFailure(nameof(request.AvatarFileId), result);
@@ -185,14 +179,4 @@ public sealed class UpdateMyProfileHandler
                 result.Error ?? "Profile field is invalid"));
     }
 
-    private static bool TryParseUploadedFileId(string? fileId, out UploadedFileId? uploadedFileId)
-    {
-        if (fileId is null)
-        {
-            uploadedFileId = null;
-            return true;
-        }
-
-        return UploadedFileId.TryParse(fileId, out uploadedFileId);
-    }
 }

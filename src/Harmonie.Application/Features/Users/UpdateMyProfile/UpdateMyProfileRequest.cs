@@ -8,7 +8,7 @@ public sealed class UpdateMyProfileRequest
 {
     public string? DisplayName { get; init; }
     public string? Bio { get; init; }
-    public string? AvatarFileId { get; init; }
+    public Guid? AvatarFileId { get; init; }
 
     public string? AvatarColor { get; init; }
     public string? AvatarIcon { get; init; }
@@ -39,7 +39,7 @@ internal sealed class UpdateMyProfileRequestJsonConverter : JsonConverter<Update
 
         string? displayName = null;
         string? bio = null;
-        string? avatarFileId = null;
+        Guid? avatarFileId = null;
         string? avatarColor = null;
         string? avatarIcon = null;
         string? avatarBg = null;
@@ -108,7 +108,7 @@ internal sealed class UpdateMyProfileRequestJsonConverter : JsonConverter<Update
             else if (propertyName.Equals("avatarFileId", StringComparison.OrdinalIgnoreCase))
             {
                 avatarFileIdIsSet = true;
-                avatarFileId = ReadNullableString(ref reader, "avatarFileId");
+                avatarFileId = ReadNullableGuid(ref reader, "avatarFileId");
             }
             else if (propertyName.Equals("avatar", StringComparison.OrdinalIgnoreCase))
             {
@@ -164,7 +164,7 @@ internal sealed class UpdateMyProfileRequestJsonConverter : JsonConverter<Update
             WriteNullableString(writer, "bio", value.Bio);
 
         if (value.AvatarFileIdIsSet)
-            WriteNullableString(writer, "avatarFileId", value.AvatarFileId);
+            WriteNullableGuid(writer, "avatarFileId", value.AvatarFileId);
 
         if (value.AvatarIsSet)
         {
@@ -248,6 +248,30 @@ internal sealed class UpdateMyProfileRequestJsonConverter : JsonConverter<Update
         }
 
         throw new JsonException("Unexpected end of JSON payload inside 'avatar'.");
+    }
+
+    private static Guid? ReadNullableGuid(ref Utf8JsonReader reader, string propertyName)
+    {
+        if (reader.TokenType == JsonTokenType.Null)
+            return null;
+
+        if (reader.TokenType != JsonTokenType.String)
+            throw new JsonException($"Property '{propertyName}' must be a GUID string or null.");
+
+        var raw = reader.GetString();
+        if (!Guid.TryParse(raw, out var guid) || guid == Guid.Empty)
+            throw new JsonException($"Property '{propertyName}' must be a valid non-empty GUID.");
+
+        return guid;
+    }
+
+    private static void WriteNullableGuid(Utf8JsonWriter writer, string propertyName, Guid? value)
+    {
+        writer.WritePropertyName(propertyName);
+        if (value is null)
+            writer.WriteNullValue();
+        else
+            writer.WriteStringValue(value.Value.ToString());
     }
 
     private static string? ReadNullableString(ref Utf8JsonReader reader, string propertyName)

@@ -76,7 +76,7 @@ public sealed class RevokeInviteEndpointTests : IClassFixture<HarmonieWebApplica
         // Add second user as admin
         await _client.SendAuthorizedPostAsync(
             $"/api/guilds/{guild!.GuildId}/members/invite",
-            new InviteMemberRequest(secondAdmin.UserId),
+            new InviteMemberRequest(Guid.Parse(secondAdmin.UserId)),
             owner.AccessToken);
         var promoteResponse = await _client.SendAuthorizedPutAsync(
             $"/api/guilds/{guild.GuildId}/members/{secondAdmin.UserId}/role",
@@ -117,7 +117,7 @@ public sealed class RevokeInviteEndpointTests : IClassFixture<HarmonieWebApplica
 
         await _client.SendAuthorizedPostAsync(
             $"/api/guilds/{guild!.GuildId}/members/invite",
-            new InviteMemberRequest(member.UserId),
+            new InviteMemberRequest(Guid.Parse(member.UserId)),
             owner.AccessToken);
 
         // Owner creates the invite

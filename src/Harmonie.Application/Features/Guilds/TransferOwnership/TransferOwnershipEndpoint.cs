@@ -41,18 +41,9 @@ public static class TransferOwnershipEndpoint
         if (validationError is not null)
             return ApplicationResponse<bool>.Fail(validationError).ToHttpResult();
 
-        if (request.NewOwnerId is not string newOwnerIdStr
-            || !UserId.TryParse(newOwnerIdStr, out var parsedNewOwnerId)
-            || parsedNewOwnerId is null)
-        {
-            return ApplicationResponse<bool>.Fail(
-                ApplicationErrorCodes.Common.InvalidState,
-                "Body validation succeeded but new owner ID parsing failed.").ToHttpResult();
-        }
-
         var callerId = httpContext.GetRequiredAuthenticatedUserId();
 
-        var response = await handler.HandleAsync(new TransferOwnershipInput(guildId, parsedNewOwnerId), callerId, cancellationToken);
+        var response = await handler.HandleAsync(new TransferOwnershipInput(guildId, UserId.From(request.NewOwnerId)), callerId, cancellationToken);
 
         if (response.Success)
             return Results.NoContent();

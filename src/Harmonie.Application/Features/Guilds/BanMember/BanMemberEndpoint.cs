@@ -43,18 +43,10 @@ public static class BanMemberEndpoint
         if (bodyValidationError is not null)
             return ApplicationResponse<BanMemberResponse>.Fail(bodyValidationError).ToHttpResult();
 
-        if (!UserId.TryParse(request.UserId, out var parsedTargetId)
-            || parsedTargetId is null)
-        {
-            return ApplicationResponse<BanMemberResponse>.Fail(
-                ApplicationErrorCodes.Common.InvalidState,
-                "Body validation succeeded but user ID parsing failed.").ToHttpResult();
-        }
-
         var callerId = httpContext.GetRequiredAuthenticatedUserId();
 
         var response = await handler.HandleAsync(
-            new BanMemberInput(guildId, parsedTargetId, request.Reason, request.PurgeMessagesDays),
+            new BanMemberInput(guildId, UserId.From(request.UserId), request.Reason, request.PurgeMessagesDays),
             callerId,
             cancellationToken);
 

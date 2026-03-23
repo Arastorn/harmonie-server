@@ -38,7 +38,7 @@ public sealed class UpdateMemberRoleTests : IClassFixture<HarmonieWebApplication
 
         var inviteResponse = await _client.SendAuthorizedPostAsync(
             $"/api/guilds/{createGuildPayload!.GuildId}/members/invite",
-            new InviteMemberRequest(member.UserId),
+            new InviteMemberRequest(Guid.Parse(member.UserId)),
             owner.AccessToken);
         inviteResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
@@ -66,7 +66,7 @@ public sealed class UpdateMemberRoleTests : IClassFixture<HarmonieWebApplication
 
         await _client.SendAuthorizedPostAsync(
             $"/api/guilds/{createGuildPayload!.GuildId}/members/invite",
-            new InviteMemberRequest(otherAdmin.UserId),
+            new InviteMemberRequest(Guid.Parse(otherAdmin.UserId)),
             owner.AccessToken);
 
         await _client.SendAuthorizedPutAsync(
@@ -99,12 +99,12 @@ public sealed class UpdateMemberRoleTests : IClassFixture<HarmonieWebApplication
 
         await _client.SendAuthorizedPostAsync(
             $"/api/guilds/{createGuildPayload!.GuildId}/members/invite",
-            new InviteMemberRequest(member.UserId),
+            new InviteMemberRequest(Guid.Parse(member.UserId)),
             owner.AccessToken);
 
         await _client.SendAuthorizedPostAsync(
             $"/api/guilds/{createGuildPayload.GuildId}/members/invite",
-            new InviteMemberRequest(target.UserId),
+            new InviteMemberRequest(Guid.Parse(target.UserId)),
             owner.AccessToken);
 
         var updateRoleResponse = await _client.SendAuthorizedPutAsync(
@@ -190,7 +190,7 @@ public sealed class UpdateMemberRoleTests : IClassFixture<HarmonieWebApplication
 
         await _client.SendAuthorizedPostAsync(
             $"/api/guilds/{createGuildPayload!.GuildId}/members/invite",
-            new InviteMemberRequest(member.UserId),
+            new InviteMemberRequest(Guid.Parse(member.UserId)),
             owner.AccessToken);
 
         var updateRoleResponse = await SendAuthorizedPutRawAsync(
@@ -201,7 +201,9 @@ public sealed class UpdateMemberRoleTests : IClassFixture<HarmonieWebApplication
 
         var error = await updateRoleResponse.Content.ReadFromJsonAsync<ApplicationError>();
         error.Should().NotBeNull();
-        error!.Code.Should().Be(ApplicationErrorCodes.Validation.WrongEnumValue);
+        error!.Code.Should().Be(ApplicationErrorCodes.Common.ValidationFailed);
+        error.Errors.Should().ContainKey("role");
+        error.Errors!["role"][0].Code.Should().Be(ApplicationErrorCodes.Validation.WrongEnumValue);
     }
 
     private async Task<HttpResponseMessage> SendAuthorizedPutRawAsync(

@@ -44,7 +44,7 @@ public sealed class SearchUsersHandlerTests
             new SearchUsersRequest
             {
                 Q = "alice",
-                GuildId = guildId.ToString()
+                GuildId = guildId
             },
             currentUserId);
 
@@ -68,7 +68,7 @@ public sealed class SearchUsersHandlerTests
             new SearchUsersRequest
             {
                 Q = "alice",
-                GuildId = guild.Id.ToString()
+                GuildId = guild.Id
             },
             currentUserId);
 
@@ -101,7 +101,7 @@ public sealed class SearchUsersHandlerTests
             new SearchUsersRequest
             {
                 Q = " Alice ",
-                GuildId = guild.Id.ToString(),
+                GuildId = guild.Id,
                 Limit = 5
             },
             ownerId);

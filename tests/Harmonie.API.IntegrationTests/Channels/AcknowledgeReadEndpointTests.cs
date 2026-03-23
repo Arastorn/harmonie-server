@@ -27,7 +27,7 @@ public sealed class AcknowledgeReadEndpointTests : IClassFixture<HarmonieWebAppl
 
         var response = await _client.SendAuthorizedPostAsync(
             $"/api/channels/{channelId}/ack",
-            new AcknowledgeReadRequest(message.MessageId),
+            new AcknowledgeReadRequest(Guid.Parse(message.MessageId)),
             owner.AccessToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -57,13 +57,13 @@ public sealed class AcknowledgeReadEndpointTests : IClassFixture<HarmonieWebAppl
 
         var firstResponse = await _client.SendAuthorizedPostAsync(
             $"/api/channels/{channelId}/ack",
-            new AcknowledgeReadRequest(message.MessageId),
+            new AcknowledgeReadRequest(Guid.Parse(message.MessageId)),
             owner.AccessToken);
         firstResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         var secondResponse = await _client.SendAuthorizedPostAsync(
             $"/api/channels/{channelId}/ack",
-            new AcknowledgeReadRequest(message.MessageId),
+            new AcknowledgeReadRequest(Guid.Parse(message.MessageId)),
             owner.AccessToken);
         secondResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
@@ -126,7 +126,7 @@ public sealed class AcknowledgeReadEndpointTests : IClassFixture<HarmonieWebAppl
 
         var response = await _client.SendAuthorizedPostAsync(
             $"/api/channels/{channelId}/ack",
-            new AcknowledgeReadRequest(Guid.NewGuid().ToString()),
+            new AcknowledgeReadRequest(Guid.NewGuid()),
             owner.AccessToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -170,7 +170,7 @@ public sealed class AcknowledgeReadEndpointTests : IClassFixture<HarmonieWebAppl
 
         var response = await _client.SendAuthorizedPostAsync(
             $"/api/channels/{Guid.NewGuid()}/ack",
-            new AcknowledgeReadRequest("not-a-guid"),
+            new { messageId = "not-a-guid" },
             caller.AccessToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);

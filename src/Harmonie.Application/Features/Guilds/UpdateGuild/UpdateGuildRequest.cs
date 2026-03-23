@@ -7,7 +7,7 @@ namespace Harmonie.Application.Features.Guilds.UpdateGuild;
 public sealed class UpdateGuildRequest
 {
     public string? Name { get; init; }
-    public string? IconFileId { get; init; }
+    public Guid? IconFileId { get; init; }
 
     public string? IconColor { get; init; }
     public string? IconName { get; init; }
@@ -30,7 +30,7 @@ internal sealed class UpdateGuildRequestJsonConverter : JsonConverter<UpdateGuil
             throw new JsonException("Request body must be a JSON object.");
 
         string? name = null;
-        string? iconFileId = null;
+        Guid? iconFileId = null;
         string? iconColor = null;
         string? iconName = null;
         string? iconBg = null;
@@ -83,7 +83,7 @@ internal sealed class UpdateGuildRequestJsonConverter : JsonConverter<UpdateGuil
             else if (propertyName.Equals("iconFileId", StringComparison.OrdinalIgnoreCase))
             {
                 iconFileIdIsSet = true;
-                iconFileId = ReadNullableString(ref reader, "iconFileId");
+                iconFileId = ReadNullableGuid(ref reader, "iconFileId");
             }
             else if (propertyName.Equals("icon", StringComparison.OrdinalIgnoreCase))
             {
@@ -130,7 +130,7 @@ internal sealed class UpdateGuildRequestJsonConverter : JsonConverter<UpdateGuil
         }
 
         if (value.IconFileIdIsSet)
-            WriteNullableString(writer, "iconFileId", value.IconFileId);
+            WriteNullableGuid(writer, "iconFileId", value.IconFileId);
 
         if (value.IconIsSet)
         {
@@ -216,6 +216,30 @@ internal sealed class UpdateGuildRequestJsonConverter : JsonConverter<UpdateGuil
             throw new JsonException($"Property '{propertyName}' must be a string.");
 
         return reader.GetString() ?? string.Empty;
+    }
+
+    private static Guid? ReadNullableGuid(ref Utf8JsonReader reader, string propertyName)
+    {
+        if (reader.TokenType == JsonTokenType.Null)
+            return null;
+
+        if (reader.TokenType != JsonTokenType.String)
+            throw new JsonException($"Property '{propertyName}' must be a GUID string or null.");
+
+        var raw = reader.GetString();
+        if (!Guid.TryParse(raw, out var guid) || guid == Guid.Empty)
+            throw new JsonException($"Property '{propertyName}' must be a valid non-empty GUID.");
+
+        return guid;
+    }
+
+    private static void WriteNullableGuid(Utf8JsonWriter writer, string propertyName, Guid? value)
+    {
+        writer.WritePropertyName(propertyName);
+        if (value is null)
+            writer.WriteNullValue();
+        else
+            writer.WriteStringValue(value.Value.ToString());
     }
 
     private static string? ReadNullableString(ref Utf8JsonReader reader, string propertyName)

@@ -33,24 +33,12 @@ public sealed class OpenConversationHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WhenTargetUserIdIsInvalid_ShouldReturnValidationFailure()
-    {
-        var response = await _handler.HandleAsync(
-            new OpenConversationRequest("not-a-guid"),
-            UserId.New());
-
-        response.Success.Should().BeFalse();
-        response.Error.Should().NotBeNull();
-        response.Error!.Code.Should().Be(ApplicationErrorCodes.Common.ValidationFailed);
-    }
-
-    [Fact]
     public async Task HandleAsync_WhenCallerTargetsSelf_ShouldReturnBadRequestError()
     {
         var callerUserId = UserId.New();
 
         var response = await _handler.HandleAsync(
-            new OpenConversationRequest(callerUserId.ToString()),
+            new OpenConversationRequest(callerUserId),
             callerUserId);
 
         response.Success.Should().BeFalse();
@@ -69,7 +57,7 @@ public sealed class OpenConversationHandlerTests
             .ReturnsAsync((User?)null);
 
         var response = await _handler.HandleAsync(
-            new OpenConversationRequest(targetUserId.ToString()),
+            new OpenConversationRequest(targetUserId),
             callerUserId);
 
         response.Success.Should().BeFalse();
@@ -94,7 +82,7 @@ public sealed class OpenConversationHandlerTests
             .ReturnsAsync(new ConversationGetOrCreateResult(conversation, true));
 
         var response = await _handler.HandleAsync(
-            new OpenConversationRequest(targetUserId.ToString()),
+            new OpenConversationRequest(targetUserId),
             callerUserId);
 
         response.Success.Should().BeTrue();
@@ -120,7 +108,7 @@ public sealed class OpenConversationHandlerTests
             .ReturnsAsync(new ConversationGetOrCreateResult(conversation, false));
 
         var response = await _handler.HandleAsync(
-            new OpenConversationRequest(targetUserId.ToString()),
+            new OpenConversationRequest(targetUserId),
             callerUserId);
 
         response.Success.Should().BeTrue();

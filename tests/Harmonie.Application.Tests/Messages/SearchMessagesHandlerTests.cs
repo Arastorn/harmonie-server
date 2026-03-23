@@ -112,7 +112,7 @@ public sealed class SearchMessagesHandlerTests
             .ReturnsAsync(new ChannelAccessContext(channel, GuildRole.Admin));
 
         var response = await _handler.HandleAsync(
-            new SearchMessagesInput(guild.Id, Q: "deploy", ChannelId: channel.Id.ToString()),
+            new SearchMessagesInput(guild.Id, Q: "deploy", ChannelId: channel.Id),
             ownerId);
 
         response.Success.Should().BeFalse();
@@ -159,7 +159,7 @@ public sealed class SearchMessagesHandlerTests
             .ReturnsAsync(new SearchGuildMessagesPage([item], nextCursor));
 
         var response = await _handler.HandleAsync(
-            new SearchMessagesInput(guild.Id, Q: " deploy ", ChannelId: channel.Id.ToString(), AuthorId: authorId.ToString(), Before: before.ToString("O"), After: after.ToString("O"), Limit: 10),
+            new SearchMessagesInput(guild.Id, Q: " deploy ", ChannelId: channel.Id, AuthorId: authorId, Before: before.ToString("O"), After: after.ToString("O"), Limit: 10),
             ownerId);
 
         response.Success.Should().BeTrue();

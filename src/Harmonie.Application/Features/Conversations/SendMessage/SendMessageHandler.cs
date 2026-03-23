@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Harmonie.Application.Features.Conversations.SendMessage;
 
-public sealed record SendConversationMessageInput(ConversationId ConversationId, string Content, IReadOnlyList<string>? AttachmentFileIds = null);
+public sealed record SendConversationMessageInput(ConversationId ConversationId, string Content, IReadOnlyList<Guid>? AttachmentFileIds = null);
 
 public sealed class SendMessageHandler : IAuthenticatedHandler<SendConversationMessageInput, SendMessageResponse>
 {

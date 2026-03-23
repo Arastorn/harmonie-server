@@ -52,12 +52,17 @@ public sealed class GlobalExceptionHandler
                  && badRequestEx.InnerException is JsonException jsonEx)
         {
             var fieldName = jsonEx.Path?.TrimStart('$', '.') ?? "value";
+            var isGuidError = jsonEx.Message.Contains("System.Guid", StringComparison.OrdinalIgnoreCase)
+                || jsonEx.Message.Contains("GUID", StringComparison.OrdinalIgnoreCase);
+            var errorCode = isGuidError
+                ? ApplicationErrorCodes.Validation.InvalidFormat
+                : ApplicationErrorCodes.Validation.WrongEnumValue;
             error = new ApplicationError(
-                ApplicationErrorCodes.Validation.WrongEnumValue,
+                ApplicationErrorCodes.Common.ValidationFailed,
                 $"The value provided for '{fieldName}' is not valid",
                 EndpointExtensions.SingleValidationError(
                     fieldName,
-                    ApplicationErrorCodes.Validation.WrongEnumValue,
+                    errorCode,
                     $"The value provided for '{fieldName}' is not valid"));
         }
         else if (exception is BadHttpRequestException { StatusCode: StatusCodes.Status400BadRequest })

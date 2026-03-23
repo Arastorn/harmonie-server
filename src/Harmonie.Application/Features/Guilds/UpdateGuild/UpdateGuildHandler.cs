@@ -15,7 +15,7 @@ namespace Harmonie.Application.Features.Guilds.UpdateGuild;
 public sealed record UpdateGuildInput(
     GuildId GuildId,
     string? Name,
-    string? IconFileId,
+    Guid? IconFileId,
     string? IconColor,
     string? IconName,
     string? IconBg,
@@ -85,13 +85,7 @@ public sealed class UpdateGuildHandler
 
         if (input.IconFileIdIsSet)
         {
-            if (!TryParseUploadedFileId(input.IconFileId, out var iconFileId))
-            {
-                return BuildValidationFailure(
-                    nameof(input.IconFileId),
-                    "Guild icon file ID is invalid");
-            }
-
+            var iconFileId = input.IconFileId.HasValue ? UploadedFileId.From(input.IconFileId.Value) : null;
             var iconFileResult = guild.UpdateIconFile(iconFileId);
             if (iconFileResult.IsFailure)
                 return BuildValidationFailure(nameof(input.IconFileId), iconFileResult);
@@ -151,17 +145,6 @@ public sealed class UpdateGuildHandler
         return guild.IconColor is not null || guild.IconName is not null || guild.IconBg is not null
             ? new GuildIconDto(guild.IconColor, guild.IconName, guild.IconBg)
             : null;
-    }
-
-    private static bool TryParseUploadedFileId(string? fileId, out UploadedFileId? uploadedFileId)
-    {
-        if (fileId is null)
-        {
-            uploadedFileId = null;
-            return true;
-        }
-
-        return UploadedFileId.TryParse(fileId, out uploadedFileId);
     }
 
     private static ApplicationResponse<UpdateGuildResponse> BuildValidationFailure(

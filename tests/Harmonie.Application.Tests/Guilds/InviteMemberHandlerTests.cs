@@ -34,7 +34,7 @@ public sealed class InviteMemberHandlerTests
     {
         var guild = ApplicationTestBuilders.CreateGuild();
         var inviterUserId = UserId.New();
-        var request = new InviteMemberRequest(UserId.New().ToString());
+        var request = new InviteMemberRequest(UserId.New());
 
         _guildRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, inviterUserId, It.IsAny<CancellationToken>()))
@@ -53,7 +53,7 @@ public sealed class InviteMemberHandlerTests
         var guild = ApplicationTestBuilders.CreateGuild();
         var inviterUserId = UserId.New();
         var targetUserId = UserId.New();
-        var request = new InviteMemberRequest(targetUserId.ToString());
+        var request = new InviteMemberRequest(targetUserId);
 
         _guildRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, inviterUserId, It.IsAny<CancellationToken>()))
@@ -76,7 +76,7 @@ public sealed class InviteMemberHandlerTests
         var guild = ApplicationTestBuilders.CreateGuild();
         var inviterUserId = UserId.New();
         var targetUserId = UserId.New();
-        var request = new InviteMemberRequest(targetUserId.ToString());
+        var request = new InviteMemberRequest(targetUserId);
 
         _guildRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, inviterUserId, It.IsAny<CancellationToken>()))
@@ -99,7 +99,7 @@ public sealed class InviteMemberHandlerTests
         var guild = ApplicationTestBuilders.CreateGuild();
         var inviterUserId = UserId.New();
         var targetUserId = UserId.New();
-        var request = new InviteMemberRequest(targetUserId.ToString());
+        var request = new InviteMemberRequest(targetUserId);
 
         _guildRepositoryMock
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, inviterUserId, It.IsAny<CancellationToken>()))

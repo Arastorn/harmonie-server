@@ -92,7 +92,7 @@ public sealed class CreateGuildInviteEndpointTests : IClassFixture<HarmonieWebAp
 
         var inviteMemberResponse = await _client.SendAuthorizedPostAsync(
             $"/api/guilds/{guild!.GuildId}/members/invite",
-            new InviteMemberRequest(member.UserId),
+            new InviteMemberRequest(Guid.Parse(member.UserId)),
             owner.AccessToken);
         inviteMemberResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 

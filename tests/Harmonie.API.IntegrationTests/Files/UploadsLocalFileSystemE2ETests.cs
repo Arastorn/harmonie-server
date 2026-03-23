@@ -297,7 +297,7 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<HarmonieWebAp
 
         var sendMessageResponse = await client.SendAuthorizedPostAsync(
             $"/api/channels/{channelId}/messages",
-            new SendMessageRequest("message with attachment", [uploadPayload!.FileId]),
+            new SendMessageRequest("message with attachment", [Guid.Parse(uploadPayload!.FileId)]),
             user.AccessToken);
         Assert.Equal(HttpStatusCode.Created, sendMessageResponse.StatusCode);
 
@@ -332,7 +332,7 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<HarmonieWebAp
 
         var sendMessageResponse = await client.SendAuthorizedPostAsync(
             $"/api/conversations/{conversationId}/messages",
-            new ConversationSendMessageRequest("message with attachment", [uploadPayload!.FileId]),
+            new ConversationSendMessageRequest("message with attachment", [Guid.Parse(uploadPayload!.FileId)]),
             caller.AccessToken);
         Assert.Equal(HttpStatusCode.Created, sendMessageResponse.StatusCode);
 
@@ -414,7 +414,7 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<HarmonieWebAp
     {
         var response = await client.SendAuthorizedPostAsync(
             "/api/conversations",
-            new OpenConversationRequest(targetUserId),
+            new OpenConversationRequest(Guid.Parse(targetUserId)),
             accessToken);
         Assert.True(response.StatusCode is HttpStatusCode.Created or HttpStatusCode.OK);
 

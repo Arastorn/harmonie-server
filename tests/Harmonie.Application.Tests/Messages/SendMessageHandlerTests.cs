@@ -189,7 +189,7 @@ public sealed class SendMessageHandlerTests
             .Returns(Task.CompletedTask);
 
         var response = await _handler.HandleAsync(
-            new SendChannelMessageInput(channel.Id, "message with file", [attachment.Id.ToString()]),
+            new SendChannelMessageInput(channel.Id, "message with file", [attachment.Id]),
             userId);
 
         response.Success.Should().BeTrue();

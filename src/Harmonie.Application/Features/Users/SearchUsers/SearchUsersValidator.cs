@@ -11,7 +11,8 @@ public sealed class SearchUsersValidator : AbstractValidator<SearchUsersRequest>
             .WithMessage("Search query must contain at least 2 characters");
 
         RuleFor(x => x.GuildId)
-            .Must(guildId => guildId is null || (Guid.TryParse(guildId, out var parsed) && parsed != Guid.Empty))
+            .NotEqual(Guid.Empty)
+            .When(x => x.GuildId.HasValue)
             .WithMessage("Guild ID must be a valid non-empty GUID");
 
         RuleFor(x => x.Limit)

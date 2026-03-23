@@ -16,7 +16,7 @@ public sealed class MessageAttachmentResolver
     }
 
     public async Task<MessageAttachmentResolutionResult> ResolveAsync(
-        IReadOnlyList<string>? attachmentFileIds,
+        IReadOnlyList<Guid>? attachmentFileIds,
         UserId currentUserId,
         CancellationToken cancellationToken = default)
     {
@@ -26,18 +26,15 @@ public sealed class MessageAttachmentResolver
         var parsedIds = new List<UploadedFileId>(attachmentFileIds.Count);
         var seenIds = new HashSet<Guid>();
 
-        foreach (var rawAttachmentFileId in attachmentFileIds)
+        foreach (var attachmentFileId in attachmentFileIds)
         {
-            if (string.IsNullOrWhiteSpace(rawAttachmentFileId)
-                || !UploadedFileId.TryParse(rawAttachmentFileId, out var parsedAttachmentFileId)
-                || parsedAttachmentFileId is null
-                || !seenIds.Add(parsedAttachmentFileId.Value))
+            if (!seenIds.Add(attachmentFileId))
             {
                 return MessageAttachmentResolutionResult.Failed(
                     "Attachment file IDs must be valid, non-empty, and unique.");
             }
 
-            parsedIds.Add(parsedAttachmentFileId);
+            parsedIds.Add(UploadedFileId.From(attachmentFileId));
         }
 
         var uploadedFiles = await _uploadedFileRepository.GetByIdsAsync(parsedIds, cancellationToken);

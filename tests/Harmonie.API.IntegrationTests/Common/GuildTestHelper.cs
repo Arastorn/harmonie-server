@@ -42,7 +42,7 @@ public static class GuildTestHelper
     {
         var response = await client.SendAuthorizedPostAsync(
             $"/api/guilds/{guildId}/members/invite",
-            new InviteMemberRequest(userId),
+            new InviteMemberRequest(Guid.Parse(userId)),
             accessToken);
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }

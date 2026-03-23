@@ -4,9 +4,9 @@ public sealed class SearchMessagesRequest
 {
     public string? Q { get; init; }
 
-    public string? ChannelId { get; init; }
+    public Guid? ChannelId { get; init; }
 
-    public string? AuthorId { get; init; }
+    public Guid? AuthorId { get; init; }
 
     public string? Before { get; init; }
 

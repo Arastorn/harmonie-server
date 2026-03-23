@@ -65,16 +65,9 @@ public sealed class CreateGuildHandler : IAuthenticatedHandler<CreateGuildReques
 
         var guild = guildResult.Value;
 
-        if (request.IconFileId is not null)
+        if (request.IconFileId.HasValue)
         {
-            if (!UploadedFileId.TryParse(request.IconFileId, out var iconFileId))
-            {
-                return BuildIconValidationFailure(
-                    nameof(request.IconFileId),
-                    "Guild icon file ID is invalid");
-            }
-
-            var iconFileResult = guild.UpdateIconFile(iconFileId);
+            var iconFileResult = guild.UpdateIconFile(UploadedFileId.From(request.IconFileId.Value));
             if (iconFileResult.IsFailure)
                 return BuildIconValidationFailure(nameof(request.IconFileId), iconFileResult);
         }

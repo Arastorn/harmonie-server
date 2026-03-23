@@ -34,22 +34,7 @@ public sealed class SearchUsersHandler
                 "Request validation succeeded but search query was missing.");
         }
 
-        GuildId? guildId = null;
-        if (request.GuildId is not null)
-        {
-            if (!GuildId.TryParse(request.GuildId, out var parsedGuildId) || parsedGuildId is null)
-            {
-                return ApplicationResponse<SearchUsersResponse>.Fail(
-                    ApplicationErrorCodes.Common.ValidationFailed,
-                    "Request validation failed",
-                    EndpointExtensions.SingleValidationError(
-                        nameof(request.GuildId),
-                        ApplicationErrorCodes.Validation.InvalidFormat,
-                        "Guild ID is invalid"));
-            }
-
-            guildId = parsedGuildId;
-        }
+        var guildId = request.GuildId.HasValue ? GuildId.From(request.GuildId.Value) : null;
 
         if (guildId is not null)
         {

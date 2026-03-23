@@ -7,9 +7,7 @@ public sealed class BanMemberValidator : AbstractValidator<BanMemberRequest>
     public BanMemberValidator()
     {
         RuleFor(x => x.UserId)
-            .NotEmpty()
-            .WithMessage("User ID is required")
-            .Must(userId => Guid.TryParse(userId, out var parsed) && parsed != Guid.Empty)
+            .NotEqual(Guid.Empty)
             .WithMessage("User ID must be a valid non-empty GUID");
 
         RuleFor(x => x.Reason)

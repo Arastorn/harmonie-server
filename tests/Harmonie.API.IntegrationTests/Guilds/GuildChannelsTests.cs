@@ -180,7 +180,9 @@ public sealed class GuildChannelsTests : IClassFixture<HarmonieWebApplicationFac
 
         var error = await createChannelResponse.Content.ReadFromJsonAsync<ApplicationError>();
         error.Should().NotBeNull();
-        error!.Code.Should().Be(ApplicationErrorCodes.Validation.WrongEnumValue);
+        error!.Code.Should().Be(ApplicationErrorCodes.Common.ValidationFailed);
+        error.Errors.Should().ContainKey("type");
+        error.Errors!["type"][0].Code.Should().Be(ApplicationErrorCodes.Validation.WrongEnumValue);
     }
 
     [Fact]
