@@ -7,7 +7,6 @@ using Harmonie.Application.Interfaces.Conversations;
 using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Application.Interfaces.Uploads;
 using Harmonie.Application.Tests.Common;
-using Harmonie.Domain.Entities.Conversations;
 using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.Entities.Messages;
 using Harmonie.Domain.Entities.Uploads;
@@ -62,8 +61,8 @@ public sealed class SendConversationMessageHandlerTests
         var userId = UserId.New();
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdAsync(conversationId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Conversation?)null);
+            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversationId, It.IsAny<UserId>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ConversationAccess?)null);
 
         var response = await _handler.HandleAsync(
             new SendConversationMessageInput(conversationId, "hello"),
@@ -84,8 +83,8 @@ public sealed class SendConversationMessageHandlerTests
         var conversation = ApplicationTestBuilders.CreateConversation(participantOne, participantTwo);
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdAsync(conversation.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(conversation);
+            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, outsider, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConversationAccess(conversation, IsParticipant: false));
 
         var response = await _handler.HandleAsync(
             new SendConversationMessageInput(conversation.Id, "hello"),
@@ -100,15 +99,12 @@ public sealed class SendConversationMessageHandlerTests
     [Fact]
     public async Task HandleAsync_WithEmptyContent_ShouldReturnContentEmpty()
     {
-        var conversation = ApplicationTestBuilders.CreateConversation(UserId.New(), UserId.New());
-
-        _conversationRepositoryMock
-            .Setup(x => x.GetByIdAsync(conversation.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(conversation);
+        var currentUserId = UserId.New();
+        var conversation = ApplicationTestBuilders.CreateConversation(currentUserId, UserId.New());
 
         var response = await _handler.HandleAsync(
             new SendConversationMessageInput(conversation.Id, "   "),
-            conversation.User1Id);
+            currentUserId);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -119,12 +115,13 @@ public sealed class SendConversationMessageHandlerTests
     [Fact]
     public async Task HandleAsync_WithValidRequest_ShouldPersistCommitAndNotify()
     {
-        var conversation = ApplicationTestBuilders.CreateConversation(UserId.New(), UserId.New());
+        var currentUserId = UserId.New();
+        var conversation = ApplicationTestBuilders.CreateConversation(currentUserId, UserId.New());
         Message? persistedMessage = null;
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdAsync(conversation.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(conversation);
+            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, currentUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConversationAccess(conversation, IsParticipant: true));
 
         _directMessageRepositoryMock
             .Setup(x => x.AddAsync(It.IsAny<Message>(), It.IsAny<CancellationToken>()))
@@ -133,7 +130,7 @@ public sealed class SendConversationMessageHandlerTests
 
         var response = await _handler.HandleAsync(
             new SendConversationMessageInput(conversation.Id, "  hello dm  "),
-            conversation.User1Id);
+            currentUserId);
 
         response.Success.Should().BeTrue();
         response.Error.Should().BeNull();
@@ -147,7 +144,7 @@ public sealed class SendConversationMessageHandlerTests
             x => x.NotifyMessageCreatedAsync(
                 It.Is<ConversationMessageCreatedNotification>(n =>
                     n.ConversationId == conversation.Id
-                    && n.AuthorUserId == conversation.User1Id
+                    && n.AuthorUserId == currentUserId
                     && n.Content == "hello dm"),
                 It.IsAny<CancellationToken>()),
             Times.Once);
@@ -156,12 +153,13 @@ public sealed class SendConversationMessageHandlerTests
     [Fact]
     public async Task HandleAsync_WithOwnedAttachmentFiles_ShouldPersistAttachmentsAndReturnThem()
     {
-        var conversation = ApplicationTestBuilders.CreateConversation(UserId.New(), UserId.New());
-        var attachment = ApplicationTestBuilders.CreateUploadedFile(uploaderUserId: conversation.User1Id, fileName: "report.pdf", contentType: "application/pdf");
+        var currentUserId = UserId.New();
+        var conversation = ApplicationTestBuilders.CreateConversation(currentUserId, UserId.New());
+        var attachment = ApplicationTestBuilders.CreateUploadedFile(uploaderUserId: currentUserId, fileName: "report.pdf", contentType: "application/pdf");
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdAsync(conversation.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(conversation);
+            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, currentUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConversationAccess(conversation, IsParticipant: true));
 
         _uploadedFileRepositoryMock
             .Setup(x => x.GetByIdsAsync(It.IsAny<IReadOnlyCollection<UploadedFileId>>(), It.IsAny<CancellationToken>()))
@@ -175,7 +173,7 @@ public sealed class SendConversationMessageHandlerTests
 
         var response = await _handler.HandleAsync(
             new SendConversationMessageInput(conversation.Id, "hello dm", [attachment.Id]),
-            conversation.User1Id);
+            currentUserId);
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();
@@ -189,11 +187,12 @@ public sealed class SendConversationMessageHandlerTests
     [Fact]
     public async Task HandleAsync_WhenNotifierThrows_ShouldStillSucceed()
     {
-        var conversation = ApplicationTestBuilders.CreateConversation(UserId.New(), UserId.New());
+        var currentUserId = UserId.New();
+        var conversation = ApplicationTestBuilders.CreateConversation(currentUserId, UserId.New());
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdAsync(conversation.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(conversation);
+            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, currentUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConversationAccess(conversation, IsParticipant: true));
 
         _directMessageRepositoryMock
             .Setup(x => x.AddAsync(It.IsAny<Message>(), It.IsAny<CancellationToken>()))
@@ -207,11 +206,10 @@ public sealed class SendConversationMessageHandlerTests
 
         var response = await _handler.HandleAsync(
             new SendConversationMessageInput(conversation.Id, "hello"),
-            conversation.User1Id);
+            currentUserId);
 
         response.Success.Should().BeTrue();
         response.Error.Should().BeNull();
         _transactionMock.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
-
 }

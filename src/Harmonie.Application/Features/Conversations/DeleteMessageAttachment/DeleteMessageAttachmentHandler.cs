@@ -40,15 +40,14 @@ public sealed class DeleteMessageAttachmentHandler : IAuthenticatedHandler<Delet
         UserId currentUserId,
         CancellationToken cancellationToken = default)
     {
-        var conversation = await _conversationRepository.GetByIdAsync(request.ConversationId, cancellationToken);
-        if (conversation is null)
+        var access = await _conversationRepository.GetByIdWithParticipantCheckAsync(request.ConversationId, currentUserId, cancellationToken);
+        if (access is null)
         {
             return ApplicationResponse<bool>.Fail(
                 ApplicationErrorCodes.Conversation.NotFound,
                 "Conversation was not found");
         }
-
-        if (conversation.User1Id != currentUserId && conversation.User2Id != currentUserId)
+        if (!access.IsParticipant)
         {
             return ApplicationResponse<bool>.Fail(
                 ApplicationErrorCodes.Conversation.AccessDenied,

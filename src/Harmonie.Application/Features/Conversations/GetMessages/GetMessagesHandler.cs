@@ -48,15 +48,14 @@ public sealed class GetMessagesHandler : IAuthenticatedHandler<GetConversationMe
 
         var limit = request.Limit ?? DefaultLimit;
 
-        var conversation = await _conversationRepository.GetByIdAsync(request.ConversationId, cancellationToken);
-        if (conversation is null)
+        var access = await _conversationRepository.GetByIdWithParticipantCheckAsync(request.ConversationId, currentUserId, cancellationToken);
+        if (access is null)
         {
             return ApplicationResponse<GetMessagesResponse>.Fail(
                 ApplicationErrorCodes.Conversation.NotFound,
                 "Conversation was not found");
         }
-
-        if (conversation.User1Id != currentUserId && conversation.User2Id != currentUserId)
+        if (!access.IsParticipant)
         {
             return ApplicationResponse<GetMessagesResponse>.Fail(
                 ApplicationErrorCodes.Conversation.AccessDenied,

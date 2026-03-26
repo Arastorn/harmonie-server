@@ -5,7 +5,6 @@ using Harmonie.Application.Interfaces.Common;
 using Harmonie.Application.Interfaces.Conversations;
 using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Application.Tests.Common;
-using Harmonie.Domain.Entities.Conversations;
 using Harmonie.Domain.Entities.Messages;
 using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.ValueObjects.Messages;
@@ -58,8 +57,8 @@ public sealed class AddConversationReactionHandlerTests
         var callerId = UserId.New();
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdAsync(conversationId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Conversation?)null);
+            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversationId, It.IsAny<UserId>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ConversationAccess?)null);
 
         var response = await _handler.HandleAsync(new ConversationAddReactionInput(conversationId, MessageId.New(), "👍"), callerId);
 
@@ -77,8 +76,8 @@ public sealed class AddConversationReactionHandlerTests
         var conversation = ApplicationTestBuilders.CreateConversation(participantOne, participantTwo);
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdAsync(conversation.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(conversation);
+            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, outsider, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConversationAccess(conversation, IsParticipant: false));
 
         var response = await _handler.HandleAsync(new ConversationAddReactionInput(conversation.Id, MessageId.New(), "👍"), outsider);
 
@@ -96,8 +95,8 @@ public sealed class AddConversationReactionHandlerTests
         var messageId = MessageId.New();
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdAsync(conversation.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(conversation);
+            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, participantOne, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConversationAccess(conversation, IsParticipant: true));
 
         _messageRepositoryMock
             .Setup(x => x.GetByIdAsync(messageId, It.IsAny<CancellationToken>()))
@@ -120,8 +119,8 @@ public sealed class AddConversationReactionHandlerTests
         var message = ApplicationTestBuilders.CreateConversationMessage(ConversationId.New(), participantOne);
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdAsync(conversation.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(conversation);
+            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, participantOne, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConversationAccess(conversation, IsParticipant: true));
 
         _messageRepositoryMock
             .Setup(x => x.GetByIdAsync(messageId, It.IsAny<CancellationToken>()))
@@ -144,8 +143,8 @@ public sealed class AddConversationReactionHandlerTests
         var message = ApplicationTestBuilders.CreateConversationMessage(conversation.Id, participantOne);
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdAsync(conversation.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(conversation);
+            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, participantOne, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConversationAccess(conversation, IsParticipant: true));
 
         _messageRepositoryMock
             .Setup(x => x.GetByIdAsync(messageId, It.IsAny<CancellationToken>()))
@@ -167,8 +166,8 @@ public sealed class AddConversationReactionHandlerTests
         var message = ApplicationTestBuilders.CreateConversationMessage(conversation.Id, participantOne);
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdAsync(conversation.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(conversation);
+            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, participantOne, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConversationAccess(conversation, IsParticipant: true));
 
         _messageRepositoryMock
             .Setup(x => x.GetByIdAsync(messageId, It.IsAny<CancellationToken>()))
@@ -205,8 +204,8 @@ public sealed class AddConversationReactionHandlerTests
         var message = ApplicationTestBuilders.CreateConversationMessage(conversation.Id, participantOne);
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdAsync(conversation.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(conversation);
+            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, participantTwo, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConversationAccess(conversation, IsParticipant: true));
 
         _messageRepositoryMock
             .Setup(x => x.GetByIdAsync(messageId, It.IsAny<CancellationToken>()))
@@ -227,8 +226,8 @@ public sealed class AddConversationReactionHandlerTests
         var message = ApplicationTestBuilders.CreateConversationMessage(conversation.Id, participantOne);
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdAsync(conversation.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(conversation);
+            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, participantOne, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConversationAccess(conversation, IsParticipant: true));
 
         _messageRepositoryMock
             .Setup(x => x.GetByIdAsync(messageId, It.IsAny<CancellationToken>()))
