@@ -11,9 +11,9 @@ public sealed class UpdateGuildValidator : AbstractValidator<UpdateGuildRequest>
             .When(x => x.NameIsSet);
 
         RuleFor(x => x.IconFileId)
-            .Must(id => Guid.TryParse(id, out var parsed) && parsed != Guid.Empty)
-            .WithMessage("Guild icon file ID must be a valid non-empty GUID")
-            .When(x => x.IconFileIdIsSet && x.IconFileId is not null);
+            .NotEqual(Guid.Empty)
+            .When(x => x.IconFileIdIsSet && x.IconFileId.HasValue)
+            .WithMessage("Guild icon file ID must be a valid non-empty GUID");
 
         RuleFor(x => x.IconColor)
             .MaximumLength(50)

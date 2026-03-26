@@ -37,13 +37,13 @@ public sealed class TransferOwnershipTests : IClassFixture<HarmonieWebApplicatio
 
         var inviteResponse = await _client.SendAuthorizedPostAsync(
             $"/api/guilds/{createGuildPayload!.GuildId}/members/invite",
-            new InviteMemberRequest(member.UserId),
+            new InviteMemberRequest(Guid.Parse(member.UserId)),
             owner.AccessToken);
         inviteResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var transferResponse = await _client.SendAuthorizedPostAsync(
             $"/api/guilds/{createGuildPayload.GuildId}/owner/transfer",
-            new TransferOwnershipRequest(member.UserId),
+            new TransferOwnershipRequest(Guid.Parse(member.UserId)),
             owner.AccessToken);
         transferResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
@@ -66,17 +66,17 @@ public sealed class TransferOwnershipTests : IClassFixture<HarmonieWebApplicatio
 
         await _client.SendAuthorizedPostAsync(
             $"/api/guilds/{createGuildPayload!.GuildId}/members/invite",
-            new InviteMemberRequest(member.UserId),
+            new InviteMemberRequest(Guid.Parse(member.UserId)),
             owner.AccessToken);
 
         await _client.SendAuthorizedPostAsync(
             $"/api/guilds/{createGuildPayload.GuildId}/members/invite",
-            new InviteMemberRequest(otherMember.UserId),
+            new InviteMemberRequest(Guid.Parse(otherMember.UserId)),
             owner.AccessToken);
 
         var transferResponse = await _client.SendAuthorizedPostAsync(
             $"/api/guilds/{createGuildPayload.GuildId}/owner/transfer",
-            new TransferOwnershipRequest(otherMember.UserId),
+            new TransferOwnershipRequest(Guid.Parse(otherMember.UserId)),
             member.AccessToken);
         transferResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
@@ -101,7 +101,7 @@ public sealed class TransferOwnershipTests : IClassFixture<HarmonieWebApplicatio
 
         var transferResponse = await _client.SendAuthorizedPostAsync(
             $"/api/guilds/{createGuildPayload!.GuildId}/owner/transfer",
-            new TransferOwnershipRequest(owner.UserId),
+            new TransferOwnershipRequest(Guid.Parse(owner.UserId)),
             owner.AccessToken);
         transferResponse.StatusCode.Should().Be(HttpStatusCode.Conflict);
 
@@ -127,7 +127,7 @@ public sealed class TransferOwnershipTests : IClassFixture<HarmonieWebApplicatio
 
         var transferResponse = await _client.SendAuthorizedPostAsync(
             $"/api/guilds/{createGuildPayload!.GuildId}/owner/transfer",
-            new TransferOwnershipRequest(nonMember.UserId),
+            new TransferOwnershipRequest(Guid.Parse(nonMember.UserId)),
             owner.AccessToken);
         transferResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
@@ -145,7 +145,7 @@ public sealed class TransferOwnershipTests : IClassFixture<HarmonieWebApplicatio
 
         var transferResponse = await _client.SendAuthorizedPostAsync(
             $"/api/guilds/{nonExistentGuildId}/owner/transfer",
-            new TransferOwnershipRequest(target.UserId),
+            new TransferOwnershipRequest(Guid.Parse(target.UserId)),
             user.AccessToken);
         transferResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
@@ -162,7 +162,7 @@ public sealed class TransferOwnershipTests : IClassFixture<HarmonieWebApplicatio
 
         var transferResponse = await _client.PostAsJsonAsync(
             $"/api/guilds/{nonExistentGuildId}/owner/transfer",
-            new TransferOwnershipRequest(target.UserId));
+            new TransferOwnershipRequest(Guid.Parse(target.UserId)));
         transferResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 }

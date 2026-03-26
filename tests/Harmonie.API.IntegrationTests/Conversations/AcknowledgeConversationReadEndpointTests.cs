@@ -28,7 +28,7 @@ public sealed class AcknowledgeConversationReadEndpointTests : IClassFixture<Har
 
         var response = await _client.SendAuthorizedPostAsync(
             $"/api/conversations/{conversationId}/ack",
-            new AcknowledgeReadRequest(message.MessageId),
+            new AcknowledgeReadRequest(Guid.Parse(message.MessageId)),
             caller.AccessToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -60,13 +60,13 @@ public sealed class AcknowledgeConversationReadEndpointTests : IClassFixture<Har
 
         var firstResponse = await _client.SendAuthorizedPostAsync(
             $"/api/conversations/{conversationId}/ack",
-            new AcknowledgeReadRequest(message.MessageId),
+            new AcknowledgeReadRequest(Guid.Parse(message.MessageId)),
             caller.AccessToken);
         firstResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         var secondResponse = await _client.SendAuthorizedPostAsync(
             $"/api/conversations/{conversationId}/ack",
-            new AcknowledgeReadRequest(message.MessageId),
+            new AcknowledgeReadRequest(Guid.Parse(message.MessageId)),
             caller.AccessToken);
         secondResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
@@ -132,7 +132,7 @@ public sealed class AcknowledgeConversationReadEndpointTests : IClassFixture<Har
 
         var response = await _client.SendAuthorizedPostAsync(
             $"/api/conversations/{conversationId}/ack",
-            new AcknowledgeReadRequest(Guid.NewGuid().ToString()),
+            new AcknowledgeReadRequest(Guid.NewGuid()),
             caller.AccessToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -176,7 +176,7 @@ public sealed class AcknowledgeConversationReadEndpointTests : IClassFixture<Har
 
         var response = await _client.SendAuthorizedPostAsync(
             $"/api/conversations/{Guid.NewGuid()}/ack",
-            new AcknowledgeReadRequest("not-a-guid"),
+            new { messageId = "not-a-guid" },
             caller.AccessToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);

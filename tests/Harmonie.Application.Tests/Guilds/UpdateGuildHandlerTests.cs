@@ -94,7 +94,7 @@ public sealed class UpdateGuildHandlerTests
         {
             Name = "Updated Guild",
             NameIsSet = true,
-            IconFileId = "1c73fa0b-0a39-4ea8-b43e-48c703bbf5fe",
+            IconFileId = Guid.Parse("1c73fa0b-0a39-4ea8-b43e-48c703bbf5fe"),
             IconFileIdIsSet = true,
             IconIsSet = true,
             IconColor = "#7C3AED",
@@ -199,7 +199,7 @@ public sealed class UpdateGuildHandlerTests
 
         var request = new UpdateGuildRequest
         {
-            IconFileId = "5d2bd47d-c897-4eca-8aec-e5e68217e1d9",
+            IconFileId = Guid.Parse("5d2bd47d-c897-4eca-8aec-e5e68217e1d9"),
             IconFileIdIsSet = true
         };
 

@@ -15,8 +15,8 @@ namespace Harmonie.Application.Features.Guilds.SearchMessages;
 public sealed record SearchMessagesInput(
     GuildId GuildId,
     string? Q = null,
-    string? ChannelId = null,
-    string? AuthorId = null,
+    Guid? ChannelId = null,
+    Guid? AuthorId = null,
     string? Before = null,
     string? After = null,
     string? Cursor = null,
@@ -69,39 +69,8 @@ public sealed class SearchMessagesHandler : IAuthenticatedHandler<SearchMessages
             cursor = parsedCursor;
         }
 
-        GuildChannelId? channelId = null;
-        if (input.ChannelId is not null)
-        {
-            if (!GuildChannelId.TryParse(input.ChannelId, out var parsedChannelId) || parsedChannelId is null)
-            {
-                return ApplicationResponse<SearchMessagesResponse>.Fail(
-                    ApplicationErrorCodes.Common.ValidationFailed,
-                    "Request validation failed",
-                    EndpointExtensions.SingleValidationError(
-                        nameof(input.ChannelId),
-                        ApplicationErrorCodes.Validation.InvalidFormat,
-                        "Channel ID is invalid"));
-            }
-
-            channelId = parsedChannelId;
-        }
-
-        UserId? authorId = null;
-        if (input.AuthorId is not null)
-        {
-            if (!UserId.TryParse(input.AuthorId, out var parsedAuthorId) || parsedAuthorId is null)
-            {
-                return ApplicationResponse<SearchMessagesResponse>.Fail(
-                    ApplicationErrorCodes.Common.ValidationFailed,
-                    "Request validation failed",
-                    EndpointExtensions.SingleValidationError(
-                        nameof(input.AuthorId),
-                        ApplicationErrorCodes.Validation.InvalidFormat,
-                        "Author ID is invalid"));
-            }
-
-            authorId = parsedAuthorId;
-        }
+        var channelId = input.ChannelId.HasValue ? GuildChannelId.From(input.ChannelId.Value) : null;
+        var authorId = input.AuthorId.HasValue ? UserId.From(input.AuthorId.Value) : null;
 
         DateTime? beforeCreatedAtUtc = null;
         if (input.Before is not null)

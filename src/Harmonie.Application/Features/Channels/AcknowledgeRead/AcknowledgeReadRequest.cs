@@ -1,3 +1,3 @@
 namespace Harmonie.Application.Features.Channels.AcknowledgeRead;
 
-public sealed record AcknowledgeReadRequest(string? MessageId);
+public sealed record AcknowledgeReadRequest(Guid? MessageId);

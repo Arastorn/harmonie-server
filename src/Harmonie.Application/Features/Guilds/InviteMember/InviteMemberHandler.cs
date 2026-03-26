@@ -7,7 +7,7 @@ using Harmonie.Domain.ValueObjects.Users;
 
 namespace Harmonie.Application.Features.Guilds.InviteMember;
 
-public sealed record InviteMemberInput(GuildId GuildId, string TargetUserId);
+public sealed record InviteMemberInput(GuildId GuildId, Guid TargetUserId);
 
 public sealed class InviteMemberHandler : IAuthenticatedHandler<InviteMemberInput, InviteMemberResponse>
 {
@@ -27,16 +27,7 @@ public sealed class InviteMemberHandler : IAuthenticatedHandler<InviteMemberInpu
         UserId currentUserId,
         CancellationToken cancellationToken = default)
     {
-        if (!UserId.TryParse(input.TargetUserId, out var invitedUserId) || invitedUserId is null)
-        {
-            return ApplicationResponse<InviteMemberResponse>.Fail(
-                ApplicationErrorCodes.Common.ValidationFailed,
-                "Request validation failed",
-                EndpointExtensions.SingleValidationError(
-                    nameof(input.TargetUserId),
-                    ApplicationErrorCodes.Validation.InvalidFormat,
-                    "User ID must be a valid non-empty GUID"));
-        }
+        var invitedUserId = UserId.From(input.TargetUserId);
 
         var guildAccess = await _guildRepository.GetWithCallerRoleAsync(
             input.GuildId,

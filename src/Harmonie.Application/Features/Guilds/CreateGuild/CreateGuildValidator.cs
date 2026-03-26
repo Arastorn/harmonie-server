@@ -11,9 +11,9 @@ public sealed class CreateGuildValidator : AbstractValidator<CreateGuildRequest>
             .WithMessage("Guild name is required");
 
         RuleFor(x => x.IconFileId)
-            .Must(fileId => fileId is null || Guid.TryParse(fileId, out _))
-            .WithMessage("Guild icon file ID must be a valid GUID")
-            .When(x => x.IconFileId is not null);
+            .NotEqual(Guid.Empty)
+            .When(x => x.IconFileId.HasValue)
+            .WithMessage("Guild icon file ID must be a valid non-empty GUID");
 
         RuleFor(x => x.Icon!.Color)
             .MaximumLength(50)

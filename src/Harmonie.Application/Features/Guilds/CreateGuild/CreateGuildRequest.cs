@@ -2,7 +2,7 @@ namespace Harmonie.Application.Features.Guilds.CreateGuild;
 
 public sealed record CreateGuildRequest(
     string Name,
-    string? IconFileId = null,
+    Guid? IconFileId = null,
     CreateGuildIconRequest? Icon = null);
 
 public sealed record CreateGuildIconRequest(

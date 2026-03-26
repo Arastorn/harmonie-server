@@ -63,12 +63,7 @@ public sealed class ReorderChannelsHandler : IAuthenticatedHandler<ReorderChanne
 
         foreach (var item in input.Channels)
         {
-            if (!GuildChannelId.TryParse(item.ChannelId, out var parsedId) || parsedId is null)
-            {
-                return ApplicationResponse<ReorderChannelsResponse>.Fail(
-                    ApplicationErrorCodes.Channel.NotFound,
-                    $"Channel '{item.ChannelId}' is not a valid ID");
-            }
+            var parsedId = GuildChannelId.From(item.ChannelId);
 
             if (!channelMap.ContainsKey(parsedId))
             {

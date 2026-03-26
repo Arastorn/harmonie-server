@@ -35,7 +35,7 @@ public sealed class BanMemberEndpointTests : IClassFixture<HarmonieWebApplicatio
 
         var banResponse = await _client.SendAuthorizedPostAsync(
             $"/api/guilds/{guild.GuildId}/bans",
-            new BanMemberRequest(member.UserId, "Spamming"),
+            new BanMemberRequest(Guid.Parse(member.UserId), "Spamming"),
             owner.AccessToken);
         banResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
@@ -71,7 +71,7 @@ public sealed class BanMemberEndpointTests : IClassFixture<HarmonieWebApplicatio
         // Ban the member
         var banResponse = await _client.SendAuthorizedPostAsync(
             $"/api/guilds/{guild.GuildId}/bans",
-            new BanMemberRequest(banned.UserId),
+            new BanMemberRequest(Guid.Parse(banned.UserId)),
             owner.AccessToken);
         banResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
@@ -104,7 +104,7 @@ public sealed class BanMemberEndpointTests : IClassFixture<HarmonieWebApplicatio
 
         var banResponse = await _client.SendAuthorizedPostAsync(
             $"/api/guilds/{guild.GuildId}/bans",
-            new BanMemberRequest(target.UserId),
+            new BanMemberRequest(Guid.Parse(target.UserId)),
             member.AccessToken);
         banResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
@@ -134,7 +134,7 @@ public sealed class BanMemberEndpointTests : IClassFixture<HarmonieWebApplicatio
 
         var banResponse = await _client.SendAuthorizedPostAsync(
             $"/api/guilds/{guild.GuildId}/bans",
-            new BanMemberRequest(owner.UserId),
+            new BanMemberRequest(Guid.Parse(owner.UserId)),
             admin.AccessToken);
         banResponse.StatusCode.Should().Be(HttpStatusCode.Conflict);
 
@@ -156,13 +156,13 @@ public sealed class BanMemberEndpointTests : IClassFixture<HarmonieWebApplicatio
 
         var firstBan = await _client.SendAuthorizedPostAsync(
             $"/api/guilds/{guild.GuildId}/bans",
-            new BanMemberRequest(member.UserId),
+            new BanMemberRequest(Guid.Parse(member.UserId)),
             owner.AccessToken);
         firstBan.StatusCode.Should().Be(HttpStatusCode.Created);
 
         var secondBan = await _client.SendAuthorizedPostAsync(
             $"/api/guilds/{guild.GuildId}/bans",
-            new BanMemberRequest(member.UserId),
+            new BanMemberRequest(Guid.Parse(member.UserId)),
             owner.AccessToken);
         secondBan.StatusCode.Should().Be(HttpStatusCode.Conflict);
 
@@ -199,7 +199,7 @@ public sealed class BanMemberEndpointTests : IClassFixture<HarmonieWebApplicatio
         // Ban with purge
         var banResponse = await _client.SendAuthorizedPostAsync(
             $"/api/guilds/{guild.GuildId}/bans",
-            new BanMemberRequest(member.UserId, PurgeMessagesDays: 7),
+            new BanMemberRequest(Guid.Parse(member.UserId), PurgeMessagesDays: 7),
             owner.AccessToken);
         banResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
@@ -221,7 +221,7 @@ public sealed class BanMemberEndpointTests : IClassFixture<HarmonieWebApplicatio
 
         var banResponse = await _client.PostAsJsonAsync(
             $"/api/guilds/{nonExistentGuildId}/bans",
-            new BanMemberRequest(Guid.NewGuid().ToString()));
+            new BanMemberRequest(Guid.NewGuid()));
         banResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 }

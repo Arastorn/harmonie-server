@@ -7,9 +7,7 @@ public sealed class TransferOwnershipValidator : AbstractValidator<TransferOwner
     public TransferOwnershipValidator()
     {
         RuleFor(x => x.NewOwnerId)
-            .NotEmpty()
-            .WithMessage("New owner ID is required")
-            .Must(id => Guid.TryParse(id, out var parsed) && parsed != Guid.Empty)
+            .NotEqual(Guid.Empty)
             .WithMessage("New owner ID must be a valid non-empty GUID");
     }
 }

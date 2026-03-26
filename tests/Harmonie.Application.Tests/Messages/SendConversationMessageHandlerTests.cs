@@ -174,7 +174,7 @@ public sealed class SendConversationMessageHandlerTests
             .Returns(Task.CompletedTask);
 
         var response = await _handler.HandleAsync(
-            new SendConversationMessageInput(conversation.Id, "hello dm", [attachment.Id.ToString()]),
+            new SendConversationMessageInput(conversation.Id, "hello dm", [attachment.Id]),
             conversation.User1Id);
 
         response.Success.Should().BeTrue();

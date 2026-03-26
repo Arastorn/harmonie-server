@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Harmonie.Application.Features.Channels.SendMessage;
 
-public sealed record SendChannelMessageInput(GuildChannelId ChannelId, string Content, IReadOnlyList<string>? AttachmentFileIds = null);
+public sealed record SendChannelMessageInput(GuildChannelId ChannelId, string Content, IReadOnlyList<Guid>? AttachmentFileIds = null);
 
 public sealed class SendMessageHandler : IAuthenticatedHandler<SendChannelMessageInput, SendMessageResponse>
 {

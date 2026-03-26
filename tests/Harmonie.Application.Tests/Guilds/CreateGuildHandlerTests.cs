@@ -97,7 +97,7 @@ public sealed class CreateGuildHandlerTests
         var iconFileId = UploadedFileId.New();
         var request = new CreateGuildRequest(
             "Icon Guild",
-            IconFileId: iconFileId.ToString(),
+            IconFileId: iconFileId,
             Icon: new CreateGuildIconRequest(
                 Color: "#7C3AED",
                 Name: "sword",
@@ -140,7 +140,7 @@ public sealed class CreateGuildHandlerTests
         var iconFileId = UploadedFileId.New();
         var request = new CreateGuildRequest(
             "Url Only Guild",
-            IconFileId: iconFileId.ToString());
+            IconFileId: iconFileId);
         var userId = UserId.New();
 
         var response = await _handler.HandleAsync(request, userId);

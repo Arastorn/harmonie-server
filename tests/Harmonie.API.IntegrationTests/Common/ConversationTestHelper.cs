@@ -15,7 +15,7 @@ public static class ConversationTestHelper
     {
         var response = await client.SendAuthorizedPostAsync(
             "/api/conversations",
-            new OpenConversationRequest(targetUserId),
+            new OpenConversationRequest(Guid.Parse(targetUserId)),
             accessToken);
         response.StatusCode.Should().BeOneOf(HttpStatusCode.Created, HttpStatusCode.OK);
 

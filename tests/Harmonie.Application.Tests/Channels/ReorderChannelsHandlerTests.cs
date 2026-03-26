@@ -49,7 +49,7 @@ public sealed class ReorderChannelsHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guildId, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((GuildAccessContext?)null);
 
-        var request = new ReorderChannelsRequest([new ReorderChannelsItemRequest(GuildChannelId.New().ToString(), 0)]);
+        var request = new ReorderChannelsRequest([new ReorderChannelsItemRequest(GuildChannelId.New(), 0)]);
         var response = await _handler.HandleAsync(new ReorderChannelsInput(guildId, request.Channels), callerId);
 
         response.Success.Should().BeFalse();
@@ -67,7 +67,7 @@ public sealed class ReorderChannelsHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GuildAccessContext(guild, CallerRole: null));
 
-        var request = new ReorderChannelsRequest([new ReorderChannelsItemRequest(GuildChannelId.New().ToString(), 0)]);
+        var request = new ReorderChannelsRequest([new ReorderChannelsItemRequest(GuildChannelId.New(), 0)]);
         var response = await _handler.HandleAsync(new ReorderChannelsInput(guild.Id, request.Channels), callerId);
 
         response.Success.Should().BeFalse();
@@ -85,7 +85,7 @@ public sealed class ReorderChannelsHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GuildAccessContext(guild, GuildRole.Member));
 
-        var request = new ReorderChannelsRequest([new ReorderChannelsItemRequest(GuildChannelId.New().ToString(), 0)]);
+        var request = new ReorderChannelsRequest([new ReorderChannelsItemRequest(GuildChannelId.New(), 0)]);
         var response = await _handler.HandleAsync(new ReorderChannelsInput(guild.Id, request.Channels), callerId);
 
         response.Success.Should().BeFalse();
@@ -107,7 +107,7 @@ public sealed class ReorderChannelsHandlerTests
             .Setup(x => x.GetByGuildIdAsync(guild.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
-        var unknownChannelId = GuildChannelId.New().ToString();
+        var unknownChannelId = GuildChannelId.New();
         var request = new ReorderChannelsRequest([new ReorderChannelsItemRequest(unknownChannelId, 0)]);
         var response = await _handler.HandleAsync(new ReorderChannelsInput(guild.Id, request.Channels), adminId);
 
@@ -131,10 +131,10 @@ public sealed class ReorderChannelsHandlerTests
             .Setup(x => x.GetByGuildIdAsync(guild.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync([channel]);
 
-        var channelIdStr = channel.Id.ToString();
+        var channelId = channel.Id;
         var request = new ReorderChannelsRequest([
-            new ReorderChannelsItemRequest(channelIdStr, 0),
-            new ReorderChannelsItemRequest(channelIdStr, 1)
+            new ReorderChannelsItemRequest(channelId, 0),
+            new ReorderChannelsItemRequest(channelId, 1)
         ]);
         var response = await _handler.HandleAsync(new ReorderChannelsInput(guild.Id, request.Channels), adminId);
 
@@ -160,8 +160,8 @@ public sealed class ReorderChannelsHandlerTests
             .ReturnsAsync([ch1, ch2]);
 
         var request = new ReorderChannelsRequest([
-            new ReorderChannelsItemRequest(ch1.Id.ToString(), 5),
-            new ReorderChannelsItemRequest(ch2.Id.ToString(), 3)
+            new ReorderChannelsItemRequest(ch1.Id, 5),
+            new ReorderChannelsItemRequest(ch2.Id, 3)
         ]);
         var response = await _handler.HandleAsync(new ReorderChannelsInput(guild.Id, request.Channels), adminId);
 
@@ -193,8 +193,8 @@ public sealed class ReorderChannelsHandlerTests
             .ReturnsAsync([ch1, ch2]);
 
         var request = new ReorderChannelsRequest([
-            new ReorderChannelsItemRequest(ch1.Id.ToString(), 5),
-            new ReorderChannelsItemRequest(ch2.Id.ToString(), 3)
+            new ReorderChannelsItemRequest(ch1.Id, 5),
+            new ReorderChannelsItemRequest(ch2.Id, 3)
         ]);
         await _handler.HandleAsync(new ReorderChannelsInput(guild.Id, request.Channels), adminId);
 
@@ -224,7 +224,7 @@ public sealed class ReorderChannelsHandlerTests
             .ReturnsAsync([ch1, ch2]);
 
         var request = new ReorderChannelsRequest([
-            new ReorderChannelsItemRequest(ch1.Id.ToString(), 10)
+            new ReorderChannelsItemRequest(ch1.Id, 10)
         ]);
         await _handler.HandleAsync(new ReorderChannelsInput(guild.Id, request.Channels), adminId);
 

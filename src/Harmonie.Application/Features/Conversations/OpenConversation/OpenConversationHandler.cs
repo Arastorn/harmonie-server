@@ -31,16 +31,7 @@ public sealed class OpenConversationHandler : IAuthenticatedHandler<OpenConversa
         UserId currentUserId,
         CancellationToken cancellationToken = default)
     {
-        if (!UserId.TryParse(request.TargetUserId, out var targetUserId) || targetUserId is null)
-        {
-            return ApplicationResponse<OpenConversationResponse>.Fail(
-                ApplicationErrorCodes.Common.ValidationFailed,
-                "Request validation failed",
-                EndpointExtensions.SingleValidationError(
-                    nameof(request.TargetUserId),
-                    ApplicationErrorCodes.Validation.InvalidFormat,
-                    "Target user ID must be a valid non-empty GUID"));
-        }
+        var targetUserId = UserId.From(request.TargetUserId);
 
         if (targetUserId == currentUserId)
         {

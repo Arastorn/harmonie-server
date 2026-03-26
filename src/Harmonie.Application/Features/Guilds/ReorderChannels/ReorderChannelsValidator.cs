@@ -15,9 +15,7 @@ public sealed class ReorderChannelsValidator : AbstractValidator<ReorderChannels
         RuleForEach(x => x.Channels).ChildRules(channel =>
         {
             channel.RuleFor(c => c.ChannelId)
-                .NotEmpty()
-                .WithMessage("Channel ID is required")
-                .Must(id => Guid.TryParse(id, out var parsed) && parsed != Guid.Empty)
+                .NotEqual(Guid.Empty)
                 .WithMessage("Channel ID must be a valid non-empty GUID");
 
             channel.RuleFor(c => c.Position)

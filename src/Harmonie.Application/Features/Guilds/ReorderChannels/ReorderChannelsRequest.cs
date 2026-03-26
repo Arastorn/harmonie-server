@@ -4,5 +4,5 @@ public sealed record ReorderChannelsRequest(
     IReadOnlyList<ReorderChannelsItemRequest> Channels);
 
 public sealed record ReorderChannelsItemRequest(
-    string ChannelId,
+    Guid ChannelId,
     int Position);

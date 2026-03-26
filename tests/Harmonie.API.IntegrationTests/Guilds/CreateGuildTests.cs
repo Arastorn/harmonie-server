@@ -41,7 +41,7 @@ public sealed class CreateGuildTests : IClassFixture<HarmonieWebApplicationFacto
 
         var inviteResponse = await _client.SendAuthorizedPostAsync(
             $"/api/guilds/{createGuildPayload!.GuildId}/members/invite",
-            new InviteMemberRequest(userB.UserId),
+            new InviteMemberRequest(Guid.Parse(userB.UserId)),
             userA.AccessToken);
         inviteResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
@@ -123,7 +123,7 @@ public sealed class CreateGuildTests : IClassFixture<HarmonieWebApplicationFacto
 
         var inviteResponse = await _client.SendAuthorizedPostAsync(
             $"/api/guilds/{inviterGuild!.GuildId}/members/invite",
-            new InviteMemberRequest(owner.UserId),
+            new InviteMemberRequest(Guid.Parse(owner.UserId)),
             inviter.AccessToken);
         inviteResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 

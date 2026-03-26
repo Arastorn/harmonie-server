@@ -17,9 +17,9 @@ public sealed class UpdateMyProfileValidator : AbstractValidator<UpdateMyProfile
             .When(x => x.BioIsSet && x.Bio is not null);
 
         RuleFor(x => x.AvatarFileId)
-            .Must(id => Guid.TryParse(id, out var parsed) && parsed != Guid.Empty)
-            .WithMessage("Avatar file ID must be a valid non-empty GUID")
-            .When(x => x.AvatarFileIdIsSet && x.AvatarFileId is not null);
+            .NotEqual(Guid.Empty)
+            .When(x => x.AvatarFileIdIsSet && x.AvatarFileId.HasValue)
+            .WithMessage("Avatar file ID must be a valid non-empty GUID");
 
         RuleFor(x => x.AvatarColor)
             .MaximumLength(50)

@@ -41,18 +41,7 @@ public static class AcknowledgeReadEndpoint
         if (bodyValidationError is not null)
             return ApplicationResponse<bool>.Fail(bodyValidationError).ToHttpResult();
 
-        MessageId? parsedMessageId = null;
-        if (request.MessageId is string messageIdStr)
-        {
-            if (!MessageId.TryParse(messageIdStr, out var parsed) || parsed is null)
-            {
-                return ApplicationResponse<bool>.Fail(
-                    ApplicationErrorCodes.Common.InvalidState,
-                    "Body validation succeeded but message ID parsing failed.").ToHttpResult();
-            }
-
-            parsedMessageId = parsed;
-        }
+        var parsedMessageId = request.MessageId.HasValue ? MessageId.From(request.MessageId.Value) : null;
 
         var callerId = httpContext.GetRequiredAuthenticatedUserId();
 

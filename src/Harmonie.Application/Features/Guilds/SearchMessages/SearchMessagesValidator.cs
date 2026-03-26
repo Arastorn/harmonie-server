@@ -14,11 +14,13 @@ public sealed class SearchMessagesValidator : AbstractValidator<SearchMessagesRe
             .WithMessage("Search query is required");
 
         RuleFor(x => x.ChannelId)
-            .Must(channelId => channelId is null || (Guid.TryParse(channelId, out var parsed) && parsed != Guid.Empty))
+            .NotEqual(Guid.Empty)
+            .When(x => x.ChannelId.HasValue)
             .WithMessage("Channel ID must be a valid non-empty GUID");
 
         RuleFor(x => x.AuthorId)
-            .Must(authorId => authorId is null || (Guid.TryParse(authorId, out var parsed) && parsed != Guid.Empty))
+            .NotEqual(Guid.Empty)
+            .When(x => x.AuthorId.HasValue)
             .WithMessage("Author ID must be a valid non-empty GUID");
 
         RuleFor(x => x.Before)
