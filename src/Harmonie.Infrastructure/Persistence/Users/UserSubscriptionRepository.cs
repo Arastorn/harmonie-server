@@ -41,10 +41,10 @@ public sealed class UserSubscriptionRepository : IUserSubscriptionRepository
                            UNION ALL
 
                            SELECT 'conversation' AS "Kind",
-                                  c.id           AS "Id1",
-                                  NULL::uuid      AS "Id2"
-                           FROM conversations c
-                           WHERE @UserId IN (c.user1_id, c.user2_id)
+                                  cp.conversation_id AS "Id1",
+                                  NULL::uuid         AS "Id2"
+                           FROM conversation_participants cp
+                           WHERE cp.user_id = @UserId
                            """;
 
         var connection = await _dbSession.GetOpenConnectionAsync(cancellationToken);
