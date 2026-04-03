@@ -8,7 +8,8 @@ public sealed class SendMessageValidator : AbstractValidator<SendMessageRequest>
     {
         RuleFor(x => x.Content)
             .NotEmpty()
-            .WithMessage("Content is required");
+            .WithMessage("Content is required")
+            .When(x => x.AttachmentFileIds is null || x.AttachmentFileIds.Count == 0);
 
         RuleForEach(x => x.AttachmentFileIds)
             .NotEqual(Guid.Empty)

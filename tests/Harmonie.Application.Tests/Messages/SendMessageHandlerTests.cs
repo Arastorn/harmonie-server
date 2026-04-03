@@ -128,6 +128,56 @@ public sealed class SendMessageHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsync_WithNullContentAndNoAttachments_ShouldReturnMessageContentEmpty()
+    {
+        var response = await _handler.HandleAsync(
+            new SendChannelMessageInput(GuildChannelId.New(), null),
+            UserId.New());
+
+        response.Success.Should().BeFalse();
+        response.Error.Should().NotBeNull();
+        response.Error!.Code.Should().Be(ApplicationErrorCodes.Message.ContentEmpty);
+        _unitOfWorkMock.Verify(x => x.BeginAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WithNullContentAndAttachments_ShouldPersistEmptyContentAndReturnSuccess()
+    {
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);
+        var userId = UserId.New();
+        var attachment = ApplicationTestBuilders.CreateUploadedFile(uploaderUserId: userId, fileName: "photo.png", contentType: "image/png");
+
+        _guildChannelRepositoryMock
+            .Setup(x => x.GetWithCallerRoleAsync(channel.Id, userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ChannelAccessContext(channel, GuildRole.Member));
+
+        _uploadedFileRepositoryMock
+            .Setup(x => x.GetByIdsAsync(It.IsAny<IReadOnlyCollection<UploadedFileId>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([attachment]);
+
+        Message? persistedMessage = null;
+        _channelMessageRepositoryMock
+            .Setup(x => x.AddAsync(It.IsAny<Message>(), It.IsAny<CancellationToken>()))
+            .Callback<Message, CancellationToken>((message, _) => persistedMessage = message)
+            .Returns(Task.CompletedTask);
+
+        var response = await _handler.HandleAsync(
+            new SendChannelMessageInput(channel.Id, null, [attachment.Id]),
+            userId);
+
+        response.Success.Should().BeTrue();
+        response.Error.Should().BeNull();
+        response.Data.Should().NotBeNull();
+        response.Data!.Content.Should().BeEmpty();
+        response.Data.Attachments.Should().ContainSingle();
+        persistedMessage.Should().NotBeNull();
+        persistedMessage!.Content.Value.Should().BeEmpty();
+        persistedMessage.Attachments.Should().ContainSingle();
+        _unitOfWorkMock.Verify(x => x.BeginAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _transactionMock.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
     public async Task HandleAsync_WithValidRequest_ShouldPersistTrimmedContentCommitAndNotify()
     {
         var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);

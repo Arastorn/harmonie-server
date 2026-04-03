@@ -1,5 +1,5 @@
 namespace Harmonie.Application.Features.Conversations.SendMessage;
 
 public sealed record SendMessageRequest(
-    string Content,
+    string? Content,
     IReadOnlyList<Guid>? AttachmentFileIds = null);
