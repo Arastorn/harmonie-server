@@ -93,10 +93,10 @@ internal static class MessageRepositoryHelpers
         MessageRow row,
         IReadOnlyDictionary<Guid, IReadOnlyList<MessageAttachment>> attachmentsByMessageId)
     {
-        MessageContent messageContent;
-        if (row.Content.Length == 0)
+        MessageContent? messageContent;
+        if (row.Content is null)
         {
-            messageContent = MessageContent.Empty;
+            messageContent = null;
         }
         else
         {

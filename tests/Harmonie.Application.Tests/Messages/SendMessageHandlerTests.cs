@@ -167,7 +167,7 @@ public sealed class SendMessageHandlerTests
         response.Data!.Content.Should().BeEmpty();
         response.Data.Attachments.Should().ContainSingle();
         persistedMessage.Should().NotBeNull();
-        persistedMessage!.Content.Value.Should().BeEmpty();
+        persistedMessage!.Content.Should().BeNull();
         persistedMessage.Attachments.Should().ContainSingle();
         _unitOfWorkMock.Verify(x => x.BeginAsync(It.IsAny<CancellationToken>()), Times.Once);
         _transactionMock.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -198,7 +198,7 @@ public sealed class SendMessageHandlerTests
         response.Data!.Content.Should().Be("hello team");
         response.Data.Attachments.Should().BeEmpty();
         persistedMessage.Should().NotBeNull();
-        persistedMessage!.Content.Value.Should().Be("hello team");
+        persistedMessage!.Content!.Value.Should().Be("hello team");
         _unitOfWorkMock.Verify(x => x.BeginAsync(It.IsAny<CancellationToken>()), Times.Once);
         _transactionMock.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
         _transactionMock.Verify(x => x.DisposeAsync(), Times.Once);

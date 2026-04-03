@@ -16,8 +16,6 @@ public sealed record MessageContent
         Value = value;
     }
 
-    public static MessageContent Empty { get; } = new(string.Empty);
-
     public static Result<MessageContent> Create(string? value)
     {
         if (value is null)

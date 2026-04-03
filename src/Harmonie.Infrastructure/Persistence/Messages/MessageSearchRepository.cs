@@ -235,9 +235,18 @@ internal sealed class MessageSearchRepository : IMessageSearchRepository
         ChannelMessageSearchRow row,
         IReadOnlyDictionary<Guid, IReadOnlyList<MessageAttachment>> attachmentsByMessageId)
     {
-        var contentResult = MessageContent.Create(row.Content);
-        if (contentResult.IsFailure || contentResult.Value is null)
-            throw new InvalidOperationException("Stored guild message search content is invalid.");
+        MessageContent? messageContent;
+        if (row.Content is null)
+        {
+            messageContent = null;
+        }
+        else
+        {
+            var contentResult = MessageContent.Create(row.Content);
+            if (contentResult.IsFailure || contentResult.Value is null)
+                throw new InvalidOperationException("Stored guild message search content is invalid.");
+            messageContent = contentResult.Value;
+        }
         attachmentsByMessageId.TryGetValue(row.MessageId, out var attachments);
 
         return new SearchGuildMessagesItem(
@@ -252,7 +261,7 @@ internal sealed class MessageSearchRepository : IMessageSearchRepository
             AuthorAvatarIcon: row.AuthorAvatarIcon,
             AuthorAvatarBg: row.AuthorAvatarBg,
             Attachments: attachments ?? Array.Empty<MessageAttachment>(),
-            Content: contentResult.Value,
+            Content: messageContent,
             CreatedAtUtc: row.CreatedAtUtc,
             UpdatedAtUtc: row.UpdatedAtUtc);
     }
@@ -261,9 +270,18 @@ internal sealed class MessageSearchRepository : IMessageSearchRepository
         ConversationMessageSearchRow row,
         IReadOnlyDictionary<Guid, IReadOnlyList<MessageAttachment>> attachmentsByMessageId)
     {
-        var contentResult = MessageContent.Create(row.Content);
-        if (contentResult.IsFailure || contentResult.Value is null)
-            throw new InvalidOperationException("Stored conversation message search content is invalid.");
+        MessageContent? convMessageContent;
+        if (row.Content is null)
+        {
+            convMessageContent = null;
+        }
+        else
+        {
+            var contentResult = MessageContent.Create(row.Content);
+            if (contentResult.IsFailure || contentResult.Value is null)
+                throw new InvalidOperationException("Stored conversation message search content is invalid.");
+            convMessageContent = contentResult.Value;
+        }
         attachmentsByMessageId.TryGetValue(row.MessageId, out var attachments);
 
         return new SearchConversationMessagesItem(
@@ -276,7 +294,7 @@ internal sealed class MessageSearchRepository : IMessageSearchRepository
             AuthorAvatarIcon: row.AuthorAvatarIcon,
             AuthorAvatarBg: row.AuthorAvatarBg,
             Attachments: attachments ?? Array.Empty<MessageAttachment>(),
-            Content: contentResult.Value,
+            Content: convMessageContent,
             CreatedAtUtc: row.CreatedAtUtc,
             UpdatedAtUtc: row.UpdatedAtUtc);
     }

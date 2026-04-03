@@ -78,7 +78,7 @@ public sealed class GetMessagesHandler : IAuthenticatedHandler<GetConversationMe
                 return new GetMessagesItemResponse(
                     MessageId: x.Id.Value,
                     AuthorUserId: x.AuthorUserId.Value,
-                    Content: x.Content.Value,
+                    Content: x.Content?.Value ?? string.Empty,
                     Attachments: x.Attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
                     Reactions: reactions?.Select(r => new MessageReactionDto(r.Emoji, r.Count, r.ReactedByCaller)).ToArray()
                               ?? Array.Empty<MessageReactionDto>(),

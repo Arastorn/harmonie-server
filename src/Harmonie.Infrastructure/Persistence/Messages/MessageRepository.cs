@@ -57,7 +57,7 @@ internal sealed class MessageRepository : IMessageRepository
                 ChannelId = channelId?.Value,
                 ConversationId = conversationId?.Value,
                 AuthorUserId = message.AuthorUserId.Value,
-                Content = message.Content.Value,
+                Content = message.Content?.Value,
                 message.CreatedAtUtc
             },
             transaction: _dbSession.Transaction,
@@ -143,7 +143,7 @@ internal sealed class MessageRepository : IMessageRepository
             sql,
             new
             {
-                Content = message.Content.Value,
+                Content = message.Content?.Value,
                 message.UpdatedAtUtc,
                 Id = message.Id.Value
             },

@@ -15,7 +15,7 @@ public sealed class Message : Entity<MessageId>
 
     public UserId AuthorUserId { get; private set; }
 
-    public MessageContent Content { get; private set; }
+    public MessageContent? Content { get; private set; }
 
     public IReadOnlyList<MessageAttachment> Attachments { get; private set; } = Array.Empty<MessageAttachment>();
 
@@ -26,7 +26,7 @@ public sealed class Message : Entity<MessageId>
         GuildChannelId? channelId,
         ConversationId? conversationId,
         UserId authorUserId,
-        MessageContent content,
+        MessageContent? content,
         IReadOnlyList<MessageAttachment> attachments,
         DateTime createdAtUtc,
         DateTime? updatedAtUtc,
@@ -46,20 +46,18 @@ public sealed class Message : Entity<MessageId>
     public static Result<Message> CreateForChannel(
         GuildChannelId channelId,
         UserId authorUserId,
-        MessageContent content,
+        MessageContent? content,
         IReadOnlyList<MessageAttachment>? attachments = null)
     {
         if (channelId is null)
             return Result.Failure<Message>("Channel ID is required");
         if (authorUserId is null)
             return Result.Failure<Message>("Author user ID is required");
-        if (content is null)
-            return Result.Failure<Message>("Message content is required");
         if (attachments is null)
             attachments = Array.Empty<MessageAttachment>();
         if (attachments.Any(attachment => attachment is null))
             return Result.Failure<Message>("Message attachments are invalid");
-        if (content.Value.Length == 0 && attachments.Count == 0)
+        if (content is null && attachments.Count == 0)
             return Result.Failure<Message>("Message must have content or at least one attachment");
 
         return Result.Success(new Message(
@@ -77,20 +75,18 @@ public sealed class Message : Entity<MessageId>
     public static Result<Message> CreateForConversation(
         ConversationId conversationId,
         UserId authorUserId,
-        MessageContent content,
+        MessageContent? content,
         IReadOnlyList<MessageAttachment>? attachments = null)
     {
         if (conversationId is null)
             return Result.Failure<Message>("Conversation ID is required");
         if (authorUserId is null)
             return Result.Failure<Message>("Author user ID is required");
-        if (content is null)
-            return Result.Failure<Message>("Message content is required");
         if (attachments is null)
             attachments = Array.Empty<MessageAttachment>();
         if (attachments.Any(attachment => attachment is null))
             return Result.Failure<Message>("Message attachments are invalid");
-        if (content.Value.Length == 0 && attachments.Count == 0)
+        if (content is null && attachments.Count == 0)
             return Result.Failure<Message>("Message must have content or at least one attachment");
 
         return Result.Success(new Message(
@@ -107,9 +103,6 @@ public sealed class Message : Entity<MessageId>
 
     public Result UpdateContent(MessageContent newContent)
     {
-        if (newContent is null)
-            return Result.Failure("New content is required");
-
         Content = newContent;
         MarkAsUpdated();
         return Result.Success();
@@ -147,7 +140,7 @@ public sealed class Message : Entity<MessageId>
         GuildChannelId? channelId,
         ConversationId? conversationId,
         UserId authorUserId,
-        MessageContent content,
+        MessageContent? content,
         DateTime createdAtUtc,
         DateTime? updatedAtUtc,
         DateTime? deletedAtUtc,
@@ -155,7 +148,6 @@ public sealed class Message : Entity<MessageId>
     {
         ArgumentNullException.ThrowIfNull(id);
         ArgumentNullException.ThrowIfNull(authorUserId);
-        ArgumentNullException.ThrowIfNull(content);
 
         if ((channelId is null) == (conversationId is null))
             throw new ArgumentException("Exactly one parent reference is required.", nameof(channelId));

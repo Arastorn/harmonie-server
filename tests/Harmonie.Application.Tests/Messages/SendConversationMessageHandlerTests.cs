@@ -144,7 +144,7 @@ public sealed class SendConversationMessageHandlerTests
         response.Data!.Content.Should().Be("hello dm");
         response.Data.Attachments.Should().BeEmpty();
         persistedMessage.Should().NotBeNull();
-        persistedMessage!.Content.Value.Should().Be("hello dm");
+        persistedMessage!.Content!.Value.Should().Be("hello dm");
         _transactionMock.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
         _directMessageNotifierMock.Verify(
             x => x.NotifyMessageCreatedAsync(

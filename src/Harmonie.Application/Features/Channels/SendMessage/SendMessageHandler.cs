@@ -46,12 +46,8 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendChannelMessag
         UserId currentUserId,
         CancellationToken cancellationToken = default)
     {
-        MessageContent content;
-        if (string.IsNullOrWhiteSpace(request.Content))
-        {
-            content = MessageContent.Empty;
-        }
-        else
+        MessageContent? content = null;
+        if (!string.IsNullOrWhiteSpace(request.Content))
         {
             var contentResult = MessageContent.Create(request.Content);
             if (contentResult.IsFailure || contentResult.Value is null)
@@ -108,7 +104,7 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendChannelMessag
             attachmentResolution.Attachments);
         if (messageResult.IsFailure || messageResult.Value is null)
         {
-            var errorCode = content == MessageContent.Empty && attachmentResolution.Attachments.Count == 0
+            var errorCode = content is null && attachmentResolution.Attachments.Count == 0
                 ? ApplicationErrorCodes.Message.ContentEmpty
                 : ApplicationErrorCodes.Common.DomainRuleViolation;
             return ApplicationResponse<SendMessageResponse>.Fail(
@@ -134,7 +130,7 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendChannelMessag
                 messageChannelId,
                 ctx.Channel.GuildId,
                 messageResult.Value.AuthorUserId,
-                messageResult.Value.Content.Value,
+                messageResult.Value.Content?.Value ?? string.Empty,
                 messageResult.Value.Attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
                 messageResult.Value.CreatedAtUtc));
 
@@ -142,7 +138,7 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendChannelMessag
             MessageId: messageResult.Value.Id.Value,
             ChannelId: messageChannelId.Value,
             AuthorUserId: messageResult.Value.AuthorUserId.Value,
-            Content: messageResult.Value.Content.Value,
+            Content: messageResult.Value.Content?.Value ?? string.Empty,
             Attachments: messageResult.Value.Attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
             CreatedAtUtc: messageResult.Value.CreatedAtUtc);
 
