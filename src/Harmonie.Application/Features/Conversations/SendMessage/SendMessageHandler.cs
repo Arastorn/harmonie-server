@@ -120,7 +120,7 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendConversationM
                 messageResult.Value.Id,
                 messageConversationId,
                 messageResult.Value.AuthorUserId,
-                messageResult.Value.Content?.Value ?? string.Empty,
+                messageResult.Value.Content?.Value,
                 messageResult.Value.Attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
                 messageResult.Value.CreatedAtUtc));
 
@@ -128,7 +128,7 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendConversationM
             MessageId: messageResult.Value.Id.Value,
             ConversationId: messageConversationId.Value,
             AuthorUserId: messageResult.Value.AuthorUserId.Value,
-            Content: messageResult.Value.Content?.Value ?? string.Empty,
+            Content: messageResult.Value.Content?.Value,
             Attachments: messageResult.Value.Attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
             CreatedAtUtc: messageResult.Value.CreatedAtUtc));
     }

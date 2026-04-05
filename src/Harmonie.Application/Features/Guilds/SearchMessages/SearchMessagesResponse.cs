@@ -18,7 +18,7 @@ public sealed record SearchMessagesItemResponse(
     string? AuthorDisplayName,
     Guid? AuthorAvatarFileId,
     AvatarAppearanceDto? AuthorAvatar,
-    string Content,
+    string? Content,
     IReadOnlyList<MessageAttachmentDto> Attachments,
     DateTime CreatedAtUtc,
     DateTime? UpdatedAtUtc);

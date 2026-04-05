@@ -20,7 +20,7 @@ public sealed class MessageAttachmentsTests : IClassFixture<HarmonieWebApplicati
     }
 
     [Fact]
-    public async Task SendMessage_WithAttachmentAndNoContent_ShouldReturnCreatedAndExposeEmptyContent()
+    public async Task SendMessage_WithAttachmentAndNoContent_ShouldReturnCreatedAndExposeNullContent()
     {
         var author = await AuthTestHelper.RegisterAsync(_client);
         var channelId = await ChannelTestHelper.CreateChannelAndGetIdAsync(_client, author.AccessToken, "attachment-only-channel");
@@ -34,7 +34,7 @@ public sealed class MessageAttachmentsTests : IClassFixture<HarmonieWebApplicati
 
         var sendPayload = await sendResponse.Content.ReadFromJsonAsync<SendMessageResponse>();
         sendPayload.Should().NotBeNull();
-        sendPayload!.Content.Should().BeEmpty();
+        sendPayload!.Content.Should().BeNull();
         sendPayload.Attachments.Should().ContainSingle();
         sendPayload.Attachments[0].FileId.Should().Be(fileId);
 
@@ -46,21 +46,41 @@ public sealed class MessageAttachmentsTests : IClassFixture<HarmonieWebApplicati
         var listPayload = await listResponse.Content.ReadFromJsonAsync<GetMessagesResponse>();
         listPayload.Should().NotBeNull();
         listPayload!.Items.Should().ContainSingle();
-        listPayload.Items[0].Content.Should().BeEmpty();
+        listPayload.Items[0].Content.Should().BeNull();
         listPayload.Items[0].Attachments.Should().ContainSingle();
     }
 
-    [Fact]
-    public async Task SendMessage_WithNoContentAndNoAttachment_ShouldReturnBadRequest()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("   ")]
+    public async Task SendMessage_WithNoContentAndNoAttachment_ShouldReturnBadRequest(string? content)
     {
         var author = await AuthTestHelper.RegisterAsync(_client);
-        var channelId = await ChannelTestHelper.CreateChannelAndGetIdAsync(_client, author.AccessToken, "no-content-no-attachment-channel");
+        var channelId = await ChannelTestHelper.CreateChannelAndGetIdAsync(_client, author.AccessToken, $"no-content-test-{Guid.NewGuid()}");
 
         var sendResponse = await _client.SendAuthorizedPostAsync(
             $"/api/channels/{channelId}/messages",
-            new SendMessageRequest(null),
+            new SendMessageRequest(content),
             author.AccessToken);
         sendResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task SendMessage_WithWhitespaceContentAndAttachment_ShouldReturnCreated()
+    {
+        var author = await AuthTestHelper.RegisterAsync(_client);
+        var channelId = await ChannelTestHelper.CreateChannelAndGetIdAsync(_client, author.AccessToken, $"whitespace-attachment-{Guid.NewGuid():N}");
+        var fileId = await UploadTestHelper.UploadFileAsync(_client, author.AccessToken, "image.png", "image/png", "attachment payload");
+
+        var sendResponse = await _client.SendAuthorizedPostAsync(
+            $"/api/channels/{channelId}/messages",
+            new SendMessageRequest("   ", [fileId]),
+            author.AccessToken);
+        sendResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var sendPayload = await sendResponse.Content.ReadFromJsonAsync<SendMessageResponse>();
+        sendPayload.Should().NotBeNull();
+        sendPayload!.Attachments.Should().ContainSingle();
     }
 
     [Fact]

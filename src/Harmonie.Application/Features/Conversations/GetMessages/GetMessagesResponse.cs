@@ -12,7 +12,7 @@ public sealed record GetMessagesResponse(
 public sealed record GetMessagesItemResponse(
     Guid MessageId,
     Guid AuthorUserId,
-    string Content,
+    string? Content,
     IReadOnlyList<MessageAttachmentDto> Attachments,
     IReadOnlyList<MessageReactionDto> Reactions,
     DateTime CreatedAtUtc,

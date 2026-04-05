@@ -238,7 +238,7 @@ public sealed class EditConversationMessageHandlerTests
             x => x.UpdateAsync(
                 It.Is<Message>(m =>
                     m.Id == message.Id
-                    && m.Content.Value == "updated content"
+                    && m.Content!.Value == "updated content"
                     && m.UpdatedAtUtc != null),
                 It.IsAny<CancellationToken>()),
             Times.Once);

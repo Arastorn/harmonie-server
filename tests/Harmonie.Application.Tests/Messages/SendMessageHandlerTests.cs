@@ -164,7 +164,7 @@ public sealed class SendMessageHandlerTests
         response.Success.Should().BeTrue();
         response.Error.Should().BeNull();
         response.Data.Should().NotBeNull();
-        response.Data!.Content.Should().BeEmpty();
+        response.Data!.Content.Should().BeNull();
         response.Data.Attachments.Should().ContainSingle();
         persistedMessage.Should().NotBeNull();
         persistedMessage!.Content.Should().BeNull();

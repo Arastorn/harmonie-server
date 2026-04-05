@@ -74,7 +74,7 @@ public sealed record MessageCreatedEvent(
     Guid ChannelId,
     Guid GuildId,
     Guid AuthorUserId,
-    string Content,
+    string? Content,
     IReadOnlyList<MessageAttachmentDto> Attachments,
     DateTime CreatedAtUtc);
 
@@ -82,7 +82,7 @@ public sealed record MessageUpdatedEvent(
     Guid MessageId,
     Guid ChannelId,
     Guid GuildId,
-    string Content,
+    string? Content,
     DateTime UpdatedAtUtc);
 
 public sealed record MessageDeletedEvent(

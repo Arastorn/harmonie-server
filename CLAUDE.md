@@ -43,6 +43,7 @@ When picking up a GitHub issue:
 - For HTTP request DTOs (body/query/route models), non-null/empty boundary checks must be defined in `*Validator.cs`.
 - Do not duplicate HTTP DTO non-null checks inside handlers when the input is already validated at endpoint boundary.
 - Keep endpoint/handler checks focused on values that are outside FluentValidation scope (e.g., auth claims, parsed IDs, infrastructure results).
+- Limit FluentValidation to structural checks (is a required field present?). Cross-field business invariants (e.g., "at least one of X or Y must be set") belong in the domain entity and should not be duplicated in the validator.
 
 6. Do not use exceptions for expected flow control:
 - In API/Application code (`src/Harmonie.API/**`, `src/Harmonie.Application/**`), do not throw exceptions for validation, business rules, or authorization outcomes.

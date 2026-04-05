@@ -104,14 +104,14 @@ public sealed class EditMessageHandler : IAuthenticatedHandler<EditConversationM
             new ConversationMessageUpdatedNotification(
                 message.Id,
                 messageConversationId,
-                message.Content?.Value ?? string.Empty,
+                message.Content?.Value,
                 updatedAtUtc.Value));
 
         return ApplicationResponse<EditMessageResponse>.Ok(new EditMessageResponse(
             MessageId: message.Id.Value,
             ConversationId: messageConversationId.Value,
             AuthorUserId: message.AuthorUserId.Value,
-            Content: message.Content?.Value ?? string.Empty,
+            Content: message.Content?.Value,
             Attachments: message.Attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
             CreatedAtUtc: message.CreatedAtUtc,
             UpdatedAtUtc: updatedAtUtc));
