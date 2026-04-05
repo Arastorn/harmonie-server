@@ -190,7 +190,7 @@ public sealed class SearchMessagesHandler : IAuthenticatedHandler<SearchMessages
                         AuthorDisplayName: item.AuthorDisplayName,
                         AuthorAvatarFileId: item.AuthorAvatarFileId?.Value,
                         AuthorAvatar: authorAvatar,
-                        Content: item.Content.Value,
+                        Content: item.Content?.Value,
                         Attachments: item.Attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
                         CreatedAtUtc: item.CreatedAtUtc,
                         UpdatedAtUtc: item.UpdatedAtUtc);

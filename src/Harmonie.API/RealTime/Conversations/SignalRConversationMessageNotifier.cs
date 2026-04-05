@@ -70,14 +70,14 @@ public sealed record ConversationMessageCreatedEvent(
     Guid MessageId,
     Guid ConversationId,
     Guid AuthorUserId,
-    string Content,
+    string? Content,
     IReadOnlyList<MessageAttachmentDto> Attachments,
     DateTime CreatedAtUtc);
 
 public sealed record ConversationMessageUpdatedEvent(
     Guid MessageId,
     Guid ConversationId,
-    string Content,
+    string? Content,
     DateTime UpdatedAtUtc);
 
 public sealed record ConversationMessageDeletedEvent(

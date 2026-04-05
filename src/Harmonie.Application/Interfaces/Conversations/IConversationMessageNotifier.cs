@@ -24,14 +24,14 @@ public sealed record ConversationMessageCreatedNotification(
     MessageId MessageId,
     ConversationId ConversationId,
     UserId AuthorUserId,
-    string Content,
+    string? Content,
     IReadOnlyList<MessageAttachmentDto> Attachments,
     DateTime CreatedAtUtc);
 
 public sealed record ConversationMessageUpdatedNotification(
     MessageId MessageId,
     ConversationId ConversationId,
-    string Content,
+    string? Content,
     DateTime UpdatedAtUtc);
 
 public sealed record ConversationMessageDeletedNotification(

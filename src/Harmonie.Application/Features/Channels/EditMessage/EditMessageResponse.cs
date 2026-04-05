@@ -7,7 +7,7 @@ public sealed record EditMessageResponse(
     Guid MessageId,
     Guid ChannelId,
     Guid AuthorUserId,
-    string Content,
+    string? Content,
     IReadOnlyList<MessageAttachmentDto> Attachments,
     DateTime CreatedAtUtc,
     DateTime? UpdatedAtUtc);

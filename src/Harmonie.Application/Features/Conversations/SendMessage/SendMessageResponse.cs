@@ -7,6 +7,6 @@ public sealed record SendMessageResponse(
     Guid MessageId,
     Guid ConversationId,
     Guid AuthorUserId,
-    string Content,
+    string? Content,
     IReadOnlyList<MessageAttachmentDto> Attachments,
     DateTime CreatedAtUtc);

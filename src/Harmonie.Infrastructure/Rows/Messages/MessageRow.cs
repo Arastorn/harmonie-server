@@ -10,7 +10,7 @@ public sealed class MessageRow
 
     public Guid AuthorUserId { get; init; }
 
-    public string Content { get; init; } = string.Empty;
+    public string? Content { get; init; }
 
     public DateTime CreatedAtUtc { get; init; }
 

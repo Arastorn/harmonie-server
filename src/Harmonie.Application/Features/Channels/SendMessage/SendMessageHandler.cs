@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Harmonie.Application.Features.Channels.SendMessage;
 
-public sealed record SendChannelMessageInput(GuildChannelId ChannelId, string Content, IReadOnlyList<Guid>? AttachmentFileIds = null);
+public sealed record SendChannelMessageInput(GuildChannelId ChannelId, string? Content, IReadOnlyList<Guid>? AttachmentFileIds = null);
 
 public sealed class SendMessageHandler : IAuthenticatedHandler<SendChannelMessageInput, SendMessageResponse>
 {
@@ -46,13 +46,18 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendChannelMessag
         UserId currentUserId,
         CancellationToken cancellationToken = default)
     {
-        var contentResult = MessageContent.Create(request.Content);
-        if (contentResult.IsFailure || contentResult.Value is null)
+        MessageContent? content = null;
+        if (!string.IsNullOrWhiteSpace(request.Content))
         {
-            var code = MessageContentErrorCodeResolver.Resolve(request.Content);
-            return ApplicationResponse<SendMessageResponse>.Fail(
-                code,
-                contentResult.Error ?? "Message content is invalid");
+            var contentResult = MessageContent.Create(request.Content);
+            if (contentResult.IsFailure || contentResult.Value is null)
+            {
+                var code = MessageContentErrorCodeResolver.Resolve(request.Content);
+                return ApplicationResponse<SendMessageResponse>.Fail(
+                    code,
+                    contentResult.Error ?? "Message content is invalid");
+            }
+            content = contentResult.Value;
         }
 
         var ctx = await _guildChannelRepository.GetWithCallerRoleAsync(request.ChannelId, currentUserId, cancellationToken);
@@ -95,12 +100,15 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendChannelMessag
         var messageResult = Message.CreateForChannel(
             request.ChannelId,
             currentUserId,
-            contentResult.Value,
+            content,
             attachmentResolution.Attachments);
         if (messageResult.IsFailure || messageResult.Value is null)
         {
+            var errorCode = content is null && attachmentResolution.Attachments.Count == 0
+                ? ApplicationErrorCodes.Message.ContentEmpty
+                : ApplicationErrorCodes.Common.DomainRuleViolation;
             return ApplicationResponse<SendMessageResponse>.Fail(
-                ApplicationErrorCodes.Common.DomainRuleViolation,
+                errorCode,
                 messageResult.Error ?? "Unable to create channel message");
         }
 
@@ -122,7 +130,7 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendChannelMessag
                 messageChannelId,
                 ctx.Channel.GuildId,
                 messageResult.Value.AuthorUserId,
-                messageResult.Value.Content.Value,
+                messageResult.Value.Content?.Value,
                 messageResult.Value.Attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
                 messageResult.Value.CreatedAtUtc));
 
@@ -130,7 +138,7 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendChannelMessag
             MessageId: messageResult.Value.Id.Value,
             ChannelId: messageChannelId.Value,
             AuthorUserId: messageResult.Value.AuthorUserId.Value,
-            Content: messageResult.Value.Content.Value,
+            Content: messageResult.Value.Content?.Value,
             Attachments: messageResult.Value.Attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
             CreatedAtUtc: messageResult.Value.CreatedAtUtc);
 

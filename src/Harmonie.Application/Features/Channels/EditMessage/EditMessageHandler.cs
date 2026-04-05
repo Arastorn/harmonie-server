@@ -114,14 +114,14 @@ public sealed class EditMessageHandler : IAuthenticatedHandler<EditChannelMessag
                 message.Id,
                 messageChannelId,
                 ctx.Channel.GuildId,
-                message.Content.Value,
+                message.Content?.Value,
                 updatedAtUtc.Value));
 
         return ApplicationResponse<EditMessageResponse>.Ok(new EditMessageResponse(
             MessageId: message.Id.Value,
             ChannelId: messageChannelId.Value,
             AuthorUserId: message.AuthorUserId.Value,
-            Content: message.Content.Value,
+            Content: message.Content?.Value,
             Attachments: message.Attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
             CreatedAtUtc: message.CreatedAtUtc,
             UpdatedAtUtc: message.UpdatedAtUtc));

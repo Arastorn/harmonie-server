@@ -96,14 +96,20 @@ public sealed class SendConversationMessageHandlerTests
         _unitOfWorkMock.Verify(x => x.BeginAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    [Fact]
-    public async Task HandleAsync_WithEmptyContent_ShouldReturnContentEmpty()
+    [Theory]
+    [InlineData("   ")]
+    [InlineData(null)]
+    public async Task HandleAsync_WithNoContentAndNoAttachments_ShouldReturnContentEmpty(string? rawContent)
     {
         var currentUserId = UserId.New();
         var conversation = ApplicationTestBuilders.CreateConversation(currentUserId, UserId.New());
 
+        _conversationRepositoryMock
+            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, currentUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConversationAccess(conversation, IsParticipant: true));
+
         var response = await _handler.HandleAsync(
-            new SendConversationMessageInput(conversation.Id, "   "),
+            new SendConversationMessageInput(conversation.Id, rawContent),
             currentUserId);
 
         response.Success.Should().BeFalse();
@@ -138,7 +144,7 @@ public sealed class SendConversationMessageHandlerTests
         response.Data!.Content.Should().Be("hello dm");
         response.Data.Attachments.Should().BeEmpty();
         persistedMessage.Should().NotBeNull();
-        persistedMessage!.Content.Value.Should().Be("hello dm");
+        persistedMessage!.Content!.Value.Should().Be("hello dm");
         _transactionMock.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
         _directMessageNotifierMock.Verify(
             x => x.NotifyMessageCreatedAsync(

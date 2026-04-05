@@ -114,17 +114,63 @@ public sealed class SendMessageHandlerTests
         _unitOfWorkMock.Verify(x => x.BeginAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    [Fact]
-    public async Task HandleAsync_WithEmptyContent_ShouldReturnMessageContentEmpty()
+    [Theory]
+    [InlineData("   ")]
+    [InlineData(null)]
+    public async Task HandleAsync_WithNoContentAndNoAttachments_ShouldReturnMessageContentEmpty(string? rawContent)
     {
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);
+        var userId = UserId.New();
+
+        _guildChannelRepositoryMock
+            .Setup(x => x.GetWithCallerRoleAsync(channel.Id, userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ChannelAccessContext(channel, GuildRole.Member));
+
         var response = await _handler.HandleAsync(
-            new SendChannelMessageInput(GuildChannelId.New(), "   "),
-            UserId.New());
+            new SendChannelMessageInput(channel.Id, rawContent),
+            userId);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
         response.Error!.Code.Should().Be(ApplicationErrorCodes.Message.ContentEmpty);
         _unitOfWorkMock.Verify(x => x.BeginAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WithNullContentAndAttachments_ShouldPersistEmptyContentAndReturnSuccess()
+    {
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);
+        var userId = UserId.New();
+        var attachment = ApplicationTestBuilders.CreateUploadedFile(uploaderUserId: userId, fileName: "photo.png", contentType: "image/png");
+
+        _guildChannelRepositoryMock
+            .Setup(x => x.GetWithCallerRoleAsync(channel.Id, userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ChannelAccessContext(channel, GuildRole.Member));
+
+        _uploadedFileRepositoryMock
+            .Setup(x => x.GetByIdsAsync(It.IsAny<IReadOnlyCollection<UploadedFileId>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([attachment]);
+
+        Message? persistedMessage = null;
+        _channelMessageRepositoryMock
+            .Setup(x => x.AddAsync(It.IsAny<Message>(), It.IsAny<CancellationToken>()))
+            .Callback<Message, CancellationToken>((message, _) => persistedMessage = message)
+            .Returns(Task.CompletedTask);
+
+        var response = await _handler.HandleAsync(
+            new SendChannelMessageInput(channel.Id, null, [attachment.Id]),
+            userId);
+
+        response.Success.Should().BeTrue();
+        response.Error.Should().BeNull();
+        response.Data.Should().NotBeNull();
+        response.Data!.Content.Should().BeNull();
+        response.Data.Attachments.Should().ContainSingle();
+        persistedMessage.Should().NotBeNull();
+        persistedMessage!.Content.Should().BeNull();
+        persistedMessage.Attachments.Should().ContainSingle();
+        _unitOfWorkMock.Verify(x => x.BeginAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _transactionMock.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -152,7 +198,7 @@ public sealed class SendMessageHandlerTests
         response.Data!.Content.Should().Be("hello team");
         response.Data.Attachments.Should().BeEmpty();
         persistedMessage.Should().NotBeNull();
-        persistedMessage!.Content.Value.Should().Be("hello team");
+        persistedMessage!.Content!.Value.Should().Be("hello team");
         _unitOfWorkMock.Verify(x => x.BeginAsync(It.IsAny<CancellationToken>()), Times.Once);
         _transactionMock.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
         _transactionMock.Verify(x => x.DisposeAsync(), Times.Once);

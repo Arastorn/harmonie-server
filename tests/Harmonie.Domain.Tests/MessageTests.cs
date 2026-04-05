@@ -3,6 +3,7 @@ using Harmonie.Domain.Entities.Messages;
 using Harmonie.Domain.ValueObjects.Channels;
 using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.ValueObjects.Messages;
+using Harmonie.Domain.ValueObjects.Uploads;
 using Harmonie.Domain.ValueObjects.Users;
 using Xunit;
 
@@ -131,6 +132,39 @@ public sealed class MessageTests
             deletedAtUtc: null);
 
         act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void CreateForChannel_WithNullContentAndOneAttachment_ShouldSucceedWithNullContent()
+    {
+        var attachment = new MessageAttachment(
+            UploadedFileId.New(),
+            "photo.png",
+            "image/png",
+            1024);
+
+        var result = Message.CreateForChannel(
+            GuildChannelId.New(),
+            UserId.New(),
+            content: null,
+            attachments: [attachment]);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value!.Content.Should().BeNull();
+        result.Value.Attachments.Should().ContainSingle();
+    }
+
+    [Fact]
+    public void CreateForChannel_WithNullContentAndNoAttachments_ShouldFail()
+    {
+        var result = Message.CreateForChannel(
+            GuildChannelId.New(),
+            UserId.New(),
+            content: null);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Contain("content or at least one attachment");
     }
 
     [Fact]

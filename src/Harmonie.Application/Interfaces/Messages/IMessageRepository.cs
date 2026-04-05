@@ -77,7 +77,7 @@ public sealed record SearchGuildMessagesItem(
     string? AuthorAvatarIcon,
     string? AuthorAvatarBg,
     IReadOnlyList<MessageAttachment> Attachments,
-    MessageContent Content,
+    MessageContent? Content,
     DateTime CreatedAtUtc,
     DateTime? UpdatedAtUtc);
 
@@ -102,7 +102,7 @@ public sealed record SearchConversationMessagesItem(
     string? AuthorAvatarIcon,
     string? AuthorAvatarBg,
     IReadOnlyList<MessageAttachment> Attachments,
-    MessageContent Content,
+    MessageContent? Content,
     DateTime CreatedAtUtc,
     DateTime? UpdatedAtUtc);
 

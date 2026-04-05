@@ -93,9 +93,14 @@ internal static class MessageRepositoryHelpers
         MessageRow row,
         IReadOnlyDictionary<Guid, IReadOnlyList<MessageAttachment>> attachmentsByMessageId)
     {
-        var contentResult = MessageContent.Create(row.Content);
-        if (contentResult.IsFailure || contentResult.Value is null)
-            throw new InvalidOperationException("Stored message content is invalid.");
+        MessageContent? messageContent = null;
+        if (row.Content is not null)
+        {
+            var contentResult = MessageContent.Create(row.Content);
+            if (contentResult.IsFailure || contentResult.Value is null)
+                throw new InvalidOperationException("Stored message content is invalid.");
+            messageContent = contentResult.Value;
+        }
 
         GuildChannelId? channelId = row.ChannelId.HasValue
             ? GuildChannelId.From(row.ChannelId.Value)
@@ -110,7 +115,7 @@ internal static class MessageRepositoryHelpers
             channelId,
             conversationId,
             UserId.From(row.AuthorUserId),
-            contentResult.Value,
+            messageContent,
             row.CreatedAtUtc,
             row.UpdatedAtUtc,
             row.DeletedAtUtc,
