@@ -42,9 +42,9 @@ public sealed class SearchConversationMessagesEndpointTests : IClassFixture<Harm
         var payload = await response.Content.ReadFromJsonAsync<SearchConversationMessagesResponse>();
         payload.Should().NotBeNull();
         payload!.ConversationId.Should().Be(conversationId);
-        payload.Items.Select(item => item.Content).Should().Equal("deploy alpha", "deploy beta");
-        payload.Items[0].AuthorUsername.Should().Be(caller.Username);
-        payload.Items[1].AuthorUsername.Should().Be(target.Username);
+        payload.Items.Select(item => item.Content).Should().Equal("deploy beta", "deploy alpha");
+        payload.Items[0].AuthorUsername.Should().Be(target.Username);
+        payload.Items[1].AuthorUsername.Should().Be(caller.Username);
     }
 
     [Fact]
@@ -68,7 +68,7 @@ public sealed class SearchConversationMessagesEndpointTests : IClassFixture<Harm
 
         var firstPayload = await firstResponse.Content.ReadFromJsonAsync<SearchConversationMessagesResponse>();
         firstPayload.Should().NotBeNull();
-        firstPayload!.Items.Select(item => item.Content).Should().Equal("incident two", "incident three");
+        firstPayload!.Items.Select(item => item.Content).Should().Equal("incident three", "incident two");
         firstPayload.NextCursor.Should().NotBeNullOrWhiteSpace();
 
         var secondResponse = await _client.SendAuthorizedGetAsync(

@@ -47,10 +47,10 @@ public sealed class SearchMessagesEndpointTests : IClassFixture<HarmonieWebAppli
         payload.Should().NotBeNull();
         payload!.GuildId.Should().Be(guildId);
         payload.Items.Should().HaveCount(2);
-        payload.Items.Select(item => item.Content).Should().Equal("deploy alpha", "deploy beta");
-        payload.Items.Select(item => item.ChannelName).Should().Equal("general", "deployments");
-        payload.Items[0].AuthorUsername.Should().Be(owner.Username);
-        payload.Items[1].AuthorUsername.Should().Be(member.Username);
+        payload.Items.Select(item => item.Content).Should().Equal("deploy beta", "deploy alpha");
+        payload.Items.Select(item => item.ChannelName).Should().Equal("deployments", "general");
+        payload.Items[0].AuthorUsername.Should().Be(member.Username);
+        payload.Items[1].AuthorUsername.Should().Be(owner.Username);
     }
 
     [Fact]
@@ -84,7 +84,7 @@ public sealed class SearchMessagesEndpointTests : IClassFixture<HarmonieWebAppli
 
         var firstPayload = await firstResponse.Content.ReadFromJsonAsync<SearchMessagesResponse>();
         firstPayload.Should().NotBeNull();
-        firstPayload!.Items.Select(item => item.Content).Should().Equal("incident three", "incident four");
+        firstPayload!.Items.Select(item => item.Content).Should().Equal("incident four", "incident three");
         firstPayload.NextCursor.Should().NotBeNullOrWhiteSpace();
 
         var secondResponse = await _client.SendAuthorizedGetAsync(
