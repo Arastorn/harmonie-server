@@ -51,6 +51,10 @@ public interface IGuildNotifier
     Task NotifyMemberRoleUpdatedAsync(
         MemberRoleUpdatedNotification notification,
         CancellationToken cancellationToken = default);
+
+    Task NotifyGuildUpdatedAsync(
+        GuildUpdatedNotification notification,
+        CancellationToken cancellationToken = default);
 }
 
 public sealed record GuildDeletedNotification(
@@ -108,3 +112,8 @@ public sealed record MemberRoleUpdatedNotification(
     GuildId GuildId,
     UserId UserId,
     GuildRole NewRole);
+
+public sealed record GuildUpdatedNotification(
+    GuildId GuildId,
+    string Name,
+    UploadedFileId? IconFileId);

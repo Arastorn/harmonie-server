@@ -135,6 +135,11 @@ public class RealtimeHubDocumentation
         Summary = "Received when a guild member's role is changed by an admin. Broadcast to all guild members.")]
     public void OnMemberRoleUpdated() { }
 
+    [Channel("hubs/realtime/GuildUpdated")]
+    [SubscribeOperation(typeof(GuildUpdatedEvent),
+        Summary = "Received when guild settings (name or icon) are updated. Broadcast to all guild members.")]
+    public void OnGuildUpdated() { }
+
     [Channel("hubs/realtime/UserTyping")]
     [SubscribeOperation(typeof(UserTypingEvent),
         Summary = "Received when a user starts typing in a guild text channel.")]

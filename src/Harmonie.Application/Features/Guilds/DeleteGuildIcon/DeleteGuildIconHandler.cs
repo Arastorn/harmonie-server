@@ -15,15 +15,18 @@ public sealed class DeleteGuildIconHandler : IAuthenticatedHandler<DeleteGuildIc
     private readonly IGuildRepository _guildRepository;
     private readonly UploadedFileCleanupService _uploadedFileCleanupService;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IGuildNotifier _guildNotifier;
 
     public DeleteGuildIconHandler(
         IGuildRepository guildRepository,
         UploadedFileCleanupService uploadedFileCleanupService,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IGuildNotifier guildNotifier)
     {
         _guildRepository = guildRepository;
         _uploadedFileCleanupService = uploadedFileCleanupService;
         _unitOfWork = unitOfWork;
+        _guildNotifier = guildNotifier;
     }
 
     public async Task<ApplicationResponse<bool>> HandleAsync(
@@ -71,6 +74,10 @@ public sealed class DeleteGuildIconHandler : IAuthenticatedHandler<DeleteGuildIc
         }
 
         await _uploadedFileCleanupService.DeleteIfExistsAsync(previousIconFileId, cancellationToken);
+
+        await _guildNotifier.NotifyGuildUpdatedAsync(
+            new GuildUpdatedNotification(ctx.Guild.Id, ctx.Guild.Name.Value, null),
+            cancellationToken);
 
         return ApplicationResponse<bool>.Ok(true);
     }

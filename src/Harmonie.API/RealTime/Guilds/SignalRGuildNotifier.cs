@@ -212,6 +212,22 @@ public sealed class SignalRGuildNotifier : IGuildNotifier
             .Group(RealtimeHub.GetGuildGroupName(notification.GuildId))
             .SendAsync("MemberRoleUpdated", payload, cancellationToken);
     }
+
+    public async Task NotifyGuildUpdatedAsync(
+        GuildUpdatedNotification notification,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(notification);
+
+        var payload = new GuildUpdatedEvent(
+            GuildId: notification.GuildId.Value,
+            Name: notification.Name,
+            IconFileId: notification.IconFileId?.Value);
+
+        await _hubContext.Clients
+            .Group(RealtimeHub.GetGuildGroupName(notification.GuildId))
+            .SendAsync("GuildUpdated", payload, cancellationToken);
+    }
 }
 
 public sealed record GuildDeletedEvent(
@@ -275,3 +291,8 @@ public sealed record MemberRoleUpdatedEvent(
     Guid GuildId,
     Guid UserId,
     string NewRole);
+
+public sealed record GuildUpdatedEvent(
+    Guid GuildId,
+    string Name,
+    Guid? IconFileId);

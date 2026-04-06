@@ -31,15 +31,18 @@ public sealed class UpdateGuildHandler
     private readonly IGuildRepository _guildRepository;
     private readonly UploadedFileCleanupService _uploadedFileCleanupService;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IGuildNotifier _guildNotifier;
 
     public UpdateGuildHandler(
         IGuildRepository guildRepository,
         UploadedFileCleanupService uploadedFileCleanupService,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IGuildNotifier guildNotifier)
     {
         _guildRepository = guildRepository;
         _uploadedFileCleanupService = uploadedFileCleanupService;
         _unitOfWork = unitOfWork;
+        _guildNotifier = guildNotifier;
     }
 
     public async Task<ApplicationResponse<UpdateGuildResponse>> HandleAsync(
@@ -126,6 +129,10 @@ public sealed class UpdateGuildHandler
             await using var transaction = await _unitOfWork.BeginAsync(cancellationToken);
             await _guildRepository.UpdateAsync(guild, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
+
+            await _guildNotifier.NotifyGuildUpdatedAsync(
+                new GuildUpdatedNotification(guild.Id, guild.Name.Value, guild.IconFileId),
+                cancellationToken);
         }
 
         if (shouldDeletePreviousIconFile)
