@@ -386,7 +386,7 @@ public sealed class SignalRGuildHubTests : IClassFixture<HarmonieWebApplicationF
 
         var eventPayload = await eventReceived.Task;
         eventPayload.GuildId.Should().Be(createGuildPayload.GuildId.ToString());
-        eventPayload.UserId.Should().NotBeNullOrEmpty();
+        eventPayload.UserId.Should().Be(targetMember.UserId.ToString());
     }
 
     private HubConnection CreateHubConnection(string accessToken)
