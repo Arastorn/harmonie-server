@@ -126,7 +126,7 @@ internal sealed class MessageSearchRepository : IMessageSearchRepository
         MessageCursor? nextCursor = null;
         if (hasMore && items.Length > 0)
         {
-            var oldestItem = items[^1];
+            var oldestItem = items.Last();
             nextCursor = new MessageCursor(oldestItem.CreatedAtUtc, oldestItem.MessageId);
         }
 
@@ -220,7 +220,7 @@ internal sealed class MessageSearchRepository : IMessageSearchRepository
         MessageCursor? nextCursor = null;
         if (hasMore && items.Length > 0)
         {
-            var oldestItem = items[^1];
+            var oldestItem = items.Last();
             nextCursor = new MessageCursor(oldestItem.CreatedAtUtc, oldestItem.MessageId);
         }
 
