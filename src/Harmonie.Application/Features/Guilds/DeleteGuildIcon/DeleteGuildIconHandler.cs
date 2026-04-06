@@ -5,6 +5,7 @@ using Harmonie.Application.Interfaces.Guilds;
 using Harmonie.Domain.Enums;
 using Harmonie.Domain.ValueObjects.Guilds;
 using Harmonie.Domain.ValueObjects.Users;
+using Microsoft.Extensions.Logging;
 
 namespace Harmonie.Application.Features.Guilds.DeleteGuildIcon;
 
@@ -15,15 +16,21 @@ public sealed class DeleteGuildIconHandler : IAuthenticatedHandler<DeleteGuildIc
     private readonly IGuildRepository _guildRepository;
     private readonly UploadedFileCleanupService _uploadedFileCleanupService;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IGuildNotifier _guildNotifier;
+    private readonly ILogger<DeleteGuildIconHandler> _logger;
 
     public DeleteGuildIconHandler(
         IGuildRepository guildRepository,
         UploadedFileCleanupService uploadedFileCleanupService,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IGuildNotifier guildNotifier,
+        ILogger<DeleteGuildIconHandler> logger)
     {
         _guildRepository = guildRepository;
         _uploadedFileCleanupService = uploadedFileCleanupService;
         _unitOfWork = unitOfWork;
+        _guildNotifier = guildNotifier;
+        _logger = logger;
     }
 
     public async Task<ApplicationResponse<bool>> HandleAsync(
@@ -71,6 +78,15 @@ public sealed class DeleteGuildIconHandler : IAuthenticatedHandler<DeleteGuildIc
         }
 
         await _uploadedFileCleanupService.DeleteIfExistsAsync(previousIconFileId, cancellationToken);
+
+        await BestEffortNotificationHelper.TryNotifyAsync(
+            ct => _guildNotifier.NotifyGuildUpdatedAsync(
+                new GuildUpdatedNotification(ctx.Guild.Id, ctx.Guild.Name.Value, null),
+                ct),
+            TimeSpan.FromSeconds(5),
+            _logger,
+            "Failed to notify guild {GuildId} that icon was deleted",
+            ctx.Guild.Id);
 
         return ApplicationResponse<bool>.Ok(true);
     }

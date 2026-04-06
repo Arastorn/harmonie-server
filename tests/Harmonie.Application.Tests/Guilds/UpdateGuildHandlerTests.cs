@@ -25,6 +25,7 @@ public sealed class UpdateGuildHandlerTests
     private readonly Mock<IObjectStorageService> _objectStorageServiceMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly Mock<IUnitOfWorkTransaction> _transactionMock;
+    private readonly Mock<IGuildNotifier> _guildNotifierMock;
     private readonly UpdateGuildHandler _handler;
 
     public UpdateGuildHandlerTests()
@@ -34,6 +35,7 @@ public sealed class UpdateGuildHandlerTests
         _objectStorageServiceMock = new Mock<IObjectStorageService>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _transactionMock = new Mock<IUnitOfWorkTransaction>();
+        _guildNotifierMock = new Mock<IGuildNotifier>();
 
         _transactionMock = _unitOfWorkMock.SetupTransactionMock();
 
@@ -43,7 +45,9 @@ public sealed class UpdateGuildHandlerTests
                 _uploadedFileRepositoryMock.Object,
                 _objectStorageServiceMock.Object,
                 NullLogger<UploadedFileCleanupService>.Instance),
-            _unitOfWorkMock.Object);
+            _unitOfWorkMock.Object,
+            _guildNotifierMock.Object,
+            NullLogger<UpdateGuildHandler>.Instance);
     }
 
     [Fact]
@@ -245,6 +249,56 @@ public sealed class UpdateGuildHandlerTests
         _objectStorageServiceMock.Verify(
             x => x.DeleteIfExistsAsync(oldUploadedFile.StorageKey, It.IsAny<CancellationToken>()),
             Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenGuildUpdated_ShouldCallNotifyGuildUpdatedAsync()
+    {
+        var guild = ApplicationTestBuilders.CreateGuild();
+        var ownerId = guild.OwnerUserId;
+
+        _guildRepositoryMock
+            .Setup(x => x.GetWithCallerRoleAsync(guild.Id, ownerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GuildAccessContext(guild, GuildRole.Member));
+
+        _guildNotifierMock
+            .Setup(x => x.NotifyGuildUpdatedAsync(It.IsAny<GuildUpdatedNotification>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var response = await _handler.HandleAsync(
+            new UpdateGuildInput(guild.Id, "Updated Name", null, null, null, null, true, false, false, false, false),
+            ownerId);
+
+        response.Success.Should().BeTrue();
+
+        _guildNotifierMock.Verify(
+            x => x.NotifyGuildUpdatedAsync(
+                It.Is<GuildUpdatedNotification>(n =>
+                    n.GuildId == guild.Id
+                    && n.Name == "Updated Name"
+                    && n.IconFileId == null),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenNoFieldsSet_ShouldNotCallNotifyGuildUpdatedAsync()
+    {
+        var guild = ApplicationTestBuilders.CreateGuild();
+        var ownerId = guild.OwnerUserId;
+
+        _guildRepositoryMock
+            .Setup(x => x.GetWithCallerRoleAsync(guild.Id, ownerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GuildAccessContext(guild, GuildRole.Member));
+
+        var response = await _handler.HandleAsync(
+            new UpdateGuildInput(guild.Id, null, null, null, null, null, false, false, false, false, false),
+            ownerId);
+
+        response.Success.Should().BeTrue();
+        _guildNotifierMock.Verify(
+            x => x.NotifyGuildUpdatedAsync(It.IsAny<GuildUpdatedNotification>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
 }

@@ -535,6 +535,54 @@ public sealed class SignalRGuildHubTests : IClassFixture<HarmonieWebApplicationF
         eventPayload.NewRole.Should().Be("Admin");
     }
 
+    [Fact]
+    public async Task GuildUpdated_WhenMemberConnected_ShouldReceiveEvent()
+    {
+        var owner = await AuthTestHelper.RegisterAsync(_client);
+        var member = await AuthTestHelper.RegisterAsync(_client);
+
+        var prefix = Guid.NewGuid().ToString("N")[..8];
+
+        var createGuildResponse = await _client.SendAuthorizedPostAsync(
+            "/api/guilds",
+            new CreateGuildRequest($"SignalR GuildUpdated Guild {prefix}"),
+            owner.AccessToken);
+        createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        createGuildPayload.Should().NotBeNull();
+
+        await GuildTestHelper.InviteMemberAsync(_client, createGuildPayload!.GuildId, owner.AccessToken, member.AccessToken);
+
+        await using var connection = CreateHubConnection(member.AccessToken);
+        var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var eventReceived = new TaskCompletionSource<SignalRGuildUpdatedEvent>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        connection.On("Ready", () => ready.TrySetResult());
+        connection.On<SignalRGuildUpdatedEvent>("GuildUpdated", payload =>
+        {
+            eventReceived.TrySetResult(payload);
+        });
+
+        await connection.StartAsync();
+        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        var updateResponse = await _client.SendAuthorizedPatchAsync(
+            $"/api/guilds/{createGuildPayload.GuildId}",
+            new { name = $"Updated Guild {prefix}" },
+            owner.AccessToken);
+        updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var completedTask = await Task.WhenAny(eventReceived.Task, Task.Delay(Timeout.InfiniteTimeSpan, timeout.Token));
+        completedTask.Should().Be(eventReceived.Task);
+
+        var eventPayload = await eventReceived.Task;
+        eventPayload.GuildId.Should().Be(createGuildPayload.GuildId.ToString());
+        eventPayload.Name.Should().Be($"Updated Guild {prefix}");
+    }
+
     private sealed record SignalRMemberBannedEvent(
         string GuildId,
         string UserId);
@@ -547,4 +595,9 @@ public sealed class SignalRGuildHubTests : IClassFixture<HarmonieWebApplicationF
         string GuildId,
         string UserId,
         string NewRole);
+
+    private sealed record SignalRGuildUpdatedEvent(
+        string GuildId,
+        string Name,
+        string? IconFileId);
 }

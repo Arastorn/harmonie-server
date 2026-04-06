@@ -25,6 +25,7 @@ public sealed class DeleteGuildIconHandlerTests
     private readonly Mock<IObjectStorageService> _objectStorageServiceMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly Mock<IUnitOfWorkTransaction> _transactionMock;
+    private readonly Mock<IGuildNotifier> _guildNotifierMock;
     private readonly DeleteGuildIconHandler _handler;
 
     public DeleteGuildIconHandlerTests()
@@ -34,6 +35,7 @@ public sealed class DeleteGuildIconHandlerTests
         _objectStorageServiceMock = new Mock<IObjectStorageService>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _transactionMock = new Mock<IUnitOfWorkTransaction>();
+        _guildNotifierMock = new Mock<IGuildNotifier>();
 
         _unitOfWorkMock
             .Setup(x => x.BeginAsync(It.IsAny<CancellationToken>()))
@@ -49,7 +51,9 @@ public sealed class DeleteGuildIconHandlerTests
                 _uploadedFileRepositoryMock.Object,
                 _objectStorageServiceMock.Object,
                 NullLogger<UploadedFileCleanupService>.Instance),
-            _unitOfWorkMock.Object);
+            _unitOfWorkMock.Object,
+            _guildNotifierMock.Object,
+            NullLogger<DeleteGuildIconHandler>.Instance);
     }
 
     [Fact]
@@ -158,6 +162,45 @@ public sealed class DeleteGuildIconHandlerTests
         _transactionMock.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
         _uploadedFileRepositoryMock.Verify(
             x => x.DeleteAsync(iconFileId, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenIconDeleted_ShouldCallNotifyGuildUpdatedAsyncWithNullIconFileId()
+    {
+        var iconFileId = UploadedFileId.From(Guid.Parse("08f8d69f-5b34-4037-8fb0-ccf6d98af75d"));
+        var guild = ApplicationTestBuilders.CreateGuild(iconFileId: iconFileId);
+        var ownerId = guild.OwnerUserId;
+        var uploadedFile = ApplicationTestBuilders.CreateUploadedFile(
+            id: iconFileId,
+            fileName: "guild-icon.png",
+            contentType: "image/png",
+            sizeBytes: 512,
+            storageKey: "guild-icons/icon.png",
+            purpose: UploadPurpose.GuildIcon);
+
+        _guildRepositoryMock
+            .Setup(x => x.GetWithCallerRoleAsync(guild.Id, ownerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GuildAccessContext(guild, GuildRole.Member));
+
+        _uploadedFileRepositoryMock
+            .Setup(x => x.GetByIdAsync(iconFileId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(uploadedFile);
+
+        _guildNotifierMock
+            .Setup(x => x.NotifyGuildUpdatedAsync(It.IsAny<GuildUpdatedNotification>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var response = await _handler.HandleAsync(new DeleteGuildIconInput(guild.Id), ownerId);
+
+        response.Success.Should().BeTrue();
+
+        _guildNotifierMock.Verify(
+            x => x.NotifyGuildUpdatedAsync(
+                It.Is<GuildUpdatedNotification>(n =>
+                    n.GuildId == guild.Id
+                    && n.IconFileId == null),
+                It.IsAny<CancellationToken>()),
             Times.Once);
     }
 

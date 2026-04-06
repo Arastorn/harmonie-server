@@ -9,6 +9,7 @@ using Harmonie.Domain.Enums;
 using Harmonie.Domain.ValueObjects.Guilds;
 using Harmonie.Domain.ValueObjects.Uploads;
 using Harmonie.Domain.ValueObjects.Users;
+using Microsoft.Extensions.Logging;
 
 namespace Harmonie.Application.Features.Guilds.UpdateGuild;
 
@@ -31,15 +32,21 @@ public sealed class UpdateGuildHandler
     private readonly IGuildRepository _guildRepository;
     private readonly UploadedFileCleanupService _uploadedFileCleanupService;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IGuildNotifier _guildNotifier;
+    private readonly ILogger<UpdateGuildHandler> _logger;
 
     public UpdateGuildHandler(
         IGuildRepository guildRepository,
         UploadedFileCleanupService uploadedFileCleanupService,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IGuildNotifier guildNotifier,
+        ILogger<UpdateGuildHandler> logger)
     {
         _guildRepository = guildRepository;
         _uploadedFileCleanupService = uploadedFileCleanupService;
         _unitOfWork = unitOfWork;
+        _guildNotifier = guildNotifier;
+        _logger = logger;
     }
 
     public async Task<ApplicationResponse<UpdateGuildResponse>> HandleAsync(
@@ -126,6 +133,15 @@ public sealed class UpdateGuildHandler
             await using var transaction = await _unitOfWork.BeginAsync(cancellationToken);
             await _guildRepository.UpdateAsync(guild, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
+
+            await BestEffortNotificationHelper.TryNotifyAsync(
+                ct => _guildNotifier.NotifyGuildUpdatedAsync(
+                    new GuildUpdatedNotification(guild.Id, guild.Name.Value, guild.IconFileId),
+                    ct),
+                TimeSpan.FromSeconds(5),
+                _logger,
+                "Failed to notify guild {GuildId} that settings were updated",
+                guild.Id);
         }
 
         if (shouldDeletePreviousIconFile)
