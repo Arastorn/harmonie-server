@@ -121,8 +121,6 @@ internal sealed class MessageSearchRepository : IMessageSearchRepository
 
         var items = pageRows
             .Select(row => MapToSearchGuildMessagesItem(row, attachmentsByMessageId))
-            .OrderByDescending(x => x.CreatedAtUtc)
-            .ThenByDescending(x => x.MessageId.Value)
             .ToArray();
 
         MessageCursor? nextCursor = null;
@@ -217,8 +215,6 @@ internal sealed class MessageSearchRepository : IMessageSearchRepository
 
         var items = pageRows
             .Select(row => MapToSearchConversationMessagesItem(row, attachmentsByMessageId))
-            .OrderByDescending(x => x.CreatedAtUtc)
-            .ThenByDescending(x => x.MessageId.Value)
             .ToArray();
 
         MessageCursor? nextCursor = null;
