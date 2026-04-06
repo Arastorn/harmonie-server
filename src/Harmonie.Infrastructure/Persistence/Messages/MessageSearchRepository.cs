@@ -121,14 +121,14 @@ internal sealed class MessageSearchRepository : IMessageSearchRepository
 
         var items = pageRows
             .Select(row => MapToSearchGuildMessagesItem(row, attachmentsByMessageId))
-            .OrderBy(x => x.CreatedAtUtc)
-            .ThenBy(x => x.MessageId.Value)
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .ThenByDescending(x => x.MessageId.Value)
             .ToArray();
 
         MessageCursor? nextCursor = null;
         if (hasMore && items.Length > 0)
         {
-            var oldestItem = items[0];
+            var oldestItem = items[^1];
             nextCursor = new MessageCursor(oldestItem.CreatedAtUtc, oldestItem.MessageId);
         }
 
@@ -217,14 +217,14 @@ internal sealed class MessageSearchRepository : IMessageSearchRepository
 
         var items = pageRows
             .Select(row => MapToSearchConversationMessagesItem(row, attachmentsByMessageId))
-            .OrderBy(x => x.CreatedAtUtc)
-            .ThenBy(x => x.MessageId.Value)
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .ThenByDescending(x => x.MessageId.Value)
             .ToArray();
 
         MessageCursor? nextCursor = null;
         if (hasMore && items.Length > 0)
         {
-            var oldestItem = items[0];
+            var oldestItem = items[^1];
             nextCursor = new MessageCursor(oldestItem.CreatedAtUtc, oldestItem.MessageId);
         }
 
