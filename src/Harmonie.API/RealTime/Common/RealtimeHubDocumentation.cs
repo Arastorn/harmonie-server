@@ -155,6 +155,11 @@ public class RealtimeHubDocumentation
         Summary = "Received when a user changes their presence status. Invisible users appear as 'offline'.")]
     public void OnUserPresenceChanged() { }
 
+    [Channel("hubs/realtime/UserProfileUpdated")]
+    [SubscribeOperation(typeof(UserProfileUpdatedEvent),
+        Summary = "Received when a user updates their display name or avatar. Broadcast to all guild members and conversation participants who share a guild or conversation with the updated user.")]
+    public void OnUserProfileUpdated() { }
+
     [Channel("hubs/realtime/ReactionAdded")]
     [SubscribeOperation(typeof(ReactionAddedEvent),
         Summary = "Received when a user adds an emoji reaction to a message (channel or conversation).")]

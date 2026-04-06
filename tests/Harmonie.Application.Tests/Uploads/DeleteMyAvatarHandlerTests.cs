@@ -3,6 +3,8 @@ using Harmonie.Application.Common;
 using Harmonie.Application.Common.Uploads;
 using Harmonie.Application.Features.Users.DeleteMyAvatar;
 using Harmonie.Application.Interfaces.Common;
+using Harmonie.Application.Interfaces.Conversations;
+using Harmonie.Application.Interfaces.Guilds;
 using Harmonie.Application.Interfaces.Uploads;
 using Harmonie.Application.Interfaces.Users;
 using Harmonie.Application.Tests.Common;
@@ -42,13 +44,27 @@ public sealed class DeleteMyAvatarHandlerTests
             .Setup(x => x.DisposeAsync())
             .Returns(ValueTask.CompletedTask);
 
+        var guildMemberRepositoryMock = new Mock<IGuildMemberRepository>();
+        guildMemberRepositoryMock
+            .Setup(x => x.GetUserGuildMembershipsAsync(It.IsAny<UserId>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<UserGuildMembership>());
+
+        var conversationRepositoryMock = new Mock<IConversationRepository>();
+        conversationRepositoryMock
+            .Setup(x => x.GetUserConversationsAsync(It.IsAny<UserId>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<UserConversationSummary>());
+
         _handler = new DeleteMyAvatarHandler(
             _userRepositoryMock.Object,
             new UploadedFileCleanupService(
                 _uploadedFileRepositoryMock.Object,
                 _objectStorageServiceMock.Object,
                 NullLogger<UploadedFileCleanupService>.Instance),
-            _unitOfWorkMock.Object);
+            _unitOfWorkMock.Object,
+            guildMemberRepositoryMock.Object,
+            conversationRepositoryMock.Object,
+            Mock.Of<IUserProfileNotifier>(),
+            NullLogger<DeleteMyAvatarHandler>.Instance);
     }
 
     [Fact]

@@ -2,6 +2,8 @@ using FluentAssertions;
 using Harmonie.Application.Common;
 using Harmonie.Application.Common.Uploads;
 using Harmonie.Application.Features.Users.UpdateMyProfile;
+using Harmonie.Application.Interfaces.Conversations;
+using Harmonie.Application.Interfaces.Guilds;
 using Harmonie.Application.Interfaces.Uploads;
 using Harmonie.Application.Interfaces.Users;
 using Harmonie.Application.Tests.Common;
@@ -26,12 +28,27 @@ public sealed class UpdateMyProfileHandlerTests
         _userRepositoryMock = new Mock<IUserRepository>();
         _uploadedFileRepositoryMock = new Mock<IUploadedFileRepository>();
         _objectStorageServiceMock = new Mock<IObjectStorageService>();
+
+        var guildMemberRepositoryMock = new Mock<IGuildMemberRepository>();
+        guildMemberRepositoryMock
+            .Setup(x => x.GetUserGuildMembershipsAsync(It.IsAny<UserId>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Harmonie.Application.Interfaces.Guilds.UserGuildMembership>());
+
+        var conversationRepositoryMock = new Mock<IConversationRepository>();
+        conversationRepositoryMock
+            .Setup(x => x.GetUserConversationsAsync(It.IsAny<UserId>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Harmonie.Application.Interfaces.Conversations.UserConversationSummary>());
+
         _handler = new UpdateMyProfileHandler(
             _userRepositoryMock.Object,
             new UploadedFileCleanupService(
                 _uploadedFileRepositoryMock.Object,
                 _objectStorageServiceMock.Object,
-                NullLogger<UploadedFileCleanupService>.Instance));
+                NullLogger<UploadedFileCleanupService>.Instance),
+            guildMemberRepositoryMock.Object,
+            conversationRepositoryMock.Object,
+            Mock.Of<IUserProfileNotifier>(),
+            NullLogger<UpdateMyProfileHandler>.Instance);
     }
 
     [Fact]

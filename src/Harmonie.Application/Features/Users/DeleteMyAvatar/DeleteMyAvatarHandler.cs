@@ -1,8 +1,11 @@
 using Harmonie.Application.Common;
 using Harmonie.Application.Common.Uploads;
 using Harmonie.Application.Interfaces.Common;
+using Harmonie.Application.Interfaces.Conversations;
+using Harmonie.Application.Interfaces.Guilds;
 using Harmonie.Application.Interfaces.Users;
 using Harmonie.Domain.ValueObjects.Users;
+using Microsoft.Extensions.Logging;
 
 namespace Harmonie.Application.Features.Users.DeleteMyAvatar;
 
@@ -11,15 +14,27 @@ public sealed class DeleteMyAvatarHandler : IAuthenticatedHandler<Unit, bool>
     private readonly IUserRepository _userRepository;
     private readonly UploadedFileCleanupService _uploadedFileCleanupService;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IGuildMemberRepository _guildMemberRepository;
+    private readonly IConversationRepository _conversationRepository;
+    private readonly IUserProfileNotifier _userProfileNotifier;
+    private readonly ILogger<DeleteMyAvatarHandler> _logger;
 
     public DeleteMyAvatarHandler(
         IUserRepository userRepository,
         UploadedFileCleanupService uploadedFileCleanupService,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IGuildMemberRepository guildMemberRepository,
+        IConversationRepository conversationRepository,
+        IUserProfileNotifier userProfileNotifier,
+        ILogger<DeleteMyAvatarHandler> logger)
     {
         _userRepository = userRepository;
         _uploadedFileCleanupService = uploadedFileCleanupService;
         _unitOfWork = unitOfWork;
+        _guildMemberRepository = guildMemberRepository;
+        _conversationRepository = conversationRepository;
+        _userProfileNotifier = userProfileNotifier;
+        _logger = logger;
     }
 
     public async Task<ApplicationResponse<bool>> HandleAsync(
@@ -70,6 +85,25 @@ public sealed class DeleteMyAvatarHandler : IAuthenticatedHandler<Unit, bool>
         }
 
         await _uploadedFileCleanupService.DeleteIfExistsAsync(previousAvatarFileId, cancellationToken);
+
+        var memberships = await _guildMemberRepository.GetUserGuildMembershipsAsync(
+            currentUserId, cancellationToken);
+        var conversations = await _conversationRepository.GetUserConversationsAsync(
+            currentUserId, cancellationToken);
+
+        await BestEffortNotificationHelper.TryNotifyAsync(
+            ct => _userProfileNotifier.NotifyProfileUpdatedAsync(
+                new UserProfileUpdatedNotification(
+                    UserId: user.Id,
+                    DisplayName: user.DisplayName,
+                    AvatarFileId: user.AvatarFileId,
+                    GuildIds: memberships.Select(m => m.Guild.Id).ToList(),
+                    ConversationIds: conversations.Select(c => c.ConversationId).ToList()),
+                ct),
+            TimeSpan.FromSeconds(5),
+            _logger,
+            "Failed to notify profile update for user {UserId}",
+            user.Id);
 
         return ApplicationResponse<bool>.Ok(true);
     }
