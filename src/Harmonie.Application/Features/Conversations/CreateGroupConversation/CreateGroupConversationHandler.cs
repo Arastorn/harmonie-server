@@ -12,17 +12,20 @@ public sealed class CreateGroupConversationHandler : IAuthenticatedHandler<Creat
     private readonly IConversationRepository _conversationRepository;
     private readonly IUserRepository _userRepository;
     private readonly IRealtimeGroupManager _realtimeGroupManager;
+    private readonly IConversationNotifier _conversationNotifier;
     private readonly ILogger<CreateGroupConversationHandler> _logger;
 
     public CreateGroupConversationHandler(
         IConversationRepository conversationRepository,
         IUserRepository userRepository,
         IRealtimeGroupManager realtimeGroupManager,
+        IConversationNotifier conversationNotifier,
         ILogger<CreateGroupConversationHandler> logger)
     {
         _conversationRepository = conversationRepository;
         _userRepository = userRepository;
         _realtimeGroupManager = realtimeGroupManager;
+        _conversationNotifier = conversationNotifier;
         _logger = logger;
     }
 
@@ -62,10 +65,17 @@ public sealed class CreateGroupConversationHandler : IAuthenticatedHandler<Creat
                 await Task.WhenAll(
                     participantUserIds.Select(uid =>
                         _realtimeGroupManager.AddUserToConversationGroupAsync(uid, conversation.Id, ct)));
+
+                await _conversationNotifier.NotifyConversationCreatedAsync(
+                    new ConversationCreatedNotification(
+                        ConversationId: conversation.Id,
+                        Name: conversation.Name,
+                        ParticipantIds: participantUserIds),
+                    ct);
             },
             TimeSpan.FromSeconds(5),
             _logger,
-            "Failed to subscribe users to group conversation {ConversationId} SignalR group",
+            "Failed to notify participants of group conversation {ConversationId} creation",
             conversation.Id);
 
         var payload = new CreateGroupConversationResponse(

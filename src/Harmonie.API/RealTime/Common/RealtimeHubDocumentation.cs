@@ -45,6 +45,11 @@ public class RealtimeHubDocumentation
         Summary = "Received when a message is deleted in a text channel.")]
     public void OnMessageDeleted() { }
 
+    [Channel("hubs/realtime/ConversationCreated")]
+    [SubscribeOperation(typeof(ConversationCreatedEvent),
+        Summary = "Received by all participants when a new group conversation is created. Broadcast to the conversation group after all participants have been subscribed.")]
+    public void OnConversationCreated() { }
+
     [Channel("hubs/realtime/ConversationMessageCreated")]
     [SubscribeOperation(typeof(ConversationMessageCreatedEvent),
         Summary = "Received when a new message is posted in a direct conversation.")]
