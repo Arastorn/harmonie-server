@@ -3,8 +3,11 @@ using Harmonie.Application.Common.Uploads;
 using Harmonie.Application.Features.Users;
 using Harmonie.Application.Interfaces.Users;
 using Harmonie.Domain.Common;
+using Harmonie.Domain.ValueObjects.Conversations;
+using Harmonie.Domain.ValueObjects.Guilds;
 using Harmonie.Domain.ValueObjects.Uploads;
 using Harmonie.Domain.ValueObjects.Users;
+using Microsoft.Extensions.Logging;
 
 namespace Harmonie.Application.Features.Users.UpdateMyProfile;
 
@@ -13,13 +16,19 @@ public sealed class UpdateMyProfileHandler
 {
     private readonly IUserRepository _userRepository;
     private readonly UploadedFileCleanupService _uploadedFileCleanupService;
+    private readonly IUserProfileNotifier _userProfileNotifier;
+    private readonly ILogger<UpdateMyProfileHandler> _logger;
 
     public UpdateMyProfileHandler(
         IUserRepository userRepository,
-        UploadedFileCleanupService uploadedFileCleanupService)
+        UploadedFileCleanupService uploadedFileCleanupService,
+        IUserProfileNotifier userProfileNotifier,
+        ILogger<UpdateMyProfileHandler> logger)
     {
         _userRepository = userRepository;
         _uploadedFileCleanupService = uploadedFileCleanupService;
+        _userProfileNotifier = userProfileNotifier;
+        _logger = logger;
     }
 
     public async Task<ApplicationResponse<UpdateMyProfileResponse>> HandleAsync(
@@ -104,6 +113,7 @@ public sealed class UpdateMyProfileHandler
         var anyFieldSet = request.DisplayNameIsSet || request.BioIsSet || request.AvatarFileIdIsSet
             || request.AvatarColorIsSet || request.AvatarIconIsSet || request.AvatarBgIsSet
             || request.ThemeIsSet || request.LanguageIsSet;
+        var shouldNotifyProfile = request.DisplayNameIsSet || request.BioIsSet || request.AvatarFileIdIsSet;
         var shouldDeletePreviousAvatar = request.AvatarFileIdIsSet
             && previousAvatarFileId is not null
             && previousAvatarFileId != user.AvatarFileId;
@@ -131,6 +141,26 @@ public sealed class UpdateMyProfileHandler
                 UpdatedAtUtc: user.UpdatedAtUtc);
 
             await _userRepository.UpdateProfileAsync(parameters, cancellationToken);
+        }
+
+        if (shouldNotifyProfile)
+        {
+            var notificationContext = await _userRepository.GetUserNotificationContextAsync(
+                currentUserId, cancellationToken);
+
+            await BestEffortNotificationHelper.TryNotifyAsync(
+                ct => _userProfileNotifier.NotifyProfileUpdatedAsync(
+                    new UserProfileUpdatedNotification(
+                        UserId: user.Id,
+                        DisplayName: user.DisplayName,
+                        AvatarFileId: user.AvatarFileId,
+                        GuildIds: notificationContext.GuildIds,
+                        ConversationIds: notificationContext.ConversationIds),
+                    ct),
+                TimeSpan.FromSeconds(5),
+                _logger,
+                "Failed to notify profile update for user {UserId}",
+                user.Id);
         }
 
         if (shouldDeletePreviousAvatar)

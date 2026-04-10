@@ -9,6 +9,8 @@ using Harmonie.Application.Tests.Common;
 using Harmonie.Domain.Entities.Uploads;
 using Harmonie.Domain.Entities.Users;
 using Harmonie.Domain.Enums;
+using Harmonie.Domain.ValueObjects.Conversations;
+using Harmonie.Domain.ValueObjects.Guilds;
 using Harmonie.Domain.ValueObjects.Uploads;
 using Harmonie.Domain.ValueObjects.Users;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -42,13 +44,19 @@ public sealed class DeleteMyAvatarHandlerTests
             .Setup(x => x.DisposeAsync())
             .Returns(ValueTask.CompletedTask);
 
+        _userRepositoryMock
+            .Setup(x => x.GetUserNotificationContextAsync(It.IsAny<UserId>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new UserNotificationContext(Array.Empty<GuildId>(), Array.Empty<ConversationId>()));
+
         _handler = new DeleteMyAvatarHandler(
             _userRepositoryMock.Object,
             new UploadedFileCleanupService(
                 _uploadedFileRepositoryMock.Object,
                 _objectStorageServiceMock.Object,
                 NullLogger<UploadedFileCleanupService>.Instance),
-            _unitOfWorkMock.Object);
+            _unitOfWorkMock.Object,
+            Mock.Of<IUserProfileNotifier>(),
+            NullLogger<DeleteMyAvatarHandler>.Instance);
     }
 
     [Fact]

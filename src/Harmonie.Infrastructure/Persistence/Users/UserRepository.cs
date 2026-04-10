@@ -2,6 +2,7 @@ using System.Text;
 using Dapper;
 using Harmonie.Application.Interfaces.Users;
 using Harmonie.Domain.Entities.Users;
+using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.ValueObjects.Guilds;
 using Harmonie.Domain.ValueObjects.Uploads;
 using Harmonie.Domain.ValueObjects.Users;
@@ -360,6 +361,34 @@ public sealed class UserRepository : IUserRepository
             transaction: _dbSession.Transaction,
             cancellationToken: ct);
         await conn.ExecuteAsync(cmd);
+    }
+
+    public async Task<UserNotificationContext> GetUserNotificationContextAsync(
+        UserId userId,
+        CancellationToken ct = default)
+    {
+        const string sql = """
+            SELECT gm.guild_id
+            FROM guild_members gm
+            WHERE gm.user_id = @UserId;
+
+            SELECT cp.conversation_id
+            FROM conversation_participants cp
+            WHERE cp.user_id = @UserId;
+            """;
+
+        var conn = await _dbSession.GetOpenConnectionAsync(ct);
+        var cmd = new CommandDefinition(
+            sql,
+            new { UserId = userId.Value },
+            transaction: _dbSession.Transaction,
+            cancellationToken: ct);
+
+        using var multi = await conn.QueryMultipleAsync(cmd);
+        var guildIds = (await multi.ReadAsync<Guid>()).Select(GuildId.From).ToArray();
+        var conversationIds = (await multi.ReadAsync<Guid>()).Select(ConversationId.From).ToArray();
+
+        return new UserNotificationContext(guildIds, conversationIds);
     }
 
     private static User MapToUser(UserRow userRow)

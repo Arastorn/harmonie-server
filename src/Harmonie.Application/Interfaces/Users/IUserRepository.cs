@@ -1,4 +1,5 @@
 using Harmonie.Domain.Entities.Users;
+using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.ValueObjects.Guilds;
 using Harmonie.Domain.ValueObjects.Uploads;
 using Harmonie.Domain.ValueObjects.Users;
@@ -101,4 +102,15 @@ public interface IUserRepository
     /// Delete a user (soft delete recommended)
     /// </summary>
     Task DeleteAsync(UserId userId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get the notification context for a user (guilds and conversations they belong to).
+    /// </summary>
+    Task<UserNotificationContext> GetUserNotificationContextAsync(
+        UserId userId,
+        CancellationToken cancellationToken = default);
 }
+
+public sealed record UserNotificationContext(
+    IReadOnlyList<GuildId> GuildIds,
+    IReadOnlyList<ConversationId> ConversationIds);

@@ -5,6 +5,8 @@ using Harmonie.Application.Interfaces.Uploads;
 using Harmonie.Application.Interfaces.Users;
 using Harmonie.Domain.Entities.Uploads;
 using Harmonie.Domain.Enums;
+using Harmonie.Domain.ValueObjects.Conversations;
+using Harmonie.Domain.ValueObjects.Guilds;
 using Harmonie.Domain.ValueObjects.Users;
 using Microsoft.Extensions.Logging;
 using SixLabors.ImageSharp;
@@ -24,6 +26,7 @@ public sealed class UploadMyAvatarHandler
     private readonly IObjectStorageService _objectStorageService;
     private readonly UploadedFileCleanupService _uploadedFileCleanupService;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IUserProfileNotifier _userProfileNotifier;
     private readonly ILogger<UploadMyAvatarHandler> _logger;
 
     public UploadMyAvatarHandler(
@@ -32,6 +35,7 @@ public sealed class UploadMyAvatarHandler
         IObjectStorageService objectStorageService,
         UploadedFileCleanupService uploadedFileCleanupService,
         IUnitOfWork unitOfWork,
+        IUserProfileNotifier userProfileNotifier,
         ILogger<UploadMyAvatarHandler> logger)
     {
         _userRepository = userRepository;
@@ -39,6 +43,7 @@ public sealed class UploadMyAvatarHandler
         _objectStorageService = objectStorageService;
         _uploadedFileCleanupService = uploadedFileCleanupService;
         _unitOfWork = unitOfWork;
+        _userProfileNotifier = userProfileNotifier;
         _logger = logger;
     }
 
@@ -125,6 +130,23 @@ public sealed class UploadMyAvatarHandler
 
         if (previousAvatarFileId is not null && previousAvatarFileId != uploadedFileResult.Value.Id)
             await _uploadedFileCleanupService.DeleteIfExistsAsync(previousAvatarFileId, cancellationToken);
+
+        var notificationContext = await _userRepository.GetUserNotificationContextAsync(
+            currentUserId, cancellationToken);
+
+        await BestEffortNotificationHelper.TryNotifyAsync(
+            ct => _userProfileNotifier.NotifyProfileUpdatedAsync(
+                new UserProfileUpdatedNotification(
+                    UserId: user.Id,
+                    DisplayName: user.DisplayName,
+                    AvatarFileId: user.AvatarFileId,
+                    GuildIds: notificationContext.GuildIds,
+                    ConversationIds: notificationContext.ConversationIds),
+                ct),
+            TimeSpan.FromSeconds(5),
+            _logger,
+            "Failed to notify profile update for user {UserId}",
+            user.Id);
 
         return ApplicationResponse<UploadMyAvatarResponse>.Ok(
             new UploadMyAvatarResponse(uploadedFileResult.Value.Id.Value));
