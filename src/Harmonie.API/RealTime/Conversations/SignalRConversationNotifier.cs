@@ -28,9 +28,28 @@ public sealed class SignalRConversationNotifier : IConversationNotifier
             .Group(RealtimeHub.GetConversationGroupName(notification.ConversationId))
             .SendAsync("ConversationCreated", payload, cancellationToken);
     }
+
+    public async Task NotifyParticipantLeftAsync(
+        ConversationParticipantLeftNotification notification,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(notification);
+
+        var payload = new ConversationParticipantLeftEvent(
+            ConversationId: notification.ConversationId.Value,
+            UserId: notification.UserId.Value);
+
+        await _hubContext.Clients
+            .Group(RealtimeHub.GetConversationGroupName(notification.ConversationId))
+            .SendAsync("ConversationParticipantLeft", payload, cancellationToken);
+    }
 }
 
 public sealed record ConversationCreatedEvent(
     Guid ConversationId,
     string? Name,
     IReadOnlyList<Guid> ParticipantIds);
+
+public sealed record ConversationParticipantLeftEvent(
+    Guid ConversationId,
+    Guid UserId);

@@ -1,4 +1,5 @@
 using Harmonie.Application.Features.Conversations.CreateGroupConversation;
+using Harmonie.Application.Features.Conversations.DeleteConversation;
 using Harmonie.Application.Features.Conversations.ListConversations;
 using Harmonie.Application.Features.Conversations.OpenConversation;
 using Harmonie.Application.Features.Conversations.SearchConversationMessages;
@@ -19,6 +20,7 @@ public static class ConversationEndpoints
     {
         OpenConversationEndpoint.Map(app);
         CreateGroupConversationEndpoint.Map(app);
+        DeleteConversationEndpoint.Map(app);
         ListConversationsEndpoint.Map(app);
         SearchConversationMessagesEndpoint.Map(app);
 
