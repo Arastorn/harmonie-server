@@ -205,4 +205,26 @@ public sealed class SignalRRealtimeGroupManager : IRealtimeGroupManager
 
         await Task.WhenAll(tasks);
     }
+
+    public async Task RemoveUserFromConversationGroupAsync(
+        UserId userId,
+        ConversationId conversationId,
+        CancellationToken cancellationToken = default)
+    {
+        var connectionIds = _connectionTracker.GetConnectionIds(userId);
+        if (connectionIds.Count == 0)
+            return;
+
+        var tasks = new List<Task>(connectionIds.Count);
+
+        foreach (var connectionId in connectionIds)
+        {
+            tasks.Add(_hubContext.Groups.RemoveFromGroupAsync(
+                connectionId,
+                RealtimeHub.GetConversationGroupName(conversationId),
+                cancellationToken));
+        }
+
+        await Task.WhenAll(tasks);
+    }
 }

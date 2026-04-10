@@ -36,4 +36,9 @@ public interface IRealtimeGroupManager
         UserId userId,
         ConversationId conversationId,
         CancellationToken cancellationToken = default);
+
+    Task RemoveUserFromConversationGroupAsync(
+        UserId userId,
+        ConversationId conversationId,
+        CancellationToken cancellationToken = default);
 }
