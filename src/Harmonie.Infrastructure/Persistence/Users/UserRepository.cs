@@ -2,6 +2,7 @@ using System.Text;
 using Dapper;
 using Harmonie.Application.Interfaces.Users;
 using Harmonie.Domain.Entities.Users;
+using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.ValueObjects.Guilds;
 using Harmonie.Domain.ValueObjects.Uploads;
 using Harmonie.Domain.ValueObjects.Users;
@@ -384,8 +385,8 @@ public sealed class UserRepository : IUserRepository
             cancellationToken: ct);
 
         using var multi = await conn.QueryMultipleAsync(cmd);
-        var guildIds = (await multi.ReadAsync<Guid>()).ToArray();
-        var conversationIds = (await multi.ReadAsync<Guid>()).ToArray();
+        var guildIds = (await multi.ReadAsync<Guid>()).Select(GuildId.From).ToArray();
+        var conversationIds = (await multi.ReadAsync<Guid>()).Select(ConversationId.From).ToArray();
 
         return new UserNotificationContext(guildIds, conversationIds);
     }

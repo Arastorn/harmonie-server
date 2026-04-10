@@ -5,6 +5,8 @@ using Harmonie.Application.Features.Users.UpdateMyProfile;
 using Harmonie.Application.Interfaces.Uploads;
 using Harmonie.Application.Interfaces.Users;
 using Harmonie.Application.Tests.Common;
+using Harmonie.Domain.ValueObjects.Conversations;
+using Harmonie.Domain.ValueObjects.Guilds;
 using Harmonie.Domain.ValueObjects.Uploads;
 using Harmonie.Domain.Entities.Users;
 using Harmonie.Domain.ValueObjects.Users;
@@ -29,7 +31,7 @@ public sealed class UpdateMyProfileHandlerTests
 
         _userRepositoryMock
             .Setup(x => x.GetUserNotificationContextAsync(It.IsAny<UserId>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new UserNotificationContext(Array.Empty<Guid>(), Array.Empty<Guid>()));
+            .ReturnsAsync(new UserNotificationContext(Array.Empty<GuildId>(), Array.Empty<ConversationId>()));
 
         _handler = new UpdateMyProfileHandler(
             _userRepositoryMock.Object,

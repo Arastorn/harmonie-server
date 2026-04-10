@@ -1,4 +1,5 @@
 using Harmonie.Domain.Entities.Users;
+using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.ValueObjects.Guilds;
 using Harmonie.Domain.ValueObjects.Uploads;
 using Harmonie.Domain.ValueObjects.Users;
@@ -111,5 +112,5 @@ public interface IUserRepository
 }
 
 public sealed record UserNotificationContext(
-    IReadOnlyList<Guid> GuildIds,
-    IReadOnlyList<Guid> ConversationIds);
+    IReadOnlyList<GuildId> GuildIds,
+    IReadOnlyList<ConversationId> ConversationIds);

@@ -148,17 +148,14 @@ public sealed class UpdateMyProfileHandler
             var notificationContext = await _userRepository.GetUserNotificationContextAsync(
                 currentUserId, cancellationToken);
 
-            var guildIds = notificationContext.GuildIds.Select(id => GuildId.From(id)).ToArray();
-            var conversationIds = notificationContext.ConversationIds.Select(id => ConversationId.From(id)).ToArray();
-
             await BestEffortNotificationHelper.TryNotifyAsync(
                 ct => _userProfileNotifier.NotifyProfileUpdatedAsync(
                     new UserProfileUpdatedNotification(
                         UserId: user.Id,
                         DisplayName: user.DisplayName,
                         AvatarFileId: user.AvatarFileId,
-                        GuildIds: guildIds,
-                        ConversationIds: conversationIds),
+                        GuildIds: notificationContext.GuildIds,
+                        ConversationIds: notificationContext.ConversationIds),
                     ct),
                 TimeSpan.FromSeconds(5),
                 _logger,
