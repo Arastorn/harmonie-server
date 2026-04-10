@@ -19,6 +19,7 @@ public sealed class CreateGroupConversationHandlerTests
     private readonly Mock<IConversationRepository> _conversationRepositoryMock;
     private readonly Mock<IUserRepository> _userRepositoryMock;
     private readonly Mock<IRealtimeGroupManager> _realtimeGroupManagerMock;
+    private readonly Mock<IConversationNotifier> _conversationNotifierMock;
     private readonly CreateGroupConversationHandler _handler;
 
     public CreateGroupConversationHandlerTests()
@@ -26,15 +27,21 @@ public sealed class CreateGroupConversationHandlerTests
         _conversationRepositoryMock = new Mock<IConversationRepository>();
         _userRepositoryMock = new Mock<IUserRepository>();
         _realtimeGroupManagerMock = new Mock<IRealtimeGroupManager>();
+        _conversationNotifierMock = new Mock<IConversationNotifier>();
 
         _realtimeGroupManagerMock
             .Setup(x => x.AddUserToConversationGroupAsync(It.IsAny<UserId>(), It.IsAny<ConversationId>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        _conversationNotifierMock
+            .Setup(x => x.NotifyConversationCreatedAsync(It.IsAny<ConversationCreatedNotification>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         _handler = new CreateGroupConversationHandler(
             _conversationRepositoryMock.Object,
             _userRepositoryMock.Object,
             _realtimeGroupManagerMock.Object,
+            _conversationNotifierMock.Object,
             NullLogger<CreateGroupConversationHandler>.Instance);
     }
 
@@ -114,6 +121,15 @@ public sealed class CreateGroupConversationHandlerTests
         response.Data.Name.Should().Be("Team Chat");
         response.Data.ConversationId.Should().Be(conversation.Id.Value);
         response.Data.ParticipantIds.Should().HaveCount(2);
+
+        _conversationNotifierMock.Verify(
+            x => x.NotifyConversationCreatedAsync(
+                It.Is<ConversationCreatedNotification>(n =>
+                    n.ConversationId == conversation.Id
+                    && n.Name == "Team Chat"
+                    && n.ParticipantIds.Count == 2),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Fact]
