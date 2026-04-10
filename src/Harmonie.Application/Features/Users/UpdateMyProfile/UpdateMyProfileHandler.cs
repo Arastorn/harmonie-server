@@ -1,10 +1,10 @@
 using Harmonie.Application.Common;
 using Harmonie.Application.Common.Uploads;
 using Harmonie.Application.Features.Users;
-using Harmonie.Application.Interfaces.Conversations;
-using Harmonie.Application.Interfaces.Guilds;
 using Harmonie.Application.Interfaces.Users;
 using Harmonie.Domain.Common;
+using Harmonie.Domain.ValueObjects.Conversations;
+using Harmonie.Domain.ValueObjects.Guilds;
 using Harmonie.Domain.ValueObjects.Uploads;
 using Harmonie.Domain.ValueObjects.Users;
 using Microsoft.Extensions.Logging;
@@ -16,23 +16,17 @@ public sealed class UpdateMyProfileHandler
 {
     private readonly IUserRepository _userRepository;
     private readonly UploadedFileCleanupService _uploadedFileCleanupService;
-    private readonly IGuildMemberRepository _guildMemberRepository;
-    private readonly IConversationRepository _conversationRepository;
     private readonly IUserProfileNotifier _userProfileNotifier;
     private readonly ILogger<UpdateMyProfileHandler> _logger;
 
     public UpdateMyProfileHandler(
         IUserRepository userRepository,
         UploadedFileCleanupService uploadedFileCleanupService,
-        IGuildMemberRepository guildMemberRepository,
-        IConversationRepository conversationRepository,
         IUserProfileNotifier userProfileNotifier,
         ILogger<UpdateMyProfileHandler> logger)
     {
         _userRepository = userRepository;
         _uploadedFileCleanupService = uploadedFileCleanupService;
-        _guildMemberRepository = guildMemberRepository;
-        _conversationRepository = conversationRepository;
         _userProfileNotifier = userProfileNotifier;
         _logger = logger;
     }
@@ -151,10 +145,14 @@ public sealed class UpdateMyProfileHandler
 
         if (shouldNotifyProfile)
         {
-            var memberships = await _guildMemberRepository.GetUserGuildMembershipsAsync(
+            var notificationContexts = await _userRepository.GetUserNotificationContextAsync(
                 currentUserId, cancellationToken);
-            var conversations = await _conversationRepository.GetUserConversationsAsync(
-                currentUserId, cancellationToken);
+
+            var firstContext = notificationContexts.FirstOrDefault();
+            var guildIds = (firstContext?.GuildIds ?? Array.Empty<Guid>())
+                .Select(id => GuildId.From(id)).ToArray();
+            var conversationIds = (firstContext?.ConversationIds ?? Array.Empty<Guid>())
+                .Select(id => ConversationId.From(id)).ToArray();
 
             await BestEffortNotificationHelper.TryNotifyAsync(
                 ct => _userProfileNotifier.NotifyProfileUpdatedAsync(
@@ -162,8 +160,8 @@ public sealed class UpdateMyProfileHandler
                         UserId: user.Id,
                         DisplayName: user.DisplayName,
                         AvatarFileId: user.AvatarFileId,
-                        GuildIds: memberships.Select(m => m.Guild.Id).ToList(),
-                        ConversationIds: conversations.Select(c => c.ConversationId).ToList()),
+                        GuildIds: guildIds,
+                        ConversationIds: conversationIds),
                     ct),
                 TimeSpan.FromSeconds(5),
                 _logger,

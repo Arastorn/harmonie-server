@@ -362,6 +362,43 @@ public sealed class UserRepository : IUserRepository
         await conn.ExecuteAsync(cmd);
     }
 
+    public async Task<IReadOnlyList<UserNotificationContext>> GetUserNotificationContextAsync(
+        UserId userId,
+        CancellationToken ct = default)
+    {
+        const string sql = """
+            SELECT 
+                gm.user_id AS UserId,
+                gm.guild_id AS GuildId,
+                NULL AS ConversationId
+            FROM guild_members gm
+            WHERE gm.user_id = @UserId
+
+            UNION ALL
+
+            SELECT 
+                cp.user_id AS UserId,
+                NULL AS GuildId,
+                cp.conversation_id AS ConversationId
+            FROM conversation_participants cp
+            WHERE cp.user_id = @UserId
+            """;
+
+        var conn = await _dbSession.GetOpenConnectionAsync(ct);
+        var cmd = new CommandDefinition(
+            sql,
+            new { UserId = userId.Value },
+            transaction: _dbSession.Transaction,
+            cancellationToken: ct);
+
+        var rows = await conn.QueryAsync<UserNotificationContextRow>(cmd);
+
+        var guildIds = rows.Select(r => r.GuildId).Where(id => id is not null).Select(id => id!.Value).ToArray();
+        var conversationIds = rows.Select(r => r.ConversationId).Where(id => id is not null).Select(id => id!.Value).ToArray();
+
+        return new[] { new UserNotificationContext(guildIds, conversationIds) };
+    }
+
     private static User MapToUser(UserRow userRow)
     {
         var emailResult = Email.Create(userRow.Email);

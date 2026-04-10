@@ -101,4 +101,15 @@ public interface IUserRepository
     /// Delete a user (soft delete recommended)
     /// </summary>
     Task DeleteAsync(UserId userId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get the notification context for a user (guilds and conversations they belong to).
+    /// </summary>
+    Task<IReadOnlyList<UserNotificationContext>> GetUserNotificationContextAsync(
+        UserId userId,
+        CancellationToken cancellationToken = default);
 }
+
+public sealed record UserNotificationContext(
+    IReadOnlyList<Guid> GuildIds,
+    IReadOnlyList<Guid> ConversationIds);
