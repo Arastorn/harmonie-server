@@ -19,6 +19,7 @@ public sealed class HandleLiveKitWebhookHandlerTests
     private readonly Mock<ILiveKitWebhookReceiver> _webhookReceiverMock;
     private readonly Mock<IGuildChannelRepository> _guildChannelRepositoryMock;
     private readonly Mock<IVoicePresenceNotifier> _voicePresenceNotifierMock;
+    private readonly Mock<IVoiceParticipantCache> _voiceParticipantCacheMock;
     private readonly HandleLiveKitWebhookHandler _handler;
 
     public HandleLiveKitWebhookHandlerTests()
@@ -26,11 +27,13 @@ public sealed class HandleLiveKitWebhookHandlerTests
         _webhookReceiverMock = new Mock<ILiveKitWebhookReceiver>();
         _guildChannelRepositoryMock = new Mock<IGuildChannelRepository>();
         _voicePresenceNotifierMock = new Mock<IVoicePresenceNotifier>();
+        _voiceParticipantCacheMock = new Mock<IVoiceParticipantCache>();
 
         _handler = new HandleLiveKitWebhookHandler(
             _webhookReceiverMock.Object,
             _guildChannelRepositoryMock.Object,
-            _voicePresenceNotifierMock.Object);
+            _voicePresenceNotifierMock.Object,
+            _voiceParticipantCacheMock.Object);
     }
 
     [Fact]
@@ -231,6 +234,80 @@ public sealed class HandleLiveKitWebhookHandlerTests
                     && notification.Username == null
                     && notification.LeftAtUtc == occurredAtUtc),
                 It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenParticipantJoined_ShouldAddToCache()
+    {
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Voice);
+        var participantUserId = UserId.New();
+        var avatarFileId = UploadedFileId.New();
+        var profile = new ChannelParticipantProfile(
+            Username.Create("alice").Value!,
+            DisplayName: "Alice",
+            AvatarFileId: avatarFileId,
+            AvatarColor: "#ff0000",
+            AvatarIcon: "star",
+            AvatarBg: "#000000");
+        var request = new HandleLiveKitWebhookRequest("{}", "Bearer token");
+
+        _webhookReceiverMock
+            .Setup(x => x.Receive(request.RawBody, request.AuthorizationHeader!))
+            .Returns(LiveKitWebhookReceiveResult.Ok(
+                new LiveKitWebhookEvent(
+                    "participant_joined",
+                    $"channel:{channel.Id}",
+                    participantUserId.ToString(),
+                    "alice",
+                    DateTime.UtcNow)));
+
+        _guildChannelRepositoryMock
+            .Setup(x => x.GetWithParticipantAsync(channel.Id, participantUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ChannelWithParticipant(channel, profile));
+
+        await _handler.HandleAsync(request);
+
+        _voiceParticipantCacheMock.Verify(
+            x => x.AddOrUpdateAsync(
+                channel.Id,
+                It.Is<CachedVoiceParticipant>(p =>
+                    p.UserId == participantUserId
+                    && p.Username == profile.Username.Value
+                    && p.DisplayName == profile.DisplayName
+                    && p.AvatarFileId == profile.AvatarFileId
+                    && p.AvatarColor == profile.AvatarColor
+                    && p.AvatarIcon == profile.AvatarIcon
+                    && p.AvatarBg == profile.AvatarBg),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenParticipantLeft_ShouldRemoveFromCache()
+    {
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Voice);
+        var participantUserId = UserId.New();
+        var request = new HandleLiveKitWebhookRequest("{}", "Bearer token");
+
+        _webhookReceiverMock
+            .Setup(x => x.Receive(request.RawBody, request.AuthorizationHeader!))
+            .Returns(LiveKitWebhookReceiveResult.Ok(
+                new LiveKitWebhookEvent(
+                    "participant_left",
+                    $"channel:{channel.Id}",
+                    participantUserId.ToString(),
+                    "alice",
+                    DateTime.UtcNow)));
+
+        _guildChannelRepositoryMock
+            .Setup(x => x.GetWithParticipantAsync(channel.Id, participantUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ChannelWithParticipant(channel, null));
+
+        await _handler.HandleAsync(request);
+
+        _voiceParticipantCacheMock.Verify(
+            x => x.RemoveAsync(channel.Id, participantUserId, It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
