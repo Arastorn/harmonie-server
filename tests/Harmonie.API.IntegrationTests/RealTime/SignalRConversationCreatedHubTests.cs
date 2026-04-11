@@ -49,8 +49,8 @@ public sealed class SignalRConversationCreatedHubTests : IClassFixture<HarmonieW
         var eventPayload = await eventReceived.Task;
         eventPayload.ConversationId.Should().Be(group.ConversationId.ToString());
         eventPayload.Name.Should().Be("Integration Test Group");
-        eventPayload.ParticipantIds.Should().Contain(creator.UserId.ToString());
-        eventPayload.ParticipantIds.Should().Contain(participant.UserId.ToString());
+        eventPayload.Participants.Should().Contain(p => p.UserId == creator.UserId);
+        eventPayload.Participants.Should().Contain(p => p.UserId == participant.UserId);
     }
 
     private HubConnection CreateHubConnection(string accessToken)
@@ -71,5 +71,7 @@ public sealed class SignalRConversationCreatedHubTests : IClassFixture<HarmonieW
     private sealed record SignalRConversationCreatedEvent(
         string ConversationId,
         string? Name,
-        IReadOnlyList<string> ParticipantIds);
+        IReadOnlyList<SignalRConversationParticipantDto> Participants);
+
+    private sealed record SignalRConversationParticipantDto(Guid UserId, string Username);
 }
