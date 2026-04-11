@@ -4,7 +4,14 @@ using Harmonie.Domain.ValueObjects.Users;
 
 namespace Harmonie.Application.Interfaces.Conversations;
 
-public sealed record ConversationParticipantSummary(UserId UserId, Username Username);
+public sealed record ConversationParticipantSummary(
+    UserId UserId,
+    Username Username,
+    string? DisplayName,
+    Guid? AvatarFileId,
+    string? AvatarColor,
+    string? AvatarIcon,
+    string? AvatarBg);
 
 public sealed record ConversationGetOrCreateResult(Conversation Conversation, bool WasCreated);
 

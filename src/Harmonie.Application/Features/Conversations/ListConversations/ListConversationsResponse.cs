@@ -1,3 +1,5 @@
+using Harmonie.Application.Features.Users;
+
 namespace Harmonie.Application.Features.Conversations.ListConversations;
 
 public sealed record ListConversationsResponse(
@@ -10,4 +12,9 @@ public sealed record ListConversationsItemResponse(
     IReadOnlyList<ListConversationsParticipantDto> Participants,
     DateTime CreatedAtUtc);
 
-public sealed record ListConversationsParticipantDto(Guid UserId, string Username);
+public sealed record ListConversationsParticipantDto(
+    Guid UserId,
+    string Username,
+    string? DisplayName,
+    Guid? AvatarFileId,
+    AvatarAppearanceDto? Avatar);

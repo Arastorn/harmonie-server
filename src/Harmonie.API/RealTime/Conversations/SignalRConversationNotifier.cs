@@ -1,4 +1,6 @@
 using Harmonie.API.RealTime.Common;
+using Harmonie.Application.Features.Conversations;
+using Harmonie.Application.Features.Users;
 using Harmonie.Application.Interfaces.Conversations;
 using Microsoft.AspNetCore.SignalR;
 
@@ -22,7 +24,16 @@ public sealed class SignalRConversationNotifier : IConversationNotifier
         var payload = new ConversationCreatedEvent(
             ConversationId: notification.ConversationId.Value,
             Name: notification.Name,
-            ParticipantIds: notification.ParticipantIds.Select(id => id.Value).ToArray());
+            Participants: notification.Participants
+                .Select(p => new ConversationParticipantEventDto(
+                    UserId: p.UserId,
+                    Username: p.Username,
+                    DisplayName: p.DisplayName,
+                    AvatarFileId: p.AvatarFileId,
+                    Avatar: p.Avatar is not null
+                        ? new AvatarAppearanceDto(p.Avatar.Color, p.Avatar.Icon, p.Avatar.Bg)
+                        : null))
+                .ToArray());
 
         await _hubContext.Clients
             .Group(RealtimeHub.GetConversationGroupName(notification.ConversationId))
@@ -48,7 +59,14 @@ public sealed class SignalRConversationNotifier : IConversationNotifier
 public sealed record ConversationCreatedEvent(
     Guid ConversationId,
     string? Name,
-    IReadOnlyList<Guid> ParticipantIds);
+    IReadOnlyList<ConversationParticipantEventDto> Participants);
+
+public sealed record ConversationParticipantEventDto(
+    Guid UserId,
+    string Username,
+    string? DisplayName,
+    Guid? AvatarFileId,
+    AvatarAppearanceDto? Avatar);
 
 public sealed record ConversationParticipantLeftEvent(
     Guid ConversationId,

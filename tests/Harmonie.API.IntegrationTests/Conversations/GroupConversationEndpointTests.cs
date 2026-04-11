@@ -42,10 +42,10 @@ public sealed class GroupConversationEndpointTests : IClassFixture<HarmonieWebAp
         payload!.Type.Should().Be("group");
         payload.Name.Should().Be("Dev Team");
         payload.ConversationId.Should().NotBeEmpty();
-        payload.ParticipantIds.Should().HaveCount(3)
-            .And.Contain(caller.UserId)
-            .And.Contain(memberB.UserId)
-            .And.Contain(memberC.UserId);
+        payload.Participants.Should().HaveCount(3);
+        payload.Participants.Should().Contain(p => p.UserId == caller.UserId);
+        payload.Participants.Should().Contain(p => p.UserId == memberB.UserId);
+        payload.Participants.Should().Contain(p => p.UserId == memberC.UserId);
     }
 
     [Fact]

@@ -51,10 +51,13 @@ public sealed class OpenConversationHandlerTests
     {
         var callerUserId = UserId.New();
         var targetUserId = UserId.New();
+        var callerUser = CreateUser(callerUserId, "caller");
 
         _userRepositoryMock
-            .Setup(x => x.GetByIdAsync(targetUserId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((User?)null);
+            .Setup(x => x.GetManyByIdsAsync(
+                It.Is<IReadOnlyList<UserId>>(ids => ids.Contains(callerUserId) && ids.Contains(targetUserId)),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync([callerUser]);
 
         var response = await _handler.HandleAsync(
             new OpenConversationRequest(targetUserId),
@@ -70,12 +73,15 @@ public sealed class OpenConversationHandlerTests
     {
         var callerUserId = UserId.New();
         var targetUserId = UserId.New();
+        var callerUser = CreateUser(callerUserId, "caller");
         var targetUser = CreateUser(targetUserId, "target");
         var conversation = ApplicationTestBuilders.CreateConversation(callerUserId, targetUserId);
 
         _userRepositoryMock
-            .Setup(x => x.GetByIdAsync(targetUserId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(targetUser);
+            .Setup(x => x.GetManyByIdsAsync(
+                It.Is<IReadOnlyList<UserId>>(ids => ids.Contains(callerUserId) && ids.Contains(targetUserId)),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync([callerUser, targetUser]);
 
         _conversationRepositoryMock
             .Setup(x => x.GetOrCreateDirectAsync(callerUserId, targetUserId, It.IsAny<CancellationToken>()))
@@ -90,7 +96,7 @@ public sealed class OpenConversationHandlerTests
         response.Data!.ConversationId.Should().Be(conversation.Id.Value);
         response.Data.Created.Should().BeTrue();
         response.Data.Type.Should().Be("direct");
-        response.Data.ParticipantIds.Should().HaveCount(2);
+        response.Data.Participants.Should().HaveCount(2);
     }
 
     [Fact]
@@ -98,12 +104,15 @@ public sealed class OpenConversationHandlerTests
     {
         var callerUserId = UserId.New();
         var targetUserId = UserId.New();
+        var callerUser = CreateUser(callerUserId, "caller");
         var targetUser = CreateUser(targetUserId, "target");
         var conversation = ApplicationTestBuilders.CreateConversation(callerUserId, targetUserId);
 
         _userRepositoryMock
-            .Setup(x => x.GetByIdAsync(targetUserId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(targetUser);
+            .Setup(x => x.GetManyByIdsAsync(
+                It.Is<IReadOnlyList<UserId>>(ids => ids.Contains(callerUserId) && ids.Contains(targetUserId)),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync([callerUser, targetUser]);
 
         _conversationRepositoryMock
             .Setup(x => x.GetOrCreateDirectAsync(callerUserId, targetUserId, It.IsAny<CancellationToken>()))

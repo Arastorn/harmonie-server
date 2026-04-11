@@ -15,7 +15,7 @@ namespace Harmonie.Application.Tests.Common;
 
 internal static class ApplicationTestBuilders
 {
-    public static User CreateUser()
+    public static User CreateUser(UserId? userId = null)
     {
         var emailResult = Email.Create($"test-{Guid.NewGuid():N}@harmonie.chat");
         if (emailResult.IsFailure || emailResult.Value is null)
@@ -25,11 +25,34 @@ internal static class ApplicationTestBuilders
         if (usernameResult.IsFailure || usernameResult.Value is null)
             throw new InvalidOperationException("Failed to create username for tests.");
 
-        var userResult = User.Create(emailResult.Value, usernameResult.Value, "hashed_password");
-        if (userResult.IsFailure || userResult.Value is null)
-            throw new InvalidOperationException("Failed to create user for tests.");
+        if (userId is null)
+        {
+            var userResult = User.Create(emailResult.Value, usernameResult.Value, "hashed_password");
+            if (userResult.IsFailure || userResult.Value is null)
+                throw new InvalidOperationException("Failed to create user for tests.");
+            return userResult.Value;
+        }
 
-        return userResult.Value;
+        return User.Rehydrate(
+            userId,
+            emailResult.Value,
+            usernameResult.Value,
+            passwordHash: "hashed_password",
+            avatarFileId: null,
+            isEmailVerified: true,
+            isActive: true,
+            lastLoginAtUtc: null,
+            displayName: null,
+            bio: null,
+            avatarColor: null,
+            avatarIcon: null,
+            avatarBg: null,
+            theme: "default",
+            language: null,
+            status: "online",
+            statusUpdatedAtUtc: null,
+            createdAtUtc: DateTime.UtcNow,
+            updatedAtUtc: DateTime.UtcNow);
     }
 
     public static Guild CreateGuild(UserId? ownerId = null, GuildId? guildId = null, UploadedFileId? iconFileId = null)

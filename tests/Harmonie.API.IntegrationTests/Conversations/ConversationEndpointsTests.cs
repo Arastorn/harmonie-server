@@ -37,7 +37,9 @@ public sealed class ConversationEndpointsTests : IClassFixture<HarmonieWebApplic
         payload!.Created.Should().BeTrue();
         payload.ConversationId.Should().NotBeEmpty();
         payload.Type.Should().Be("direct");
-        payload.ParticipantIds.Should().HaveCount(2).And.Contain(caller.UserId).And.Contain(target.UserId);
+        payload.Participants.Should().HaveCount(2);
+        payload.Participants.Should().Contain(p => p.UserId == caller.UserId);
+        payload.Participants.Should().Contain(p => p.UserId == target.UserId);
     }
 
     [Fact]

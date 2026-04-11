@@ -4,5 +4,5 @@ public sealed record CreateGroupConversationResponse(
     Guid ConversationId,
     string Type,
     string? Name,
-    IReadOnlyList<Guid> ParticipantIds,
+    IReadOnlyList<ConversationParticipantDto> Participants,
     DateTime CreatedAtUtc);

@@ -68,14 +68,11 @@ public sealed class CreateGroupConversationHandlerTests
     {
         var caller = UserId.New();
         var participantB = UserId.New();
+        var callerUser = ApplicationTestBuilders.CreateUser(caller);
 
         _userRepositoryMock
-            .Setup(x => x.GetByIdAsync(caller, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(ApplicationTestBuilders.CreateUser());
-
-        _userRepositoryMock
-            .Setup(x => x.GetByIdAsync(participantB, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Domain.Entities.Users.User?)null);
+            .Setup(x => x.GetManyByIdsAsync(It.IsAny<IReadOnlyList<UserId>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([callerUser]); // participantB is missing
 
         var response = await _handler.HandleAsync(
             new CreateGroupConversationRequest("Team Chat", [caller.Value, participantB.Value]),
@@ -96,12 +93,8 @@ public sealed class CreateGroupConversationHandlerTests
         var conversation = Conversation.Rehydrate(ConversationId.New(), ConversationType.Group, "Team Chat", DateTime.UtcNow);
 
         _userRepositoryMock
-            .Setup(x => x.GetByIdAsync(caller, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(ApplicationTestBuilders.CreateUser());
-
-        _userRepositoryMock
-            .Setup(x => x.GetByIdAsync(participantB, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(ApplicationTestBuilders.CreateUser());
+            .Setup(x => x.GetManyByIdsAsync(It.IsAny<IReadOnlyList<UserId>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([ApplicationTestBuilders.CreateUser(caller), ApplicationTestBuilders.CreateUser(participantB)]);
 
         _conversationRepositoryMock
             .Setup(x => x.CreateGroupAsync(
@@ -120,14 +113,14 @@ public sealed class CreateGroupConversationHandlerTests
         response.Data!.Type.Should().Be("group");
         response.Data.Name.Should().Be("Team Chat");
         response.Data.ConversationId.Should().Be(conversation.Id.Value);
-        response.Data.ParticipantIds.Should().HaveCount(2);
+        response.Data.Participants.Should().HaveCount(2);
 
         _conversationNotifierMock.Verify(
             x => x.NotifyConversationCreatedAsync(
                 It.Is<ConversationCreatedNotification>(n =>
                     n.ConversationId == conversation.Id
                     && n.Name == "Team Chat"
-                    && n.ParticipantIds.Count == 2),
+                    && n.Participants.Count == 2),
                 It.IsAny<CancellationToken>()),
             Times.Once);
     }
@@ -140,12 +133,8 @@ public sealed class CreateGroupConversationHandlerTests
         var conversation = Conversation.Rehydrate(ConversationId.New(), ConversationType.Group, null, DateTime.UtcNow);
 
         _userRepositoryMock
-            .Setup(x => x.GetByIdAsync(caller, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(ApplicationTestBuilders.CreateUser());
-
-        _userRepositoryMock
-            .Setup(x => x.GetByIdAsync(participantB, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(ApplicationTestBuilders.CreateUser());
+            .Setup(x => x.GetManyByIdsAsync(It.IsAny<IReadOnlyList<UserId>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([ApplicationTestBuilders.CreateUser(caller), ApplicationTestBuilders.CreateUser(participantB)]);
 
         _conversationRepositoryMock
             .Setup(x => x.CreateGroupAsync(
