@@ -9,6 +9,10 @@ public interface ILiveKitRoomService
     Task<IReadOnlyList<GuildVoiceChannelParticipants>> GetGuildVoiceParticipantsAsync(
         GuildId guildId,
         CancellationToken ct);
+
+    Task<IReadOnlyList<VoiceChannelParticipant>> ListChannelParticipantsAsync(
+        GuildChannelId channelId,
+        CancellationToken ct);
 }
 
 public sealed record GuildVoiceChannelParticipants(
