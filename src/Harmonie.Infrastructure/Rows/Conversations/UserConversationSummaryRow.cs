@@ -13,4 +13,14 @@ public sealed class UserConversationSummaryRow
     public Guid ParticipantUserId { get; init; }
 
     public string ParticipantUsername { get; init; } = string.Empty;
+
+    public string? ParticipantDisplayName { get; init; }
+
+    public Guid? ParticipantAvatarFileId { get; init; }
+
+    public string? ParticipantAvatarColor { get; init; }
+
+    public string? ParticipantAvatarIcon { get; init; }
+
+    public string? ParticipantAvatarBg { get; init; }
 }

@@ -164,12 +164,17 @@ public sealed class ConversationRepository : IConversationRepository
         CancellationToken cancellationToken = default)
     {
         const string sql = """
-                           SELECT c.id             AS "ConversationId",
-                                  c.type           AS "Type",
-                                  c.name           AS "Name",
-                                  c.created_at_utc AS "CreatedAtUtc",
-                                  cp2.user_id      AS "ParticipantUserId",
-                                  u.username       AS "ParticipantUsername"
+                           SELECT c.id              AS "ConversationId",
+                                  c.type            AS "Type",
+                                  c.name            AS "Name",
+                                  c.created_at_utc  AS "CreatedAtUtc",
+                                  cp2.user_id       AS "ParticipantUserId",
+                                  u.username        AS "ParticipantUsername",
+                                  u.display_name    AS "ParticipantDisplayName",
+                                  u.avatar_file_id  AS "ParticipantAvatarFileId",
+                                  u.avatar_color    AS "ParticipantAvatarColor",
+                                  u.avatar_icon     AS "ParticipantAvatarIcon",
+                                  u.avatar_bg       AS "ParticipantAvatarBg"
                            FROM conversation_participants cp1
                            INNER JOIN conversations c ON c.id = cp1.conversation_id
                            INNER JOIN conversation_participants cp2 ON cp2.conversation_id = c.id
@@ -199,7 +204,14 @@ public sealed class ConversationRepository : IConversationRepository
                     var usernameResult = Username.Create(r.ParticipantUsername);
                     if (usernameResult.IsFailure || usernameResult.Value is null)
                         throw new InvalidOperationException("Stored conversation participant username is invalid.");
-                    return new ConversationParticipantSummary(UserId.From(r.ParticipantUserId), usernameResult.Value);
+                    return new ConversationParticipantSummary(
+                        UserId.From(r.ParticipantUserId),
+                        usernameResult.Value,
+                        r.ParticipantDisplayName,
+                        r.ParticipantAvatarFileId,
+                        r.ParticipantAvatarColor,
+                        r.ParticipantAvatarIcon,
+                        r.ParticipantAvatarBg);
                 }).ToArray();
 
                 return new UserConversationSummary(

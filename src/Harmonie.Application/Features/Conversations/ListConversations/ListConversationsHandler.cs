@@ -1,4 +1,5 @@
 using Harmonie.Application.Common;
+using Harmonie.Application.Features.Users;
 using Harmonie.Application.Interfaces.Conversations;
 using Harmonie.Domain.ValueObjects.Users;
 
@@ -29,7 +30,19 @@ public sealed class ListConversationsHandler : IAuthenticatedHandler<Unit, ListC
                     Type: conversation.Type.ToString().ToLowerInvariant(),
                     Name: conversation.Name,
                     Participants: conversation.Participants
-                        .Select(p => new ListConversationsParticipantDto(p.UserId.Value, p.Username.Value))
+                        .Select(p =>
+                        {
+                            var avatar = p.AvatarColor is not null || p.AvatarIcon is not null || p.AvatarBg is not null
+                                ? new AvatarAppearanceDto(p.AvatarColor, p.AvatarIcon, p.AvatarBg)
+                                : null;
+
+                            return new ListConversationsParticipantDto(
+                                UserId: p.UserId.Value,
+                                Username: p.Username.Value,
+                                DisplayName: p.DisplayName,
+                                AvatarFileId: p.AvatarFileId,
+                                Avatar: avatar);
+                        })
                         .ToArray(),
                     CreatedAtUtc: conversation.CreatedAtUtc))
                 .ToArray());

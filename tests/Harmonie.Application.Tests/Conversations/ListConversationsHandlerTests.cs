@@ -62,13 +62,13 @@ public sealed class ListConversationsHandlerTests
                     ConversationId.New(),
                     ConversationType.Direct,
                     null,
-                    [new ConversationParticipantSummary(bobId, usernameBob.Value!)],
+                    [new ConversationParticipantSummary(bobId, usernameBob.Value!, null, null, null, null, null)],
                     secondCreatedAt),
                 new UserConversationSummary(
                     ConversationId.New(),
                     ConversationType.Direct,
                     null,
-                    [new ConversationParticipantSummary(aliceId, usernameAlice.Value!)],
+                    [new ConversationParticipantSummary(aliceId, usernameAlice.Value!, null, null, null, null, null)],
                     firstCreatedAt)
             ]);
 

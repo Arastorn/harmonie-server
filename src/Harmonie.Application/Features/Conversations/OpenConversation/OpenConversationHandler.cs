@@ -1,7 +1,9 @@
 using Harmonie.Application.Common;
+using Harmonie.Application.Features.Users;
 using Harmonie.Application.Interfaces.Common;
 using Harmonie.Application.Interfaces.Conversations;
 using Harmonie.Application.Interfaces.Users;
+using Harmonie.Domain.Entities.Users;
 using Harmonie.Domain.ValueObjects.Users;
 using Microsoft.Extensions.Logging;
 
@@ -40,12 +42,24 @@ public sealed class OpenConversationHandler : IAuthenticatedHandler<OpenConversa
                 "You cannot open a conversation with yourself");
         }
 
-        var targetUser = await _userRepository.GetByIdAsync(targetUserId, cancellationToken);
+        var targetUserTask = _userRepository.GetByIdAsync(targetUserId, cancellationToken);
+        var currentUserTask = _userRepository.GetByIdAsync(currentUserId, cancellationToken);
+        await Task.WhenAll(targetUserTask, currentUserTask);
+        var targetUser = await targetUserTask;
+        var currentUser = await currentUserTask;
+
         if (targetUser is null)
         {
             return ApplicationResponse<OpenConversationResponse>.Fail(
                 ApplicationErrorCodes.User.NotFound,
                 "Target user was not found");
+        }
+
+        if (currentUser is null)
+        {
+            return ApplicationResponse<OpenConversationResponse>.Fail(
+                ApplicationErrorCodes.User.NotFound,
+                "Current user was not found");
         }
 
         var result = await _conversationRepository.GetOrCreateDirectAsync(
@@ -72,10 +86,24 @@ public sealed class OpenConversationHandler : IAuthenticatedHandler<OpenConversa
         var payload = new OpenConversationResponse(
             ConversationId: result.Conversation.Id.Value,
             Type: "direct",
-            ParticipantIds: [currentUserId.Value, targetUserId.Value],
+            Participants: [ToParticipantDto(currentUser), ToParticipantDto(targetUser)],
             CreatedAtUtc: result.Conversation.CreatedAtUtc,
             Created: result.WasCreated);
 
         return ApplicationResponse<OpenConversationResponse>.Ok(payload);
+    }
+
+    private static ConversationParticipantDto ToParticipantDto(User user)
+    {
+        var avatar = user.AvatarColor is not null || user.AvatarIcon is not null || user.AvatarBg is not null
+            ? new AvatarAppearanceDto(user.AvatarColor, user.AvatarIcon, user.AvatarBg)
+            : null;
+
+        return new ConversationParticipantDto(
+            UserId: user.Id.Value,
+            Username: user.Username.Value,
+            DisplayName: user.DisplayName,
+            AvatarFileId: user.AvatarFileId?.Value,
+            Avatar: avatar);
     }
 }

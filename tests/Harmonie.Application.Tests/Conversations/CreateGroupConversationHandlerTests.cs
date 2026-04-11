@@ -120,14 +120,14 @@ public sealed class CreateGroupConversationHandlerTests
         response.Data!.Type.Should().Be("group");
         response.Data.Name.Should().Be("Team Chat");
         response.Data.ConversationId.Should().Be(conversation.Id.Value);
-        response.Data.ParticipantIds.Should().HaveCount(2);
+        response.Data.Participants.Should().HaveCount(2);
 
         _conversationNotifierMock.Verify(
             x => x.NotifyConversationCreatedAsync(
                 It.Is<ConversationCreatedNotification>(n =>
                     n.ConversationId == conversation.Id
                     && n.Name == "Team Chat"
-                    && n.ParticipantIds.Count == 2),
+                    && n.Participants.Count == 2),
                 It.IsAny<CancellationToken>()),
             Times.Once);
     }

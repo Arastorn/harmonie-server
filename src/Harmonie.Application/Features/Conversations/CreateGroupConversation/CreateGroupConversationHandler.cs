@@ -1,7 +1,9 @@
 using Harmonie.Application.Common;
+using Harmonie.Application.Features.Users;
 using Harmonie.Application.Interfaces.Common;
 using Harmonie.Application.Interfaces.Conversations;
 using Harmonie.Application.Interfaces.Users;
+using Harmonie.Domain.Entities.Users;
 using Harmonie.Domain.ValueObjects.Users;
 using Microsoft.Extensions.Logging;
 
@@ -43,6 +45,7 @@ public sealed class CreateGroupConversationHandler : IAuthenticatedHandler<Creat
                 "You must be included in the participant list");
         }
 
+        var participantUsers = new List<User>(participantUserIds.Length);
         foreach (var participantId in participantUserIds)
         {
             var user = await _userRepository.GetByIdAsync(participantId, cancellationToken);
@@ -52,12 +55,15 @@ public sealed class CreateGroupConversationHandler : IAuthenticatedHandler<Creat
                     ApplicationErrorCodes.User.NotFound,
                     $"User {participantId} was not found");
             }
+            participantUsers.Add(user);
         }
 
         var conversation = await _conversationRepository.CreateGroupAsync(
             request.Name,
             participantUserIds,
             cancellationToken);
+
+        var participantDtos = participantUsers.Select(ToParticipantDto).ToArray();
 
         await BestEffortNotificationHelper.TryNotifyAsync(
             async ct =>
@@ -70,7 +76,7 @@ public sealed class CreateGroupConversationHandler : IAuthenticatedHandler<Creat
                     new ConversationCreatedNotification(
                         ConversationId: conversation.Id,
                         Name: conversation.Name,
-                        ParticipantIds: participantUserIds),
+                        Participants: participantDtos),
                     ct);
             },
             TimeSpan.FromSeconds(5),
@@ -82,9 +88,23 @@ public sealed class CreateGroupConversationHandler : IAuthenticatedHandler<Creat
             ConversationId: conversation.Id.Value,
             Type: "group",
             Name: conversation.Name,
-            ParticipantIds: participantUserIds.Select(id => id.Value).ToArray(),
+            Participants: participantDtos,
             CreatedAtUtc: conversation.CreatedAtUtc);
 
         return ApplicationResponse<CreateGroupConversationResponse>.Ok(payload);
+    }
+
+    private static ConversationParticipantDto ToParticipantDto(User user)
+    {
+        var avatar = user.AvatarColor is not null || user.AvatarIcon is not null || user.AvatarBg is not null
+            ? new AvatarAppearanceDto(user.AvatarColor, user.AvatarIcon, user.AvatarBg)
+            : null;
+
+        return new ConversationParticipantDto(
+            UserId: user.Id.Value,
+            Username: user.Username.Value,
+            DisplayName: user.DisplayName,
+            AvatarFileId: user.AvatarFileId?.Value,
+            Avatar: avatar);
     }
 }

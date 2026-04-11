@@ -1,3 +1,4 @@
+using Harmonie.Application.Features.Conversations;
 using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.ValueObjects.Users;
 
@@ -17,7 +18,7 @@ public interface IConversationNotifier
 public sealed record ConversationCreatedNotification(
     ConversationId ConversationId,
     string? Name,
-    IReadOnlyList<UserId> ParticipantIds);
+    IReadOnlyList<ConversationParticipantDto> Participants);
 
 public sealed record ConversationParticipantLeftNotification(
     ConversationId ConversationId,
