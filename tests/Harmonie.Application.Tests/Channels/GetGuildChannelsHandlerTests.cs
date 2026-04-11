@@ -3,12 +3,14 @@ using Harmonie.Application.Common;
 using Harmonie.Application.Features.Guilds.GetGuildChannels;
 using Harmonie.Application.Interfaces.Channels;
 using Harmonie.Application.Interfaces.Guilds;
+using Harmonie.Application.Interfaces.Voice;
 using Harmonie.Application.Tests.Common;
 using Harmonie.Domain.Entities.Guilds;
 using Harmonie.Domain.Enums;
+using Harmonie.Domain.ValueObjects.Channels;
 using Harmonie.Domain.ValueObjects.Guilds;
+using Harmonie.Domain.ValueObjects.Uploads;
 using Harmonie.Domain.ValueObjects.Users;
-using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
@@ -18,16 +20,23 @@ public sealed class GetGuildChannelsHandlerTests
 {
     private readonly Mock<IGuildRepository> _guildRepositoryMock;
     private readonly Mock<IGuildChannelRepository> _guildChannelRepositoryMock;
+    private readonly Mock<IVoiceParticipantCache> _voiceParticipantCacheMock;
     private readonly GetGuildChannelsHandler _handler;
 
     public GetGuildChannelsHandlerTests()
     {
         _guildRepositoryMock = new Mock<IGuildRepository>();
         _guildChannelRepositoryMock = new Mock<IGuildChannelRepository>();
+        _voiceParticipantCacheMock = new Mock<IVoiceParticipantCache>();
+
+        _voiceParticipantCacheMock
+            .Setup(x => x.GetAsync(It.IsAny<GuildChannelId>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<CachedVoiceParticipant>());
 
         _handler = new GetGuildChannelsHandler(
             _guildRepositoryMock.Object,
-            _guildChannelRepositoryMock.Object);
+            _guildChannelRepositoryMock.Object,
+            _voiceParticipantCacheMock.Object);
     }
 
     [Fact]
@@ -88,7 +97,58 @@ public sealed class GetGuildChannelsHandlerTests
         response.Data!.GuildId.Should().Be(guild.Id.Value);
         response.Data.Channels.Should().HaveCount(2);
         response.Data.Channels[0].Type.Should().Be("Text");
+        response.Data.Channels[0].CurrentParticipants.Should().BeNull();
         response.Data.Channels[1].Type.Should().Be("Voice");
+        response.Data.Channels[1].CurrentParticipants.Should().NotBeNull().And.BeEmpty();
+    }
+
+    [Fact]
+    public async Task HandleAsync_WithVoiceChannelParticipants_ShouldIncludeParticipantsInResponse()
+    {
+        var guild = ApplicationTestBuilders.CreateGuild();
+        var userId = UserId.New();
+        var voiceChannel = CreateChannel(guild.Id, "General Voice", GuildChannelType.Voice, true, 0);
+        var participantUserId = UserId.New();
+        var avatarFileId = UploadedFileId.New();
+        var participant = new CachedVoiceParticipant(
+            UserId: participantUserId,
+            Username: "alice",
+            DisplayName: "Alice",
+            AvatarFileId: avatarFileId,
+            AvatarColor: "#ff0000",
+            AvatarIcon: "star",
+            AvatarBg: "#000000");
+
+        _guildRepositoryMock
+            .Setup(x => x.GetWithCallerRoleAsync(guild.Id, userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GuildAccessContext(guild, GuildRole.Member));
+
+        _guildChannelRepositoryMock
+            .Setup(x => x.GetByGuildIdAsync(guild.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([voiceChannel]);
+
+        _voiceParticipantCacheMock
+            .Setup(x => x.GetAsync(voiceChannel.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([participant]);
+
+        var response = await _handler.HandleAsync(guild.Id, userId);
+
+        response.Success.Should().BeTrue();
+        response.Data.Should().NotBeNull();
+        response.Data!.Channels.Should().HaveCount(1);
+
+        var channelResponse = response.Data.Channels[0];
+        channelResponse.Type.Should().Be("Voice");
+        channelResponse.CurrentParticipants.Should().HaveCount(1);
+
+        var p = channelResponse.CurrentParticipants![0];
+        p.UserId.Should().Be(participantUserId.Value);
+        p.Username.Should().Be("alice");
+        p.DisplayName.Should().Be("Alice");
+        p.AvatarFileId.Should().Be(avatarFileId.Value);
+        p.AvatarColor.Should().Be("#ff0000");
+        p.AvatarIcon.Should().Be("star");
+        p.AvatarBg.Should().Be("#000000");
     }
 
     private static GuildChannel CreateChannel(

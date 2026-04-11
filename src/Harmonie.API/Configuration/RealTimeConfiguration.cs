@@ -45,6 +45,7 @@ public static class RealTimeConfiguration
         services.AddScoped<ITextChannelNotifier, SignalRTextChannelNotifier>();
         services.AddScoped<IGuildNotifier, SignalRGuildNotifier>();
         services.AddScoped<IVoicePresenceNotifier, SignalRVoicePresenceNotifier>();
+        services.AddSingleton<IVoiceParticipantCache, InMemoryVoiceParticipantCache>();
         services.AddScoped<IConversationMessageNotifier, SignalRConversationMessageNotifier>();
         services.AddScoped<IConversationNotifier, SignalRConversationNotifier>();
         services.AddScoped<IUserPresenceNotifier, SignalRUserPresenceNotifier>();

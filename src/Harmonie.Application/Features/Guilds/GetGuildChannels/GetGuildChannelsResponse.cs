@@ -9,4 +9,14 @@ public sealed record GetGuildChannelsItemResponse(
     string Name,
     string Type,
     bool IsDefault,
-    int Position);
+    int Position,
+    IReadOnlyList<GetGuildChannelsVoiceParticipantResponse>? CurrentParticipants);
+
+public sealed record GetGuildChannelsVoiceParticipantResponse(
+    Guid UserId,
+    string? Username,
+    string? DisplayName,
+    Guid? AvatarFileId,
+    string? AvatarColor,
+    string? AvatarIcon,
+    string? AvatarBg);

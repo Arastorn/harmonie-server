@@ -16,15 +16,18 @@ public sealed class HandleLiveKitWebhookHandler : IHandler<HandleLiveKitWebhookR
     private readonly ILiveKitWebhookReceiver _webhookReceiver;
     private readonly IGuildChannelRepository _guildChannelRepository;
     private readonly IVoicePresenceNotifier _voicePresenceNotifier;
+    private readonly IVoiceParticipantCache _voiceParticipantCache;
 
     public HandleLiveKitWebhookHandler(
         ILiveKitWebhookReceiver webhookReceiver,
         IGuildChannelRepository guildChannelRepository,
-        IVoicePresenceNotifier voicePresenceNotifier)
+        IVoicePresenceNotifier voicePresenceNotifier,
+        IVoiceParticipantCache voiceParticipantCache)
     {
         _webhookReceiver = webhookReceiver;
         _guildChannelRepository = guildChannelRepository;
         _voicePresenceNotifier = voicePresenceNotifier;
+        _voiceParticipantCache = voiceParticipantCache;
     }
 
     public async Task<ApplicationResponse<HandleLiveKitWebhookResponse>> HandleAsync(
@@ -78,6 +81,18 @@ public sealed class HandleLiveKitWebhookHandler : IHandler<HandleLiveKitWebhookR
 
         if (eventType == ParticipantJoinedEvent)
         {
+            await _voiceParticipantCache.AddOrUpdateAsync(
+                result.Channel.Id,
+                new CachedVoiceParticipant(
+                    UserId: participantUserId,
+                    Username: result.Participant?.Username.Value,
+                    DisplayName: result.Participant?.DisplayName,
+                    AvatarFileId: result.Participant?.AvatarFileId,
+                    AvatarColor: result.Participant?.AvatarColor,
+                    AvatarIcon: result.Participant?.AvatarIcon,
+                    AvatarBg: result.Participant?.AvatarBg),
+                cancellationToken);
+
             await _voicePresenceNotifier.NotifyParticipantJoinedAsync(
                 new VoiceParticipantJoinedNotification(
                     GuildId: result.Channel.GuildId,
@@ -94,6 +109,8 @@ public sealed class HandleLiveKitWebhookHandler : IHandler<HandleLiveKitWebhookR
         }
         else
         {
+            await _voiceParticipantCache.RemoveAsync(result.Channel.Id, participantUserId, cancellationToken);
+
             await _voicePresenceNotifier.NotifyParticipantLeftAsync(
                 new VoiceParticipantLeftNotification(
                     result.Channel.GuildId,
