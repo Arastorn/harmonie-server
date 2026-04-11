@@ -42,11 +42,9 @@ public sealed class OpenConversationHandler : IAuthenticatedHandler<OpenConversa
                 "You cannot open a conversation with yourself");
         }
 
-        var targetUserTask = _userRepository.GetByIdAsync(targetUserId, cancellationToken);
-        var currentUserTask = _userRepository.GetByIdAsync(currentUserId, cancellationToken);
-        await Task.WhenAll(targetUserTask, currentUserTask);
-        var targetUser = await targetUserTask;
-        var currentUser = await currentUserTask;
+        var users = await _userRepository.GetManyByIdsAsync([currentUserId, targetUserId], cancellationToken);
+        var currentUser = users.FirstOrDefault(u => u.Id == currentUserId);
+        var targetUser = users.FirstOrDefault(u => u.Id == targetUserId);
 
         if (targetUser is null)
         {

@@ -45,17 +45,13 @@ public sealed class CreateGroupConversationHandler : IAuthenticatedHandler<Creat
                 "You must be included in the participant list");
         }
 
-        var participantUsers = new List<User>(participantUserIds.Length);
-        foreach (var participantId in participantUserIds)
+        var participantUsers = await _userRepository.GetManyByIdsAsync(participantUserIds, cancellationToken);
+        var missingId = participantUserIds.FirstOrDefault(id => participantUsers.All(u => u.Id != id));
+        if (missingId != default)
         {
-            var user = await _userRepository.GetByIdAsync(participantId, cancellationToken);
-            if (user is null)
-            {
-                return ApplicationResponse<CreateGroupConversationResponse>.Fail(
-                    ApplicationErrorCodes.User.NotFound,
-                    $"User {participantId} was not found");
-            }
-            participantUsers.Add(user);
+            return ApplicationResponse<CreateGroupConversationResponse>.Fail(
+                ApplicationErrorCodes.User.NotFound,
+                $"User {missingId} was not found");
         }
 
         var conversation = await _conversationRepository.CreateGroupAsync(

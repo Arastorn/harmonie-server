@@ -48,6 +48,11 @@ public interface IUserRepository
     Task<User?> GetByIdAsync(UserId userId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Get multiple users by their IDs in a single query. Users not found are omitted from the result.
+    /// </summary>
+    Task<IReadOnlyList<User>> GetManyByIdsAsync(IReadOnlyList<UserId> userIds, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Get a user by their email address
     /// </summary>
     Task<User?> GetByEmailAsync(Email email, CancellationToken cancellationToken = default);

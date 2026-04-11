@@ -58,6 +58,23 @@ public sealed class UserRepository : IUserRepository
         return userRow is null ? null : MapToUser(userRow);
     }
 
+    public async Task<IReadOnlyList<User>> GetManyByIdsAsync(IReadOnlyList<UserId> userIds, CancellationToken ct = default)
+    {
+        if (userIds.Count == 0)
+            return [];
+
+        var sql = $"{SelectUserSql} WHERE id = ANY(@Ids) AND deleted_at IS NULL";
+        var conn = await _dbSession.GetOpenConnectionAsync(ct);
+        var cmd = new CommandDefinition(
+            sql,
+            new { Ids = userIds.Select(id => id.Value).ToArray() },
+            transaction: _dbSession.Transaction,
+            cancellationToken: ct);
+        var rows = await conn.QueryAsync<UserRow>(cmd);
+
+        return rows.Select(MapToUser).ToArray();
+    }
+
     public async Task<User?> GetByEmailAsync(Email email, CancellationToken ct = default)
     {
         var sql = $"{SelectUserSql} WHERE email = @Email AND deleted_at IS NULL";

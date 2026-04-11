@@ -51,10 +51,13 @@ public sealed class OpenConversationHandlerTests
     {
         var callerUserId = UserId.New();
         var targetUserId = UserId.New();
+        var callerUser = CreateUser(callerUserId, "caller");
 
         _userRepositoryMock
-            .Setup(x => x.GetByIdAsync(targetUserId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((User?)null);
+            .Setup(x => x.GetManyByIdsAsync(
+                It.Is<IReadOnlyList<UserId>>(ids => ids.Contains(callerUserId) && ids.Contains(targetUserId)),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync([callerUser]);
 
         var response = await _handler.HandleAsync(
             new OpenConversationRequest(targetUserId),
@@ -75,12 +78,10 @@ public sealed class OpenConversationHandlerTests
         var conversation = ApplicationTestBuilders.CreateConversation(callerUserId, targetUserId);
 
         _userRepositoryMock
-            .Setup(x => x.GetByIdAsync(callerUserId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(callerUser);
-
-        _userRepositoryMock
-            .Setup(x => x.GetByIdAsync(targetUserId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(targetUser);
+            .Setup(x => x.GetManyByIdsAsync(
+                It.Is<IReadOnlyList<UserId>>(ids => ids.Contains(callerUserId) && ids.Contains(targetUserId)),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync([callerUser, targetUser]);
 
         _conversationRepositoryMock
             .Setup(x => x.GetOrCreateDirectAsync(callerUserId, targetUserId, It.IsAny<CancellationToken>()))
@@ -108,12 +109,10 @@ public sealed class OpenConversationHandlerTests
         var conversation = ApplicationTestBuilders.CreateConversation(callerUserId, targetUserId);
 
         _userRepositoryMock
-            .Setup(x => x.GetByIdAsync(callerUserId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(callerUser);
-
-        _userRepositoryMock
-            .Setup(x => x.GetByIdAsync(targetUserId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(targetUser);
+            .Setup(x => x.GetManyByIdsAsync(
+                It.Is<IReadOnlyList<UserId>>(ids => ids.Contains(callerUserId) && ids.Contains(targetUserId)),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync([callerUser, targetUser]);
 
         _conversationRepositoryMock
             .Setup(x => x.GetOrCreateDirectAsync(callerUserId, targetUserId, It.IsAny<CancellationToken>()))
