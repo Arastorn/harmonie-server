@@ -107,6 +107,19 @@ public sealed class LiveKitRoomService : ILiveKitRoomService
         return new VoiceChannelParticipant(userId, username);
     }
 
+    public async Task<IReadOnlyList<VoiceChannelParticipant>> ListChannelParticipantsAsync(
+        GuildChannelId channelId,
+        CancellationToken ct)
+    {
+        var roomName = BuildRoomName(channelId);
+        var participants = await _roomApiClient.ListParticipantsAsync(roomName, ct);
+
+        return participants
+            .Select(p => TryMapParticipant(p.Identity, p.Name))
+            .OfType<VoiceChannelParticipant>()
+            .ToArray();
+    }
+
     private static string BuildRoomName(GuildChannelId channelId)
         => $"{ChannelRoomPrefix}{channelId}";
 }

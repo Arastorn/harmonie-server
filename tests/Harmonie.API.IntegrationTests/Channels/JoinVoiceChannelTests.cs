@@ -36,6 +36,7 @@ public sealed class JoinVoiceChannelTests : IClassFixture<HarmonieWebApplication
         payload!.Token.Should().NotBeNullOrWhiteSpace();
         payload.Url.Should().Be("ws://localhost:7880");
         payload.RoomName.Should().Be($"channel:{voiceChannelId}");
+        payload.CurrentParticipants.Should().NotBeNull();
     }
 
     [Fact]

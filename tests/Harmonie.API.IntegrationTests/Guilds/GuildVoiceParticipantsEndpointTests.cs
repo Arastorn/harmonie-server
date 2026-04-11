@@ -131,5 +131,10 @@ public sealed class GuildVoiceParticipantsEndpointTests : IClassFixture<Harmonie
                 ResultsByGuildId.TryGetValue(guildId.ToString(), out var results)
                     ? results
                     : (IReadOnlyList<GuildVoiceChannelParticipants>)[]);
+
+        public Task<IReadOnlyList<VoiceChannelParticipant>> ListChannelParticipantsAsync(
+            GuildChannelId channelId,
+            CancellationToken ct)
+            => Task.FromResult<IReadOnlyList<VoiceChannelParticipant>>([]);
     }
 }
