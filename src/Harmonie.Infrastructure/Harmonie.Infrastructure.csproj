@@ -16,13 +16,13 @@
 
   <ItemGroup>
     <!-- Database -->
-    <PackageReference Include="Dapper" Version="2.1.66" />
-    <PackageReference Include="Livekit.Server.Sdk.Dotnet" Version="1.2.0" />
-    <PackageReference Include="Npgsql" Version="10.0.0" />
+    <PackageReference Include="Dapper" />
+    <PackageReference Include="Livekit.Server.Sdk.Dotnet" />
+    <PackageReference Include="Npgsql" />
     
     <!-- JWT -->
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.16.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     
     <!-- Configuration -->
   </ItemGroup>
