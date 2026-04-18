@@ -8,7 +8,7 @@
   <ItemGroup>
     <PackageVersion Include="Dapper" Version="2.1.72" />
     <PackageVersion Include="Npgsql" Version="10.0.2" />
-    <PackageVersion Include="dbup-postgresql" Version="6.1.5" />
+    <PackageVersion Include="dbup-postgresql" Version="7.0.1" />
   </ItemGroup>
 
   <!-- Auth / JWT -->
@@ -19,8 +19,8 @@
 
   <!-- Validation -->
   <ItemGroup>
-    <PackageVersion Include="FluentValidation" Version="11.11.0" />
-    <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
+    <PackageVersion Include="FluentValidation" Version="12.1.1" />
+    <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
   </ItemGroup>
 
   <!-- API / Docs -->
@@ -50,7 +50,7 @@
 
   <!-- Testing -->
   <ItemGroup>
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.4.0" />
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
     <PackageVersion Include="FluentAssertions" Version="7.0.0" />
