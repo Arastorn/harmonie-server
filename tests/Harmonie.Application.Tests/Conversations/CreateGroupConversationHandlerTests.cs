@@ -54,7 +54,8 @@ public sealed class CreateGroupConversationHandlerTests
 
         var response = await _handler.HandleAsync(
             new CreateGroupConversationRequest("Team Chat", [participantA.Value, participantB.Value]),
-            caller);
+            caller,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -76,7 +77,8 @@ public sealed class CreateGroupConversationHandlerTests
 
         var response = await _handler.HandleAsync(
             new CreateGroupConversationRequest("Team Chat", [caller.Value, participantB.Value]),
-            caller);
+            caller,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -105,7 +107,8 @@ public sealed class CreateGroupConversationHandlerTests
 
         var response = await _handler.HandleAsync(
             new CreateGroupConversationRequest("Team Chat", [caller.Value, participantB.Value]),
-            caller);
+            caller,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Error.Should().BeNull();
@@ -145,7 +148,8 @@ public sealed class CreateGroupConversationHandlerTests
 
         var response = await _handler.HandleAsync(
             new CreateGroupConversationRequest(null, [caller.Value, participantB.Value]),
-            caller);
+            caller,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();

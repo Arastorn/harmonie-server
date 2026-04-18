@@ -50,7 +50,7 @@ public sealed class AcknowledgeConversationReadHandlerTests
             .Setup(x => x.GetByIdWithParticipantCheckAsync(conversationId, It.IsAny<UserId>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((ConversationAccess?)null);
 
-        var response = await _handler.HandleAsync(new AcknowledgeConversationReadInput(conversationId, null), callerId);
+        var response = await _handler.HandleAsync(new AcknowledgeConversationReadInput(conversationId, null), callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error!.Code.Should().Be(ApplicationErrorCodes.Conversation.NotFound);
@@ -69,7 +69,7 @@ public sealed class AcknowledgeConversationReadHandlerTests
             .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, outsider, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ConversationAccess(conversation, IsParticipant: false));
 
-        var response = await _handler.HandleAsync(new AcknowledgeConversationReadInput(conversation.Id, null), outsider);
+        var response = await _handler.HandleAsync(new AcknowledgeConversationReadInput(conversation.Id, null), outsider, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error!.Code.Should().Be(ApplicationErrorCodes.Conversation.AccessDenied);
@@ -92,7 +92,7 @@ public sealed class AcknowledgeConversationReadHandlerTests
             .Setup(x => x.GetByIdAsync(messageId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Message?)null);
 
-        var response = await _handler.HandleAsync(new AcknowledgeConversationReadInput(conversation.Id, messageId), participantOne);
+        var response = await _handler.HandleAsync(new AcknowledgeConversationReadInput(conversation.Id, messageId), participantOne, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error!.Code.Should().Be(ApplicationErrorCodes.Message.NotFound);
@@ -116,7 +116,7 @@ public sealed class AcknowledgeConversationReadHandlerTests
             .Setup(x => x.GetByIdAsync(messageId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(messageFromOther);
 
-        var response = await _handler.HandleAsync(new AcknowledgeConversationReadInput(conversation.Id, messageId), participantOne);
+        var response = await _handler.HandleAsync(new AcknowledgeConversationReadInput(conversation.Id, messageId), participantOne, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error!.Code.Should().Be(ApplicationErrorCodes.Message.NotFound);
@@ -140,7 +140,7 @@ public sealed class AcknowledgeConversationReadHandlerTests
             .Setup(x => x.GetByIdAsync(messageId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(message);
 
-        var response = await _handler.HandleAsync(new AcknowledgeConversationReadInput(conversation.Id, messageId), participantOne);
+        var response = await _handler.HandleAsync(new AcknowledgeConversationReadInput(conversation.Id, messageId), participantOne, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
 
@@ -169,7 +169,7 @@ public sealed class AcknowledgeConversationReadHandlerTests
             .Setup(x => x.GetLatestConversationMessageIdAsync(conversation.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(latestMessageId);
 
-        var response = await _handler.HandleAsync(new AcknowledgeConversationReadInput(conversation.Id, null), participantOne);
+        var response = await _handler.HandleAsync(new AcknowledgeConversationReadInput(conversation.Id, null), participantOne, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
 
@@ -197,7 +197,7 @@ public sealed class AcknowledgeConversationReadHandlerTests
             .Setup(x => x.GetLatestConversationMessageIdAsync(conversation.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync((MessageId?)null);
 
-        var response = await _handler.HandleAsync(new AcknowledgeConversationReadInput(conversation.Id, null), participantOne);
+        var response = await _handler.HandleAsync(new AcknowledgeConversationReadInput(conversation.Id, null), participantOne, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
 

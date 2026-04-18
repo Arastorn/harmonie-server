@@ -38,7 +38,7 @@ public sealed class DownloadFileHandlerTests
             .Setup(x => x.GetByIdAsync(fileId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((UploadedFile?)null);
 
-        var response = await _handler.HandleAsync(fileId, userId);
+        var response = await _handler.HandleAsync(fileId, userId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -62,7 +62,7 @@ public sealed class DownloadFileHandlerTests
             .Setup(x => x.GetStreamAsync(uploadedFile.StorageKey, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Stream?)null);
 
-        var response = await _handler.HandleAsync(uploadedFile.Id, userId);
+        var response = await _handler.HandleAsync(uploadedFile.Id, userId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -84,7 +84,7 @@ public sealed class DownloadFileHandlerTests
             .Setup(x => x.GetStreamAsync(uploadedFile.StorageKey, It.IsAny<CancellationToken>()))
             .ReturnsAsync(fileStream);
 
-        var response = await _handler.HandleAsync(uploadedFile.Id, userId);
+        var response = await _handler.HandleAsync(uploadedFile.Id, userId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();

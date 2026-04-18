@@ -52,7 +52,7 @@ public sealed class AcknowledgeChannelReadHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(channelId, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((ChannelAccessContext?)null);
 
-        var response = await _handler.HandleAsync(new AcknowledgeChannelReadInput(channelId, null), callerId);
+        var response = await _handler.HandleAsync(new AcknowledgeChannelReadInput(channelId, null), callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error!.Code.Should().Be(ApplicationErrorCodes.Channel.NotFound);
@@ -69,7 +69,7 @@ public sealed class AcknowledgeChannelReadHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(channel.Id, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ChannelAccessContext(channel, GuildRole.Member));
 
-        var response = await _handler.HandleAsync(new AcknowledgeChannelReadInput(channel.Id, null), callerId);
+        var response = await _handler.HandleAsync(new AcknowledgeChannelReadInput(channel.Id, null), callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error!.Code.Should().Be(ApplicationErrorCodes.Channel.NotText);
@@ -86,7 +86,7 @@ public sealed class AcknowledgeChannelReadHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(channel.Id, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ChannelAccessContext(channel, CallerRole: null));
 
-        var response = await _handler.HandleAsync(new AcknowledgeChannelReadInput(channel.Id, null), callerId);
+        var response = await _handler.HandleAsync(new AcknowledgeChannelReadInput(channel.Id, null), callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error!.Code.Should().Be(ApplicationErrorCodes.Channel.AccessDenied);
@@ -108,7 +108,7 @@ public sealed class AcknowledgeChannelReadHandlerTests
             .Setup(x => x.GetByIdAsync(messageId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Message?)null);
 
-        var response = await _handler.HandleAsync(new AcknowledgeChannelReadInput(channel.Id, messageId), callerId);
+        var response = await _handler.HandleAsync(new AcknowledgeChannelReadInput(channel.Id, messageId), callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error!.Code.Should().Be(ApplicationErrorCodes.Message.NotFound);
@@ -131,7 +131,7 @@ public sealed class AcknowledgeChannelReadHandlerTests
             .Setup(x => x.GetByIdAsync(messageId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(messageFromOtherChannel);
 
-        var response = await _handler.HandleAsync(new AcknowledgeChannelReadInput(channel.Id, messageId), callerId);
+        var response = await _handler.HandleAsync(new AcknowledgeChannelReadInput(channel.Id, messageId), callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error!.Code.Should().Be(ApplicationErrorCodes.Message.NotFound);
@@ -154,7 +154,7 @@ public sealed class AcknowledgeChannelReadHandlerTests
             .Setup(x => x.GetByIdAsync(messageId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(message);
 
-        var response = await _handler.HandleAsync(new AcknowledgeChannelReadInput(channel.Id, messageId), callerId);
+        var response = await _handler.HandleAsync(new AcknowledgeChannelReadInput(channel.Id, messageId), callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
 
@@ -182,7 +182,7 @@ public sealed class AcknowledgeChannelReadHandlerTests
             .Setup(x => x.GetLatestChannelMessageIdAsync(channel.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(latestMessageId);
 
-        var response = await _handler.HandleAsync(new AcknowledgeChannelReadInput(channel.Id, null), callerId);
+        var response = await _handler.HandleAsync(new AcknowledgeChannelReadInput(channel.Id, null), callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
 
@@ -209,7 +209,7 @@ public sealed class AcknowledgeChannelReadHandlerTests
             .Setup(x => x.GetLatestChannelMessageIdAsync(channel.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync((MessageId?)null);
 
-        var response = await _handler.HandleAsync(new AcknowledgeChannelReadInput(channel.Id, null), callerId);
+        var response = await _handler.HandleAsync(new AcknowledgeChannelReadInput(channel.Id, null), callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
 

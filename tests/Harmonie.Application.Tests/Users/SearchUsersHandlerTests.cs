@@ -46,7 +46,8 @@ public sealed class SearchUsersHandlerTests
                 Q = "alice",
                 GuildId = guildId
             },
-            currentUserId);
+            currentUserId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -70,7 +71,8 @@ public sealed class SearchUsersHandlerTests
                 Q = "alice",
                 GuildId = guild.Id
             },
-            currentUserId);
+            currentUserId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -104,7 +106,8 @@ public sealed class SearchUsersHandlerTests
                 GuildId = guild.Id,
                 Limit = 5
             },
-            ownerId);
+            ownerId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();
@@ -130,7 +133,8 @@ public sealed class SearchUsersHandlerTests
 
         var response = await _handler.HandleAsync(
             new SearchUsersRequest { Q = "b" },
-            currentUserId);
+            currentUserId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         var users = response.Data!.Users;

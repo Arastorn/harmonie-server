@@ -50,7 +50,8 @@ public sealed class SearchMessagesHandlerTests
 
         var response = await _handler.HandleAsync(
             new SearchMessagesInput(guild.Id, Q: "deploy", Cursor: "invalid-cursor"),
-            ownerId);
+            ownerId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -69,7 +70,8 @@ public sealed class SearchMessagesHandlerTests
 
         var response = await _handler.HandleAsync(
             new SearchMessagesInput(guildId, Q: "deploy"),
-            currentUserId);
+            currentUserId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -89,7 +91,8 @@ public sealed class SearchMessagesHandlerTests
 
         var response = await _handler.HandleAsync(
             new SearchMessagesInput(guild.Id, Q: "deploy"),
-            currentUserId);
+            currentUserId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -113,7 +116,8 @@ public sealed class SearchMessagesHandlerTests
 
         var response = await _handler.HandleAsync(
             new SearchMessagesInput(guild.Id, Q: "deploy", ChannelId: channel.Id),
-            ownerId);
+            ownerId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -160,7 +164,8 @@ public sealed class SearchMessagesHandlerTests
 
         var response = await _handler.HandleAsync(
             new SearchMessagesInput(guild.Id, Q: " deploy ", ChannelId: channel.Id, AuthorId: authorId, Before: before.ToString("O"), After: after.ToString("O"), Limit: 10),
-            ownerId);
+            ownerId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();

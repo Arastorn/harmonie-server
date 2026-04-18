@@ -30,7 +30,7 @@ public sealed class PreviewInviteHandlerTests
             .Setup(x => x.GetPreviewByCodeAsync("ABCD1234", It.IsAny<CancellationToken>()))
             .ReturnsAsync((InvitePreview?)null);
 
-        var response = await _handler.HandleAsync("ABCD1234");
+        var response = await _handler.HandleAsync("ABCD1234", TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error!.Code.Should().Be(ApplicationErrorCodes.Invite.NotFound);
@@ -55,7 +55,7 @@ public sealed class PreviewInviteHandlerTests
             .Setup(x => x.GetPreviewByCodeAsync("ABCD1234", It.IsAny<CancellationToken>()))
             .ReturnsAsync(preview);
 
-        var response = await _handler.HandleAsync("ABCD1234");
+        var response = await _handler.HandleAsync("ABCD1234", TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error!.Code.Should().Be(ApplicationErrorCodes.Invite.Expired);
@@ -80,7 +80,7 @@ public sealed class PreviewInviteHandlerTests
             .Setup(x => x.GetPreviewByCodeAsync("ABCD1234", It.IsAny<CancellationToken>()))
             .ReturnsAsync(preview);
 
-        var response = await _handler.HandleAsync("ABCD1234");
+        var response = await _handler.HandleAsync("ABCD1234", TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error!.Code.Should().Be(ApplicationErrorCodes.Invite.Exhausted);
@@ -106,7 +106,7 @@ public sealed class PreviewInviteHandlerTests
             .Setup(x => x.GetPreviewByCodeAsync("ABCD1234", It.IsAny<CancellationToken>()))
             .ReturnsAsync(preview);
 
-        var response = await _handler.HandleAsync("ABCD1234");
+        var response = await _handler.HandleAsync("ABCD1234", TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();
@@ -141,7 +141,7 @@ public sealed class PreviewInviteHandlerTests
             .Setup(x => x.GetPreviewByCodeAsync("ABCD1234", It.IsAny<CancellationToken>()))
             .ReturnsAsync(preview);
 
-        var response = await _handler.HandleAsync("ABCD1234");
+        var response = await _handler.HandleAsync("ABCD1234", TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data!.GuildIconFileId.Should().BeNull();

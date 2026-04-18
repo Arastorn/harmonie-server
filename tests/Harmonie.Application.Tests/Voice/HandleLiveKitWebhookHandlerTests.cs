@@ -45,7 +45,7 @@ public sealed class HandleLiveKitWebhookHandlerTests
             .Setup(x => x.Receive(request.RawBody, request.AuthorizationHeader!))
             .Returns(LiveKitWebhookReceiveResult.Fail("invalid signature"));
 
-        var response = await _handler.HandleAsync(request);
+        var response = await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -67,7 +67,7 @@ public sealed class HandleLiveKitWebhookHandlerTests
                     null,
                     DateTime.UtcNow)));
 
-        var response = await _handler.HandleAsync(request);
+        var response = await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();
@@ -95,7 +95,7 @@ public sealed class HandleLiveKitWebhookHandlerTests
                     "alice",
                     DateTime.UtcNow)));
 
-        var response = await _handler.HandleAsync(request);
+        var response = await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();
@@ -133,7 +133,7 @@ public sealed class HandleLiveKitWebhookHandlerTests
             .Setup(x => x.GetWithParticipantAsync(channel.Id, participantUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ChannelWithParticipant(channel, profile));
 
-        var response = await _handler.HandleAsync(request);
+        var response = await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data!.Processed.Should().BeTrue();
@@ -178,7 +178,7 @@ public sealed class HandleLiveKitWebhookHandlerTests
             .Setup(x => x.GetWithParticipantAsync(channel.Id, participantUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ChannelWithParticipant(channel, null));
 
-        var response = await _handler.HandleAsync(request);
+        var response = await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data!.Processed.Should().BeTrue();
@@ -219,7 +219,7 @@ public sealed class HandleLiveKitWebhookHandlerTests
             .Setup(x => x.GetWithParticipantAsync(channel.Id, participantUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ChannelWithParticipant(channel, null));
 
-        var response = await _handler.HandleAsync(request);
+        var response = await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data!.Processed.Should().BeTrue();
@@ -266,7 +266,7 @@ public sealed class HandleLiveKitWebhookHandlerTests
             .Setup(x => x.GetWithParticipantAsync(channel.Id, participantUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ChannelWithParticipant(channel, profile));
 
-        await _handler.HandleAsync(request);
+        await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
 
         _voiceParticipantCacheMock.Verify(
             x => x.AddOrUpdateAsync(
@@ -304,7 +304,7 @@ public sealed class HandleLiveKitWebhookHandlerTests
             .Setup(x => x.GetWithParticipantAsync(channel.Id, participantUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ChannelWithParticipant(channel, null));
 
-        await _handler.HandleAsync(request);
+        await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
 
         _voiceParticipantCacheMock.Verify(
             x => x.RemoveAsync(channel.Id, participantUserId, It.IsAny<CancellationToken>()),

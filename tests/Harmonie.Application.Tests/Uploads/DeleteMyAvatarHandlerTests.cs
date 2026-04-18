@@ -68,7 +68,7 @@ public sealed class DeleteMyAvatarHandlerTests
             .Setup(x => x.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((User?)null);
 
-        var response = await _handler.HandleAsync(Unit.Value, userId);
+        var response = await _handler.HandleAsync(Unit.Value, userId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -88,7 +88,7 @@ public sealed class DeleteMyAvatarHandlerTests
             .Setup(x => x.GetByIdAsync(user.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
-        var response = await _handler.HandleAsync(Unit.Value, user.Id);
+        var response = await _handler.HandleAsync(Unit.Value, user.Id, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -150,7 +150,7 @@ public sealed class DeleteMyAvatarHandlerTests
             .Setup(x => x.DeleteAsync(avatarFileId, It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        var response = await _handler.HandleAsync(Unit.Value, user.Id);
+        var response = await _handler.HandleAsync(Unit.Value, user.Id, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         user.AvatarFileId.Should().BeNull();

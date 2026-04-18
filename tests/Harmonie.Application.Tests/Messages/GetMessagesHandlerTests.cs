@@ -37,7 +37,8 @@ public sealed class GetMessagesHandlerTests
     {
         var response = await _handler.HandleAsync(
             new GetChannelMessagesInput(GuildChannelId.New(), Before: "invalid-cursor", Limit: 50),
-            UserId.New());
+            UserId.New(),
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -56,7 +57,8 @@ public sealed class GetMessagesHandlerTests
 
         var response = await _handler.HandleAsync(
             new GetChannelMessagesInput(channel.Id, Limit: 50),
-            userId);
+            userId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -75,7 +77,8 @@ public sealed class GetMessagesHandlerTests
 
         var response = await _handler.HandleAsync(
             new GetChannelMessagesInput(channel.Id, Limit: 50),
-            userId);
+            userId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -110,7 +113,8 @@ public sealed class GetMessagesHandlerTests
 
         var response = await _handler.HandleAsync(
             new GetChannelMessagesInput(channel.Id, Limit: 50),
-            userId);
+            userId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Error.Should().BeNull();

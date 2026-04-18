@@ -66,7 +66,7 @@ public sealed class DeleteGuildIconHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guildId, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((GuildAccessContext?)null);
 
-        var response = await _handler.HandleAsync(new DeleteGuildIconInput(guildId), callerId);
+        var response = await _handler.HandleAsync(new DeleteGuildIconInput(guildId), callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -83,7 +83,7 @@ public sealed class DeleteGuildIconHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GuildAccessContext(guild, GuildRole.Member));
 
-        var response = await _handler.HandleAsync(new DeleteGuildIconInput(guild.Id), callerId);
+        var response = await _handler.HandleAsync(new DeleteGuildIconInput(guild.Id), callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -100,7 +100,7 @@ public sealed class DeleteGuildIconHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, ownerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GuildAccessContext(guild, GuildRole.Member));
 
-        var response = await _handler.HandleAsync(new DeleteGuildIconInput(guild.Id), ownerId);
+        var response = await _handler.HandleAsync(new DeleteGuildIconInput(guild.Id), ownerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -155,7 +155,7 @@ public sealed class DeleteGuildIconHandlerTests
             .Setup(x => x.DeleteAsync(iconFileId, It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        var response = await _handler.HandleAsync(new DeleteGuildIconInput(guild.Id), ownerId);
+        var response = await _handler.HandleAsync(new DeleteGuildIconInput(guild.Id), ownerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         guild.IconFileId.Should().BeNull();
@@ -191,7 +191,7 @@ public sealed class DeleteGuildIconHandlerTests
             .Setup(x => x.NotifyGuildUpdatedAsync(It.IsAny<GuildUpdatedNotification>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        var response = await _handler.HandleAsync(new DeleteGuildIconInput(guild.Id), ownerId);
+        var response = await _handler.HandleAsync(new DeleteGuildIconInput(guild.Id), ownerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
 

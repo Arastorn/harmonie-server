@@ -68,7 +68,7 @@ public sealed class SendMessageHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(channelId, userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((ChannelAccessContext?)null);
 
-        var response = await _handler.HandleAsync(new SendChannelMessageInput(channelId, request.Content, request.AttachmentFileIds), userId);
+        var response = await _handler.HandleAsync(new SendChannelMessageInput(channelId, request.Content, request.AttachmentFileIds), userId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -87,7 +87,7 @@ public sealed class SendMessageHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(channel.Id, userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ChannelAccessContext(channel, GuildRole.Member));
 
-        var response = await _handler.HandleAsync(new SendChannelMessageInput(channel.Id, request.Content, request.AttachmentFileIds), userId);
+        var response = await _handler.HandleAsync(new SendChannelMessageInput(channel.Id, request.Content, request.AttachmentFileIds), userId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -106,7 +106,7 @@ public sealed class SendMessageHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(channel.Id, userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ChannelAccessContext(channel, CallerRole: null));
 
-        var response = await _handler.HandleAsync(new SendChannelMessageInput(channel.Id, request.Content, request.AttachmentFileIds), userId);
+        var response = await _handler.HandleAsync(new SendChannelMessageInput(channel.Id, request.Content, request.AttachmentFileIds), userId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -128,7 +128,8 @@ public sealed class SendMessageHandlerTests
 
         var response = await _handler.HandleAsync(
             new SendChannelMessageInput(channel.Id, rawContent),
-            userId);
+            userId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -159,7 +160,8 @@ public sealed class SendMessageHandlerTests
 
         var response = await _handler.HandleAsync(
             new SendChannelMessageInput(channel.Id, null, [attachment.Id]),
-            userId);
+            userId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Error.Should().BeNull();
@@ -190,7 +192,7 @@ public sealed class SendMessageHandlerTests
             .Callback<Message, CancellationToken>((message, _) => persistedMessage = message)
             .Returns(Task.CompletedTask);
 
-        var response = await _handler.HandleAsync(new SendChannelMessageInput(channel.Id, request.Content, request.AttachmentFileIds), userId);
+        var response = await _handler.HandleAsync(new SendChannelMessageInput(channel.Id, request.Content, request.AttachmentFileIds), userId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Error.Should().BeNull();
@@ -236,7 +238,8 @@ public sealed class SendMessageHandlerTests
 
         var response = await _handler.HandleAsync(
             new SendChannelMessageInput(channel.Id, "message with file", [attachment.Id]),
-            userId);
+            userId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();
@@ -268,7 +271,7 @@ public sealed class SendMessageHandlerTests
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("SignalR unavailable"));
 
-        var response = await _handler.HandleAsync(new SendChannelMessageInput(channel.Id, request.Content, request.AttachmentFileIds), userId);
+        var response = await _handler.HandleAsync(new SendChannelMessageInput(channel.Id, request.Content, request.AttachmentFileIds), userId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Error.Should().BeNull();

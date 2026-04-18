@@ -44,7 +44,7 @@ public sealed class GetGuildVoiceParticipantsHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guildId, userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((GuildAccessContext?)null);
 
-        var response = await _handler.HandleAsync(guildId, userId);
+        var response = await _handler.HandleAsync(guildId, userId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -61,7 +61,7 @@ public sealed class GetGuildVoiceParticipantsHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GuildAccessContext(guild, null));
 
-        var response = await _handler.HandleAsync(guild.Id, userId);
+        var response = await _handler.HandleAsync(guild.Id, userId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -92,7 +92,7 @@ public sealed class GetGuildVoiceParticipantsHandlerTests
             .Setup(x => x.GetGuildMembersAsync(guild.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<GuildMemberUser>());
 
-        var response = await _handler.HandleAsync(guild.Id, requesterUserId);
+        var response = await _handler.HandleAsync(guild.Id, requesterUserId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Error.Should().BeNull();

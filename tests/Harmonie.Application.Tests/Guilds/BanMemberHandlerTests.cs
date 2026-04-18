@@ -60,7 +60,7 @@ public sealed class BanMemberHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guildId, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((GuildAccessContext?)null);
 
-        var response = await _handler.HandleAsync(new BanMemberInput(guildId, targetId, null, 0), callerId);
+        var response = await _handler.HandleAsync(new BanMemberInput(guildId, targetId, null, 0), callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -78,7 +78,7 @@ public sealed class BanMemberHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GuildAccessContext(guild, GuildRole.Member));
 
-        var response = await _handler.HandleAsync(new BanMemberInput(guild.Id, targetId, null, 0), callerId);
+        var response = await _handler.HandleAsync(new BanMemberInput(guild.Id, targetId, null, 0), callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error!.Code.Should().Be(ApplicationErrorCodes.Guild.AccessDenied);
@@ -94,7 +94,7 @@ public sealed class BanMemberHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, ownerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GuildAccessContext(guild, GuildRole.Admin));
 
-        var response = await _handler.HandleAsync(new BanMemberInput(guild.Id, ownerId, null, 0), ownerId);
+        var response = await _handler.HandleAsync(new BanMemberInput(guild.Id, ownerId, null, 0), ownerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error!.Code.Should().Be(ApplicationErrorCodes.Guild.CannotBanSelf);
@@ -111,7 +111,7 @@ public sealed class BanMemberHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GuildAccessContext(guild, GuildRole.Admin));
 
-        var response = await _handler.HandleAsync(new BanMemberInput(guild.Id, ownerId, null, 0), callerId);
+        var response = await _handler.HandleAsync(new BanMemberInput(guild.Id, ownerId, null, 0), callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error!.Code.Should().Be(ApplicationErrorCodes.Guild.OwnerCannotBeBanned);
@@ -133,7 +133,7 @@ public sealed class BanMemberHandlerTests
             .Setup(x => x.GetRoleAsync(guild.Id, targetId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(GuildRole.Admin);
 
-        var response = await _handler.HandleAsync(new BanMemberInput(guild.Id, targetId, null, 0), callerId);
+        var response = await _handler.HandleAsync(new BanMemberInput(guild.Id, targetId, null, 0), callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error!.Code.Should().Be(ApplicationErrorCodes.Guild.AccessDenied);
@@ -158,7 +158,7 @@ public sealed class BanMemberHandlerTests
             .Setup(x => x.TryAddAsync(It.IsAny<GuildBan>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
-        var response = await _handler.HandleAsync(new BanMemberInput(guild.Id, targetId, "Abuse", 0), ownerId);
+        var response = await _handler.HandleAsync(new BanMemberInput(guild.Id, targetId, "Abuse", 0), ownerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();
@@ -188,7 +188,7 @@ public sealed class BanMemberHandlerTests
             .Setup(x => x.TryAddAsync(It.IsAny<GuildBan>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
-        var response = await _handler.HandleAsync(new BanMemberInput(guild.Id, targetId, null, 0), ownerId);
+        var response = await _handler.HandleAsync(new BanMemberInput(guild.Id, targetId, null, 0), ownerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error!.Code.Should().Be(ApplicationErrorCodes.Guild.AlreadyBanned);
@@ -213,7 +213,7 @@ public sealed class BanMemberHandlerTests
             .Setup(x => x.TryAddAsync(It.IsAny<GuildBan>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
-        var response = await _handler.HandleAsync(new BanMemberInput(guild.Id, targetId, null, 0), ownerId);
+        var response = await _handler.HandleAsync(new BanMemberInput(guild.Id, targetId, null, 0), ownerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();
@@ -249,7 +249,7 @@ public sealed class BanMemberHandlerTests
             .Setup(x => x.TryAddAsync(It.IsAny<GuildBan>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
-        var response = await _handler.HandleAsync(new BanMemberInput(guild.Id, targetId, null, 0), ownerId);
+        var response = await _handler.HandleAsync(new BanMemberInput(guild.Id, targetId, null, 0), ownerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
 
@@ -279,7 +279,7 @@ public sealed class BanMemberHandlerTests
             .Setup(x => x.TryAddAsync(It.IsAny<GuildBan>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
-        var response = await _handler.HandleAsync(new BanMemberInput(guild.Id, targetId, null, 0), ownerId);
+        var response = await _handler.HandleAsync(new BanMemberInput(guild.Id, targetId, null, 0), ownerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
 
@@ -311,7 +311,7 @@ public sealed class BanMemberHandlerTests
             .Setup(x => x.SoftDeleteByAuthorInGuildAsync(guild.Id, targetId, 3, It.IsAny<CancellationToken>()))
             .ReturnsAsync(5);
 
-        var response = await _handler.HandleAsync(new BanMemberInput(guild.Id, targetId, null, 3), ownerId);
+        var response = await _handler.HandleAsync(new BanMemberInput(guild.Id, targetId, null, 3), ownerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
 
@@ -339,7 +339,7 @@ public sealed class BanMemberHandlerTests
             .Setup(x => x.TryAddAsync(It.IsAny<GuildBan>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
-        var response = await _handler.HandleAsync(new BanMemberInput(guild.Id, targetId, null, 0), ownerId);
+        var response = await _handler.HandleAsync(new BanMemberInput(guild.Id, targetId, null, 0), ownerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
 

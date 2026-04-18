@@ -43,7 +43,8 @@ public sealed class SearchConversationMessagesHandlerTests
 
         var response = await _handler.HandleAsync(
             new SearchConversationMessagesInput(conversationId, Q: "deploy"),
-            currentUserId);
+            currentUserId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -64,7 +65,8 @@ public sealed class SearchConversationMessagesHandlerTests
 
         var response = await _handler.HandleAsync(
             new SearchConversationMessagesInput(conversation.Id, Q: "deploy"),
-            outsider);
+            outsider,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -106,7 +108,8 @@ public sealed class SearchConversationMessagesHandlerTests
                 Before: before.ToString("O"),
                 After: after.ToString("O"),
                 Limit: 10),
-            user1);
+            user1,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();

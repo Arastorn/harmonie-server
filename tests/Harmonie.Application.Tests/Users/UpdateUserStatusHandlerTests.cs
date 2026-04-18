@@ -45,7 +45,7 @@ public sealed class UpdateUserStatusHandlerTests
             .Setup(x => x.GetUserGuildMembershipsAsync(user.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<UserGuildMembership>());
 
-        var response = await _handler.HandleAsync(request, user.Id);
+        var response = await _handler.HandleAsync(request, user.Id, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();
@@ -71,7 +71,7 @@ public sealed class UpdateUserStatusHandlerTests
             .Setup(x => x.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((User?)null);
 
-        var response = await _handler.HandleAsync(request, userId);
+        var response = await _handler.HandleAsync(request, userId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Data.Should().BeNull();
@@ -97,7 +97,7 @@ public sealed class UpdateUserStatusHandlerTests
             .Setup(x => x.GetByIdAsync(user.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
-        var response = await _handler.HandleAsync(request, user.Id);
+        var response = await _handler.HandleAsync(request, user.Id, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -133,7 +133,7 @@ public sealed class UpdateUserStatusHandlerTests
                 new UserGuildMembership(guild, Domain.Enums.GuildRole.Member, DateTime.UtcNow)
             });
 
-        var response = await _handler.HandleAsync(request, user.Id);
+        var response = await _handler.HandleAsync(request, user.Id, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data!.Status.Should().Be("invisible");
@@ -168,7 +168,7 @@ public sealed class UpdateUserStatusHandlerTests
                 new UserGuildMembership(guild, Domain.Enums.GuildRole.Member, DateTime.UtcNow)
             });
 
-        var response = await _handler.HandleAsync(request, user.Id);
+        var response = await _handler.HandleAsync(request, user.Id, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
 
@@ -194,7 +194,7 @@ public sealed class UpdateUserStatusHandlerTests
             .Setup(x => x.GetUserGuildMembershipsAsync(user.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<UserGuildMembership>());
 
-        var response = await _handler.HandleAsync(request, user.Id);
+        var response = await _handler.HandleAsync(request, user.Id, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
 

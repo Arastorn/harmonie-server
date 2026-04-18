@@ -88,7 +88,7 @@ public sealed class RefreshTokenHandlerTests
         var request = new RefreshTokenRequest("old_refresh_token");
 
         // Act
-        var response = await _handler.HandleAsync(request);
+        var response = await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
 
         // Assert
         response.Success.Should().BeTrue();
@@ -129,7 +129,7 @@ public sealed class RefreshTokenHandlerTests
         var request = new RefreshTokenRequest("unknown_refresh_token");
 
         // Act
-        var response = await _handler.HandleAsync(request);
+        var response = await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
 
         // Assert
         response.Success.Should().BeFalse();
@@ -162,7 +162,7 @@ public sealed class RefreshTokenHandlerTests
         var request = new RefreshTokenRequest("expired_refresh_token");
 
         // Act
-        var response = await _handler.HandleAsync(request);
+        var response = await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
 
         // Assert
         response.Success.Should().BeFalse();
@@ -201,7 +201,7 @@ public sealed class RefreshTokenHandlerTests
             .Returns(Task.CompletedTask);
 
         // Act
-        var response = await _handler.HandleAsync(new RefreshTokenRequest("reused_refresh_token"));
+        var response = await _handler.HandleAsync(new RefreshTokenRequest("reused_refresh_token"), TestContext.Current.CancellationToken);
 
         // Assert
         response.Success.Should().BeFalse();
@@ -293,7 +293,7 @@ public sealed class RefreshTokenHandlerTests
             .Returns(Task.CompletedTask);
 
         // Act
-        var response = await _handler.HandleAsync(new RefreshTokenRequest("race_refresh_token"));
+        var response = await _handler.HandleAsync(new RefreshTokenRequest("race_refresh_token"), TestContext.Current.CancellationToken);
 
         // Assert
         response.Success.Should().BeFalse();
@@ -354,7 +354,7 @@ public sealed class RefreshTokenHandlerTests
             .Returns(Task.CompletedTask);
 
         // Act
-        var response = await _handler.HandleAsync(new RefreshTokenRequest("legacy_reused_refresh_token"));
+        var response = await _handler.HandleAsync(new RefreshTokenRequest("legacy_reused_refresh_token"), TestContext.Current.CancellationToken);
 
         // Assert
         response.Success.Should().BeFalse();
@@ -407,7 +407,7 @@ public sealed class RefreshTokenHandlerTests
             .Returns(Task.CompletedTask);
 
         // Act
-        var response = await _handler.HandleAsync(new RefreshTokenRequest("already_reuse_detected_token"));
+        var response = await _handler.HandleAsync(new RefreshTokenRequest("already_reuse_detected_token"), TestContext.Current.CancellationToken);
 
         // Assert
         response.Success.Should().BeFalse();

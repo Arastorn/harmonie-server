@@ -49,7 +49,7 @@ public sealed class LogoutHandlerTests
             .ReturnsAsync(true);
 
         // Act
-        var response = await _handler.HandleAsync(request, currentUserId);
+        var response = await _handler.HandleAsync(request, currentUserId, TestContext.Current.CancellationToken);
 
         // Assert
         response.Success.Should().BeTrue();
@@ -87,7 +87,7 @@ public sealed class LogoutHandlerTests
             .ReturnsAsync(false);
 
         // Act
-        var response = await _handler.HandleAsync(request, currentUserId);
+        var response = await _handler.HandleAsync(request, currentUserId, TestContext.Current.CancellationToken);
 
         // Assert
         response.Success.Should().BeFalse();

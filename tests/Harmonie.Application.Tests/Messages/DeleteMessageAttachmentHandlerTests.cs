@@ -66,7 +66,7 @@ public sealed class DeleteMessageAttachmentHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(channelId, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((ChannelAccessContext?)null);
 
-        var response = await _handler.HandleAsync(new DeleteChannelMessageAttachmentInput(channelId, messageId, attachmentId), callerId);
+        var response = await _handler.HandleAsync(new DeleteChannelMessageAttachmentInput(channelId, messageId, attachmentId), callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -90,7 +90,7 @@ public sealed class DeleteMessageAttachmentHandlerTests
             .Setup(x => x.GetByIdAsync(message.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(message);
 
-        var response = await _handler.HandleAsync(new DeleteChannelMessageAttachmentInput(channel.Id, message.Id, attachmentId), callerId);
+        var response = await _handler.HandleAsync(new DeleteChannelMessageAttachmentInput(channel.Id, message.Id, attachmentId), callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -114,7 +114,7 @@ public sealed class DeleteMessageAttachmentHandlerTests
             .Setup(x => x.GetByIdAsync(message.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(message);
 
-        var response = await _handler.HandleAsync(new DeleteChannelMessageAttachmentInput(channel.Id, message.Id, attachmentId), authorId);
+        var response = await _handler.HandleAsync(new DeleteChannelMessageAttachmentInput(channel.Id, message.Id, attachmentId), authorId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -180,7 +180,7 @@ public sealed class DeleteMessageAttachmentHandlerTests
             .Setup(x => x.DeleteAsync(attachmentId, It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        var response = await _handler.HandleAsync(new DeleteChannelMessageAttachmentInput(channel.Id, message.Id, attachmentId), authorId);
+        var response = await _handler.HandleAsync(new DeleteChannelMessageAttachmentInput(channel.Id, message.Id, attachmentId), authorId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         message.Attachments.Should().BeEmpty();

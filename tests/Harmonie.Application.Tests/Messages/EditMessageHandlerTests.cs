@@ -54,7 +54,8 @@ public sealed class EditMessageHandlerTests
     {
         var response = await _handler.HandleAsync(
             new EditChannelMessageInput(GuildChannelId.New(), MessageId.New(), "   "),
-            UserId.New());
+            UserId.New(),
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -74,7 +75,8 @@ public sealed class EditMessageHandlerTests
 
         var response = await _handler.HandleAsync(
             new EditChannelMessageInput(channelId, MessageId.New(), "updated content"),
-            callerId);
+            callerId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -94,7 +96,8 @@ public sealed class EditMessageHandlerTests
 
         var response = await _handler.HandleAsync(
             new EditChannelMessageInput(channel.Id, MessageId.New(), "updated content"),
-            callerId);
+            callerId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -114,7 +117,8 @@ public sealed class EditMessageHandlerTests
 
         var response = await _handler.HandleAsync(
             new EditChannelMessageInput(channel.Id, MessageId.New(), "updated content"),
-            callerId);
+            callerId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -139,7 +143,8 @@ public sealed class EditMessageHandlerTests
 
         var response = await _handler.HandleAsync(
             new EditChannelMessageInput(channel.Id, messageId, "updated content"),
-            callerId);
+            callerId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -165,7 +170,8 @@ public sealed class EditMessageHandlerTests
 
         var response = await _handler.HandleAsync(
             new EditChannelMessageInput(channel.Id, messageId, "updated content"),
-            callerId);
+            callerId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -192,7 +198,8 @@ public sealed class EditMessageHandlerTests
 
         var response = await _handler.HandleAsync(
             new EditChannelMessageInput(channel.Id, messageId, "updated content"),
-            callerId);
+            callerId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -218,7 +225,8 @@ public sealed class EditMessageHandlerTests
 
         var response = await _handler.HandleAsync(
             new EditChannelMessageInput(channel.Id, messageId, "  updated content  "),
-            authorId);
+            authorId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Error.Should().BeNull();
@@ -246,7 +254,8 @@ public sealed class EditMessageHandlerTests
 
         await _handler.HandleAsync(
             new EditChannelMessageInput(channel.Id, messageId, "updated content"),
-            authorId);
+            authorId,
+            TestContext.Current.CancellationToken);
 
         _channelMessageRepositoryMock.Verify(
             x => x.UpdateAsync(It.IsAny<Message>(), It.IsAny<CancellationToken>()),
@@ -275,7 +284,8 @@ public sealed class EditMessageHandlerTests
 
         var response = await _handler.HandleAsync(
             new EditChannelMessageInput(channel.Id, messageId, "updated content"),
-            authorId);
+            authorId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         _textChannelNotifierMock.Verify(
@@ -310,7 +320,8 @@ public sealed class EditMessageHandlerTests
 
         var response = await _handler.HandleAsync(
             new EditChannelMessageInput(channel.Id, messageId, "updated content"),
-            authorId);
+            authorId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
     }
