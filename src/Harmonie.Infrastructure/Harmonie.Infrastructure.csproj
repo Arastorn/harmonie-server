@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="..\Harmonie.Domain\Harmonie.Domain.csproj" />
     <ProjectReference Include="..\Harmonie.Application\Harmonie.Application.csproj" />
   </ItemGroup>
@@ -23,12 +24,7 @@
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.16.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
     
-    <!-- Password Hashing -->
-    <PackageReference Include="Microsoft.AspNetCore.Identity" Version="2.3.9" />
-    
     <!-- Configuration -->
-    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.0" />
   </ItemGroup>
 
 </Project>
