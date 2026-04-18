@@ -49,7 +49,7 @@ public static class EndpointExtensions
     /// <summary>
     /// Convert an application response to a standardized HTTP response.
     /// </summary>
-    public static IResult ToHttpResult<T>(this ApplicationResponse<T> response, HttpContext? httpContext = null)
+    public static IResult ToHttpResult<T>(this ApplicationResponse<T> response, HttpContext httpContext)
     {
         if (response.Success)
         {
@@ -86,7 +86,7 @@ public static class EndpointExtensions
     public static IResult ToCreatedHttpResult<T>(
         this ApplicationResponse<T> response,
         Func<T, string> locationFactory,
-        HttpContext? httpContext = null)
+        HttpContext httpContext)
     {
         if (!response.Success)
             return response.ToHttpResult(httpContext);
