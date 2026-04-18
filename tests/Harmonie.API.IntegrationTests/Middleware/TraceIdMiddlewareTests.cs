@@ -1,8 +1,10 @@
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using FluentAssertions;
 using Harmonie.API.IntegrationTests.Common;
+using Harmonie.Application.Common;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
 
@@ -96,5 +98,26 @@ public sealed class TraceIdMiddlewareTests : IClassFixture<HarmonieWebApplicatio
         traceIdValues.Should().NotBeNull();
         var traceId = traceIdValues?.FirstOrDefault() ?? string.Empty;
         traceId.Should().NotBeNullOrEmpty();
+    }
+
+    [Fact]
+    public async Task XTraceIdHeader_MatchesTraceIdInErrorBody()
+    {
+        // Arrange
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/login");
+        request.Content = JsonContent.Create(new { email = "", password = "" });
+
+        // Act
+        var response = await _client.SendAsync(request);
+
+        // Assert
+        var headerTraceId = response.Headers.GetValues("X-Trace-Id").FirstOrDefault();
+        headerTraceId.Should().NotBeNull();
+
+        var body = await response.Content.ReadAsStringAsync();
+        var error = JsonSerializer.Deserialize<ApplicationError>(body, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        error.Should().NotBeNull();
+        error!.TraceId.Should().NotBeNull();
+        error.TraceId.Should().Be(headerTraceId);
     }
 }

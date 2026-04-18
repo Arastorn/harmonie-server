@@ -3,11 +3,6 @@ using Serilog.Context;
 
 namespace Harmonie.API.Middleware;
 
-/// <summary>
-/// Middleware that establishes a TraceId for every request.
-/// Reads the W3C traceparent header if present, otherwise generates a new TraceId.
-/// Pushes the TraceId into LogContext so Serilog automatically includes it in all log entries.
-/// </summary>
 public sealed class TraceIdMiddleware
 {
     private const string TraceParentHeaderName = "traceparent";
@@ -46,13 +41,13 @@ public sealed class TraceIdMiddleware
     {
         // W3C traceparent format: "00-traceId-spanId-flags"
         var parts = traceParent.Split('-', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length < 2)
+        if (parts.Length != 4)
         {
             traceId = default!;
             return false;
         }
 
-        traceId = parts[1];
+        traceId = parts[1].ToLowerInvariant();
         return IsValidTraceId(traceId);
     }
 
