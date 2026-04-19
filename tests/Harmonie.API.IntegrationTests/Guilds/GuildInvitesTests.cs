@@ -30,7 +30,7 @@ public sealed class GuildInvitesTests : IClassFixture<HarmonieWebApplicationFact
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         await GuildTestHelper.InviteMemberAsync(_client, createGuildPayload!.GuildId, owner.AccessToken, member.AccessToken);
@@ -40,7 +40,7 @@ public sealed class GuildInvitesTests : IClassFixture<HarmonieWebApplicationFact
             member.AccessToken);
         membersResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var membersPayload = await membersResponse.Content.ReadFromJsonAsync<GetGuildMembersResponse>();
+        var membersPayload = await membersResponse.Content.ReadFromJsonAsync<GetGuildMembersResponse>(TestContext.Current.CancellationToken);
         membersPayload.Should().NotBeNull();
 
         membersPayload!.GuildId.Should().Be(createGuildPayload.GuildId);

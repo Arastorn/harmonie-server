@@ -89,7 +89,7 @@ public sealed class UnbanMemberEndpointTests : IClassFixture<HarmonieWebApplicat
             owner.AccessToken);
         unbanResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-        var error = await unbanResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await unbanResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Guild.NotBanned);
     }
@@ -120,7 +120,7 @@ public sealed class UnbanMemberEndpointTests : IClassFixture<HarmonieWebApplicat
             member.AccessToken);
         unbanResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        var error = await unbanResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await unbanResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Guild.AccessDenied);
     }
@@ -132,7 +132,8 @@ public sealed class UnbanMemberEndpointTests : IClassFixture<HarmonieWebApplicat
         var nonExistentUserId = Guid.NewGuid();
 
         var response = await _client.DeleteAsync(
-            $"/api/guilds/{nonExistentGuildId}/bans/{nonExistentUserId}");
+            $"/api/guilds/{nonExistentGuildId}/bans/{nonExistentUserId}",
+            TestContext.Current.CancellationToken);
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 }

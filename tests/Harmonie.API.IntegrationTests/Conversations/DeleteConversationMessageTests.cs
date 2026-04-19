@@ -44,7 +44,7 @@ public sealed class DeleteConversationMessageTests : IClassFixture<HarmonieWebAp
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Conversation.NotFound);
     }
@@ -64,7 +64,7 @@ public sealed class DeleteConversationMessageTests : IClassFixture<HarmonieWebAp
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Conversation.AccessDenied);
     }
@@ -83,7 +83,7 @@ public sealed class DeleteConversationMessageTests : IClassFixture<HarmonieWebAp
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Message.DeleteForbidden);
     }
@@ -101,7 +101,7 @@ public sealed class DeleteConversationMessageTests : IClassFixture<HarmonieWebAp
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Message.NotFound);
     }
@@ -113,7 +113,7 @@ public sealed class DeleteConversationMessageTests : IClassFixture<HarmonieWebAp
         var target = await AuthTestHelper.RegisterAsync(_client);
         var conversationId = await ConversationTestHelper.OpenConversationAsync(_client, caller.AccessToken, target.UserId);
         var visibleMessage = await ConversationTestHelper.SendConversationMessageAsync(_client, conversationId, "keep me", target.AccessToken);
-        await Task.Delay(20);
+        await Task.Delay(20, TestContext.Current.CancellationToken);
         var deletedMessage = await ConversationTestHelper.SendConversationMessageAsync(_client, conversationId, "delete me", caller.AccessToken);
 
         var deleteResponse = await _client.SendAuthorizedDeleteAsync(
@@ -126,7 +126,7 @@ public sealed class DeleteConversationMessageTests : IClassFixture<HarmonieWebAp
             caller.AccessToken);
         listResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var payload = await listResponse.Content.ReadFromJsonAsync<GetMessagesResponse>();
+        var payload = await listResponse.Content.ReadFromJsonAsync<GetMessagesResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.Items.Should().ContainSingle();
         payload.Items[0].MessageId.Should().Be(visibleMessage.MessageId);
@@ -136,7 +136,8 @@ public sealed class DeleteConversationMessageTests : IClassFixture<HarmonieWebAp
     public async Task DeleteConversationMessage_WithoutAuthentication_ShouldReturnUnauthorized()
     {
         var response = await _client.DeleteAsync(
-            $"/api/conversations/{Guid.NewGuid()}/messages/{Guid.NewGuid()}");
+            $"/api/conversations/{Guid.NewGuid()}/messages/{Guid.NewGuid()}",
+            TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }

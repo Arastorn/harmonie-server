@@ -33,7 +33,7 @@ public sealed class AcceptInviteEndpointTests : IClassFixture<HarmonieWebApplica
             joiner.AccessToken);
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var result = await response.Content.ReadFromJsonAsync<AcceptInviteResponse>();
+        var result = await response.Content.ReadFromJsonAsync<AcceptInviteResponse>(TestContext.Current.CancellationToken);
         result.Should().NotBeNull();
         result!.GuildId.Should().Be(guild.GuildId);
         result.Role.Should().Be("Member");
@@ -54,7 +54,7 @@ public sealed class AcceptInviteEndpointTests : IClassFixture<HarmonieWebApplica
             owner.AccessToken);
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Guild.MemberAlreadyExists);
     }
@@ -70,7 +70,7 @@ public sealed class AcceptInviteEndpointTests : IClassFixture<HarmonieWebApplica
             user.AccessToken);
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Invite.NotFound);
     }
@@ -78,7 +78,7 @@ public sealed class AcceptInviteEndpointTests : IClassFixture<HarmonieWebApplica
     [Fact]
     public async Task AcceptInvite_WhenUnauthenticated_ShouldReturn401()
     {
-        var response = await _client.PostAsync("/api/invites/ABCD1234/accept", null);
+        var response = await _client.PostAsync("/api/invites/ABCD1234/accept", null, TestContext.Current.CancellationToken);
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
@@ -93,7 +93,7 @@ public sealed class AcceptInviteEndpointTests : IClassFixture<HarmonieWebApplica
             user.AccessToken);
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Common.ValidationFailed);
     }
@@ -121,7 +121,7 @@ public sealed class AcceptInviteEndpointTests : IClassFixture<HarmonieWebApplica
             joiner2.AccessToken);
         response2.StatusCode.Should().Be(HttpStatusCode.Gone);
 
-        var error = await response2.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response2.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Invite.Exhausted);
     }

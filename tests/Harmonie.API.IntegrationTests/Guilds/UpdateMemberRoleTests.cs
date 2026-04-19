@@ -32,7 +32,7 @@ public sealed class UpdateMemberRoleTests : IClassFixture<HarmonieWebApplication
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         await GuildTestHelper.InviteMemberAsync(_client, createGuildPayload!.GuildId, owner.AccessToken, member.AccessToken);
@@ -56,7 +56,7 @@ public sealed class UpdateMemberRoleTests : IClassFixture<HarmonieWebApplication
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         await GuildTestHelper.InviteMemberAsync(_client, createGuildPayload!.GuildId, owner.AccessToken, otherAdmin.AccessToken);
@@ -86,7 +86,7 @@ public sealed class UpdateMemberRoleTests : IClassFixture<HarmonieWebApplication
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         await GuildTestHelper.InviteMemberAsync(_client, createGuildPayload!.GuildId, owner.AccessToken, member.AccessToken);
@@ -99,7 +99,7 @@ public sealed class UpdateMemberRoleTests : IClassFixture<HarmonieWebApplication
             member.AccessToken);
         updateRoleResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        var error = await updateRoleResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await updateRoleResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Guild.AccessDenied);
     }
@@ -115,7 +115,7 @@ public sealed class UpdateMemberRoleTests : IClassFixture<HarmonieWebApplication
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         var updateRoleResponse = await _client.SendAuthorizedPutAsync(
@@ -124,7 +124,7 @@ public sealed class UpdateMemberRoleTests : IClassFixture<HarmonieWebApplication
             owner.AccessToken);
         updateRoleResponse.StatusCode.Should().Be(HttpStatusCode.Conflict);
 
-        var error = await updateRoleResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await updateRoleResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Guild.OwnerRoleCannotBeChanged);
     }
@@ -142,7 +142,7 @@ public sealed class UpdateMemberRoleTests : IClassFixture<HarmonieWebApplication
             user.AccessToken);
         updateRoleResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-        var error = await updateRoleResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await updateRoleResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Guild.NotFound);
     }
@@ -155,7 +155,8 @@ public sealed class UpdateMemberRoleTests : IClassFixture<HarmonieWebApplication
 
         var updateRoleResponse = await _client.PutAsJsonAsync(
             $"/api/guilds/{nonExistentGuildId}/members/{targetId}/role",
-            new UpdateMemberRoleRequest(GuildRoleInput.Admin));
+            new UpdateMemberRoleRequest(GuildRoleInput.Admin),
+            TestContext.Current.CancellationToken);
         updateRoleResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
@@ -171,7 +172,7 @@ public sealed class UpdateMemberRoleTests : IClassFixture<HarmonieWebApplication
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         await GuildTestHelper.InviteMemberAsync(_client, createGuildPayload!.GuildId, owner.AccessToken, member.AccessToken);
@@ -182,7 +183,7 @@ public sealed class UpdateMemberRoleTests : IClassFixture<HarmonieWebApplication
             owner.AccessToken);
         updateRoleResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
-        var error = await updateRoleResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await updateRoleResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Common.ValidationFailed);
         error.Errors.Should().ContainKey("role");
@@ -199,6 +200,6 @@ public sealed class UpdateMemberRoleTests : IClassFixture<HarmonieWebApplication
             Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json")
         };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-        return await _client.SendAsync(request);
+        return await _client.SendAsync(request, TestContext.Current.CancellationToken);
     }
 }

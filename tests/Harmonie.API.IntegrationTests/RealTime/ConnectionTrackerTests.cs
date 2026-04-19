@@ -63,7 +63,7 @@ public sealed class ConnectionTrackerTests : IDisposable
             .Setup(x => x.GetUserGuildMembershipsAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<UserGuildMembership>());
 
-        await _tracker.HandleConnectedAsync(userId, "conn-1");
+        await _tracker.HandleConnectedAsync(userId, "conn-1", TestContext.Current.CancellationToken);
 
         _tracker.IsOnline(userId).Should().BeTrue();
     }
@@ -87,7 +87,7 @@ public sealed class ConnectionTrackerTests : IDisposable
                 new UserGuildMembership(guild, Domain.Enums.GuildRole.Member, DateTime.UtcNow)
             });
 
-        await _tracker.HandleConnectedAsync(userId, "conn-1");
+        await _tracker.HandleConnectedAsync(userId, "conn-1", TestContext.Current.CancellationToken);
 
         _presenceNotifierMock.Verify(
             x => x.NotifyStatusChangedAsync(
@@ -114,8 +114,8 @@ public sealed class ConnectionTrackerTests : IDisposable
             .Setup(x => x.GetUserGuildMembershipsAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<UserGuildMembership>());
 
-        await _tracker.HandleConnectedAsync(userId, "conn-1");
-        await _tracker.HandleConnectedAsync(userId, "conn-2");
+        await _tracker.HandleConnectedAsync(userId, "conn-1", TestContext.Current.CancellationToken);
+        await _tracker.HandleConnectedAsync(userId, "conn-2", TestContext.Current.CancellationToken);
 
         _tracker.IsOnline(userId).Should().BeTrue();
 
@@ -138,9 +138,9 @@ public sealed class ConnectionTrackerTests : IDisposable
             .Setup(x => x.GetUserGuildMembershipsAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<UserGuildMembership>());
 
-        await _tracker.HandleConnectedAsync(userId, "conn-1");
-        await _tracker.HandleConnectedAsync(userId, "conn-2");
-        await _tracker.HandleDisconnectedAsync(userId, "conn-1");
+        await _tracker.HandleConnectedAsync(userId, "conn-1", TestContext.Current.CancellationToken);
+        await _tracker.HandleConnectedAsync(userId, "conn-2", TestContext.Current.CancellationToken);
+        await _tracker.HandleDisconnectedAsync(userId, "conn-1", TestContext.Current.CancellationToken);
 
         _tracker.IsOnline(userId).Should().BeTrue();
     }
@@ -164,10 +164,10 @@ public sealed class ConnectionTrackerTests : IDisposable
                 new UserGuildMembership(guild, Domain.Enums.GuildRole.Member, DateTime.UtcNow)
             });
 
-        await _tracker.HandleConnectedAsync(userId, "conn-1");
+        await _tracker.HandleConnectedAsync(userId, "conn-1", TestContext.Current.CancellationToken);
         _presenceNotifierMock.Invocations.Clear();
 
-        await _tracker.HandleDisconnectedAsync(userId, "conn-1");
+        await _tracker.HandleDisconnectedAsync(userId, "conn-1", TestContext.Current.CancellationToken);
 
         // Should not broadcast immediately
         _presenceNotifierMock.Verify(
@@ -177,7 +177,7 @@ public sealed class ConnectionTrackerTests : IDisposable
             Times.Never);
 
         // Wait for grace period to expire
-        await Task.Delay(TestGracePeriod + TimeSpan.FromMilliseconds(200));
+        await Task.Delay(TestGracePeriod + TimeSpan.FromMilliseconds(200), TestContext.Current.CancellationToken);
 
         _presenceNotifierMock.Verify(
             x => x.NotifyStatusChangedAsync(
@@ -207,17 +207,17 @@ public sealed class ConnectionTrackerTests : IDisposable
                 new UserGuildMembership(guild, Domain.Enums.GuildRole.Member, DateTime.UtcNow)
             });
 
-        await _tracker.HandleConnectedAsync(userId, "conn-1");
+        await _tracker.HandleConnectedAsync(userId, "conn-1", TestContext.Current.CancellationToken);
         _presenceNotifierMock.Invocations.Clear();
 
-        await _tracker.HandleDisconnectedAsync(userId, "conn-1");
+        await _tracker.HandleDisconnectedAsync(userId, "conn-1", TestContext.Current.CancellationToken);
 
         // Reconnect before grace period expires
-        await Task.Delay(TestGracePeriod / 2);
-        await _tracker.HandleConnectedAsync(userId, "conn-2");
+        await Task.Delay(TestGracePeriod / 2, TestContext.Current.CancellationToken);
+        await _tracker.HandleConnectedAsync(userId, "conn-2", TestContext.Current.CancellationToken);
 
         // Wait for grace period to fully expire
-        await Task.Delay(TestGracePeriod + TimeSpan.FromMilliseconds(200));
+        await Task.Delay(TestGracePeriod + TimeSpan.FromMilliseconds(200), TestContext.Current.CancellationToken);
 
         // Should have broadcast online on reconnect, not offline
         _presenceNotifierMock.Verify(
@@ -254,7 +254,7 @@ public sealed class ConnectionTrackerTests : IDisposable
                 new UserGuildMembership(guild, Domain.Enums.GuildRole.Member, DateTime.UtcNow)
             });
 
-        await _tracker.HandleConnectedAsync(userId, "conn-1");
+        await _tracker.HandleConnectedAsync(userId, "conn-1", TestContext.Current.CancellationToken);
 
         _presenceNotifierMock.Verify(
             x => x.NotifyStatusChangedAsync(
@@ -276,7 +276,7 @@ public sealed class ConnectionTrackerTests : IDisposable
     public async Task HandleDisconnectedAsync_UnknownUser_ShouldNotThrow()
     {
         var userId = UserId.New();
-        await _tracker.HandleDisconnectedAsync(userId, "conn-1");
+        await _tracker.HandleDisconnectedAsync(userId, "conn-1", TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -293,7 +293,7 @@ public sealed class ConnectionTrackerTests : IDisposable
             .Setup(x => x.GetUserGuildMembershipsAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<UserGuildMembership>());
 
-        await _tracker.HandleConnectedAsync(userId, "conn-1");
+        await _tracker.HandleConnectedAsync(userId, "conn-1", TestContext.Current.CancellationToken);
 
         _presenceNotifierMock.Verify(
             x => x.NotifyStatusChangedAsync(
@@ -323,8 +323,8 @@ public sealed class ConnectionTrackerTests : IDisposable
             .Setup(x => x.GetUserGuildMembershipsAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<UserGuildMembership>());
 
-        await _tracker.HandleConnectedAsync(userId, "conn-1");
-        await _tracker.HandleConnectedAsync(userId, "conn-2");
+        await _tracker.HandleConnectedAsync(userId, "conn-1", TestContext.Current.CancellationToken);
+        await _tracker.HandleConnectedAsync(userId, "conn-2", TestContext.Current.CancellationToken);
 
         var connectionIds = _tracker.GetConnectionIds(userId);
         connectionIds.Should().HaveCount(2);
@@ -346,9 +346,9 @@ public sealed class ConnectionTrackerTests : IDisposable
             .Setup(x => x.GetUserGuildMembershipsAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<UserGuildMembership>());
 
-        await _tracker.HandleConnectedAsync(userId, "conn-1");
-        await _tracker.HandleConnectedAsync(userId, "conn-2");
-        await _tracker.HandleDisconnectedAsync(userId, "conn-1");
+        await _tracker.HandleConnectedAsync(userId, "conn-1", TestContext.Current.CancellationToken);
+        await _tracker.HandleConnectedAsync(userId, "conn-2", TestContext.Current.CancellationToken);
+        await _tracker.HandleDisconnectedAsync(userId, "conn-1", TestContext.Current.CancellationToken);
 
         var connectionIds = _tracker.GetConnectionIds(userId);
         connectionIds.Should().HaveCount(1);

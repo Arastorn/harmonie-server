@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+  </PropertyGroup>
+</Project>

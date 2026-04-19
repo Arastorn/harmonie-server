@@ -63,7 +63,7 @@ public sealed class SignalRRealtimeGroupManagerTests
                 new[] { channelId },
                 new[] { conversationId }));
 
-        await _manager.SubscribeConnectionAsync(userId, connectionId);
+        await _manager.SubscribeConnectionAsync(userId, connectionId, TestContext.Current.CancellationToken);
 
         _groupManagerMock.Verify(
             x => x.AddToGroupAsync(connectionId, $"guild-voice:{guildId}", It.IsAny<CancellationToken>()),
@@ -88,7 +88,7 @@ public sealed class SignalRRealtimeGroupManagerTests
                 Array.Empty<GuildChannelId>(),
                 Array.Empty<ConversationId>()));
 
-        await _manager.SubscribeConnectionAsync(userId, "conn-1");
+        await _manager.SubscribeConnectionAsync(userId, "conn-1", TestContext.Current.CancellationToken);
 
         _groupManagerMock.Verify(
             x => x.AddToGroupAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
@@ -115,7 +115,7 @@ public sealed class SignalRRealtimeGroupManagerTests
                 CreateChannel(voiceChannelId, guildId, GuildChannelType.Voice)
             });
 
-        await _manager.AddUserToGuildGroupsAsync(userId, guildId);
+        await _manager.AddUserToGuildGroupsAsync(userId, guildId, TestContext.Current.CancellationToken);
 
         _groupManagerMock.Verify(
             x => x.AddToGroupAsync("conn-1", $"guild-voice:{guildId}", It.IsAny<CancellationToken>()),
@@ -138,7 +138,7 @@ public sealed class SignalRRealtimeGroupManagerTests
             .Setup(x => x.GetConnectionIds(userId))
             .Returns(Array.Empty<string>());
 
-        await _manager.AddUserToGuildGroupsAsync(userId, guildId);
+        await _manager.AddUserToGuildGroupsAsync(userId, guildId, TestContext.Current.CancellationToken);
 
         _guildChannelRepositoryMock.Verify(
             x => x.GetByGuildIdAsync(It.IsAny<GuildId>(), It.IsAny<CancellationToken>()),
@@ -166,7 +166,7 @@ public sealed class SignalRRealtimeGroupManagerTests
                 CreateChannel(textChannelId, guildId, GuildChannelType.Text)
             });
 
-        await _manager.RemoveUserFromGuildGroupsAsync(userId, guildId);
+        await _manager.RemoveUserFromGuildGroupsAsync(userId, guildId, TestContext.Current.CancellationToken);
 
         _groupManagerMock.Verify(
             x => x.RemoveFromGroupAsync("conn-1", $"guild-voice:{guildId}", It.IsAny<CancellationToken>()),
@@ -186,7 +186,7 @@ public sealed class SignalRRealtimeGroupManagerTests
             .Setup(x => x.GetConnectionIds(userId))
             .Returns(Array.Empty<string>());
 
-        await _manager.RemoveUserFromGuildGroupsAsync(userId, guildId);
+        await _manager.RemoveUserFromGuildGroupsAsync(userId, guildId, TestContext.Current.CancellationToken);
 
         _groupManagerMock.Verify(
             x => x.RemoveFromGroupAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
@@ -203,7 +203,7 @@ public sealed class SignalRRealtimeGroupManagerTests
             .Setup(x => x.GetConnectionIds(userId))
             .Returns(new[] { "conn-1", "conn-2" });
 
-        await _manager.AddUserToChannelGroupAsync(userId, channelId);
+        await _manager.AddUserToChannelGroupAsync(userId, channelId, TestContext.Current.CancellationToken);
 
         _groupManagerMock.Verify(
             x => x.AddToGroupAsync("conn-1", $"channel:{channelId}", It.IsAny<CancellationToken>()),
@@ -236,7 +236,7 @@ public sealed class SignalRRealtimeGroupManagerTests
             .Setup(x => x.GetConnectionIds(offlineUserId))
             .Returns(Array.Empty<string>());
 
-        await _manager.AddAllGuildMembersToChannelGroupAsync(guildId, channelId);
+        await _manager.AddAllGuildMembersToChannelGroupAsync(guildId, channelId, TestContext.Current.CancellationToken);
 
         _groupManagerMock.Verify(
             x => x.AddToGroupAsync("conn-1", $"channel:{channelId}", It.IsAny<CancellationToken>()),
@@ -256,7 +256,7 @@ public sealed class SignalRRealtimeGroupManagerTests
             .Setup(x => x.GetConnectionIds(userId))
             .Returns(new[] { "conn-1" });
 
-        await _manager.AddUserToConversationGroupAsync(userId, conversationId);
+        await _manager.AddUserToConversationGroupAsync(userId, conversationId, TestContext.Current.CancellationToken);
 
         _groupManagerMock.Verify(
             x => x.AddToGroupAsync("conn-1", $"conversation:{conversationId}", It.IsAny<CancellationToken>()),
@@ -273,7 +273,7 @@ public sealed class SignalRRealtimeGroupManagerTests
             .Setup(x => x.GetConnectionIds(userId))
             .Returns(Array.Empty<string>());
 
-        await _manager.AddUserToConversationGroupAsync(userId, conversationId);
+        await _manager.AddUserToConversationGroupAsync(userId, conversationId, TestContext.Current.CancellationToken);
 
         _groupManagerMock.Verify(
             x => x.AddToGroupAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
@@ -298,7 +298,7 @@ public sealed class SignalRRealtimeGroupManagerTests
                 CreateChannel(channelId, guildId, GuildChannelType.Text)
             });
 
-        await _manager.AddUserToGuildGroupsAsync(userId, guildId);
+        await _manager.AddUserToGuildGroupsAsync(userId, guildId, TestContext.Current.CancellationToken);
 
         // 2 connections x (1 guild + 1 channel) = 4 calls
         _groupManagerMock.Verify(

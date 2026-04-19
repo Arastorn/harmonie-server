@@ -37,7 +37,7 @@ public sealed class SignalRTextChannelsHubTests : IClassFixture<HarmonieWebAppli
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         await GuildTestHelper.InviteMemberAsync(_client, createGuildPayload!.GuildId, owner.AccessToken, member.AccessToken);
@@ -47,7 +47,7 @@ public sealed class SignalRTextChannelsHubTests : IClassFixture<HarmonieWebAppli
             member.AccessToken);
         channelsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var channelsPayload = await channelsResponse.Content.ReadFromJsonAsync<GetGuildChannelsResponse>();
+        var channelsPayload = await channelsResponse.Content.ReadFromJsonAsync<GetGuildChannelsResponse>(TestContext.Current.CancellationToken);
         channelsPayload.Should().NotBeNull();
 
         var textChannel = channelsPayload!.Channels.First(channel => channel.Type == "Text");
@@ -65,8 +65,8 @@ public sealed class SignalRTextChannelsHubTests : IClassFixture<HarmonieWebAppli
         var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         connection.On("Ready", () => ready.TrySetResult());
 
-        await connection.StartAsync();
-        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await connection.StartAsync(TestContext.Current.CancellationToken);
+        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
         var sendMessageResponse = await _client.SendAuthorizedPostAsync(
             $"/api/channels/{textChannel.ChannelId}/messages",
@@ -74,7 +74,7 @@ public sealed class SignalRTextChannelsHubTests : IClassFixture<HarmonieWebAppli
             owner.AccessToken);
         sendMessageResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var sendMessagePayload = await sendMessageResponse.Content.ReadFromJsonAsync<SendMessageResponse>();
+        var sendMessagePayload = await sendMessageResponse.Content.ReadFromJsonAsync<SendMessageResponse>(TestContext.Current.CancellationToken);
         sendMessagePayload.Should().NotBeNull();
 
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
@@ -100,7 +100,7 @@ public sealed class SignalRTextChannelsHubTests : IClassFixture<HarmonieWebAppli
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         await GuildTestHelper.InviteMemberAsync(_client, createGuildPayload!.GuildId, owner.AccessToken, member.AccessToken);
@@ -110,7 +110,7 @@ public sealed class SignalRTextChannelsHubTests : IClassFixture<HarmonieWebAppli
             member.AccessToken);
         channelsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var channelsPayload = await channelsResponse.Content.ReadFromJsonAsync<GetGuildChannelsResponse>();
+        var channelsPayload = await channelsResponse.Content.ReadFromJsonAsync<GetGuildChannelsResponse>(TestContext.Current.CancellationToken);
         channelsPayload.Should().NotBeNull();
 
         var textChannel = channelsPayload!.Channels.First(channel => channel.Type == "Text");
@@ -121,7 +121,7 @@ public sealed class SignalRTextChannelsHubTests : IClassFixture<HarmonieWebAppli
             owner.AccessToken);
         sendMessageResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var sendMessagePayload = await sendMessageResponse.Content.ReadFromJsonAsync<SendMessageResponse>();
+        var sendMessagePayload = await sendMessageResponse.Content.ReadFromJsonAsync<SendMessageResponse>(TestContext.Current.CancellationToken);
         sendMessagePayload.Should().NotBeNull();
 
         await using var connection = CreateHubConnection(member.AccessToken);
@@ -136,8 +136,8 @@ public sealed class SignalRTextChannelsHubTests : IClassFixture<HarmonieWebAppli
         var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         connection.On("Ready", () => ready.TrySetResult());
 
-        await connection.StartAsync();
-        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await connection.StartAsync(TestContext.Current.CancellationToken);
+        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
         var editResponse = await _client.SendAuthorizedPatchAsync(
             $"/api/channels/{textChannel.ChannelId}/messages/{sendMessagePayload!.MessageId}",
@@ -168,7 +168,7 @@ public sealed class SignalRTextChannelsHubTests : IClassFixture<HarmonieWebAppli
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         await GuildTestHelper.InviteMemberAsync(_client, createGuildPayload!.GuildId, owner.AccessToken, member.AccessToken);
@@ -178,7 +178,7 @@ public sealed class SignalRTextChannelsHubTests : IClassFixture<HarmonieWebAppli
             member.AccessToken);
         channelsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var channelsPayload = await channelsResponse.Content.ReadFromJsonAsync<GetGuildChannelsResponse>();
+        var channelsPayload = await channelsResponse.Content.ReadFromJsonAsync<GetGuildChannelsResponse>(TestContext.Current.CancellationToken);
         channelsPayload.Should().NotBeNull();
 
         var textChannel = channelsPayload!.Channels.First(channel => channel.Type == "Text");
@@ -189,7 +189,7 @@ public sealed class SignalRTextChannelsHubTests : IClassFixture<HarmonieWebAppli
             owner.AccessToken);
         sendMessageResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var sendMessagePayload = await sendMessageResponse.Content.ReadFromJsonAsync<SendMessageResponse>();
+        var sendMessagePayload = await sendMessageResponse.Content.ReadFromJsonAsync<SendMessageResponse>(TestContext.Current.CancellationToken);
         sendMessagePayload.Should().NotBeNull();
 
         await using var connection = CreateHubConnection(member.AccessToken);
@@ -204,8 +204,8 @@ public sealed class SignalRTextChannelsHubTests : IClassFixture<HarmonieWebAppli
         var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         connection.On("Ready", () => ready.TrySetResult());
 
-        await connection.StartAsync();
-        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await connection.StartAsync(TestContext.Current.CancellationToken);
+        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
         var deleteResponse = await _client.SendAuthorizedDeleteAsync(
             $"/api/channels/{textChannel.ChannelId}/messages/{sendMessagePayload!.MessageId}",

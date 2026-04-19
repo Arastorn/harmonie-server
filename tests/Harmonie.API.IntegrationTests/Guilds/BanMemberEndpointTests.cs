@@ -39,7 +39,7 @@ public sealed class BanMemberEndpointTests : IClassFixture<HarmonieWebApplicatio
             owner.AccessToken);
         banResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var banPayload = await banResponse.Content.ReadFromJsonAsync<BanMemberResponse>();
+        var banPayload = await banResponse.Content.ReadFromJsonAsync<BanMemberResponse>(TestContext.Current.CancellationToken);
         banPayload.Should().NotBeNull();
         banPayload!.GuildId.Should().Be(guild.GuildId);
         banPayload.UserId.Should().Be(member.UserId);
@@ -52,7 +52,7 @@ public sealed class BanMemberEndpointTests : IClassFixture<HarmonieWebApplicatio
             owner.AccessToken);
         membersResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var membersPayload = await membersResponse.Content.ReadFromJsonAsync<GetGuildMembersResponse>();
+        var membersPayload = await membersResponse.Content.ReadFromJsonAsync<GetGuildMembersResponse>(TestContext.Current.CancellationToken);
         membersPayload.Should().NotBeNull();
         membersPayload!.Members.Should().NotContain(m => m.UserId == member.UserId);
     }
@@ -84,7 +84,7 @@ public sealed class BanMemberEndpointTests : IClassFixture<HarmonieWebApplicatio
             banned.AccessToken);
         acceptResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        var error = await acceptResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await acceptResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Guild.UserBanned);
     }
@@ -108,7 +108,7 @@ public sealed class BanMemberEndpointTests : IClassFixture<HarmonieWebApplicatio
             member.AccessToken);
         banResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        var error = await banResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await banResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Guild.AccessDenied);
     }
@@ -138,7 +138,7 @@ public sealed class BanMemberEndpointTests : IClassFixture<HarmonieWebApplicatio
             admin.AccessToken);
         banResponse.StatusCode.Should().Be(HttpStatusCode.Conflict);
 
-        var error = await banResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await banResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Guild.OwnerCannotBeBanned);
     }
@@ -166,7 +166,7 @@ public sealed class BanMemberEndpointTests : IClassFixture<HarmonieWebApplicatio
             owner.AccessToken);
         secondBan.StatusCode.Should().Be(HttpStatusCode.Conflict);
 
-        var error = await secondBan.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await secondBan.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Guild.AlreadyBanned);
     }
@@ -186,7 +186,7 @@ public sealed class BanMemberEndpointTests : IClassFixture<HarmonieWebApplicatio
         var channelsResponse = await _client.SendAuthorizedGetAsync(
             $"/api/guilds/{guild.GuildId}/channels",
             owner.AccessToken);
-        var channels = await channelsResponse.Content.ReadFromJsonAsync<GetGuildChannelsResponse>();
+        var channels = await channelsResponse.Content.ReadFromJsonAsync<GetGuildChannelsResponse>(TestContext.Current.CancellationToken);
         var textChannel = channels!.Channels.First(c => c.Type == "Text");
 
         // Member sends a message
@@ -209,7 +209,7 @@ public sealed class BanMemberEndpointTests : IClassFixture<HarmonieWebApplicatio
             owner.AccessToken);
         messagesResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var messages = await messagesResponse.Content.ReadFromJsonAsync<GetMessagesResponse>();
+        var messages = await messagesResponse.Content.ReadFromJsonAsync<GetMessagesResponse>(TestContext.Current.CancellationToken);
         messages.Should().NotBeNull();
         messages!.Items.Should().NotContain(m => m.AuthorUserId == member.UserId);
     }
@@ -221,7 +221,8 @@ public sealed class BanMemberEndpointTests : IClassFixture<HarmonieWebApplicatio
 
         var banResponse = await _client.PostAsJsonAsync(
             $"/api/guilds/{nonExistentGuildId}/bans",
-            new BanMemberRequest(Guid.NewGuid()));
+            new BanMemberRequest(Guid.NewGuid()),
+            TestContext.Current.CancellationToken);
         banResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 }

@@ -35,7 +35,7 @@ public sealed class ConversationMessageAttachmentsTests : IClassFixture<Harmonie
             caller.AccessToken);
         sendResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var sendPayload = await sendResponse.Content.ReadFromJsonAsync<SendMessageResponse>();
+        var sendPayload = await sendResponse.Content.ReadFromJsonAsync<SendMessageResponse>(TestContext.Current.CancellationToken);
         sendPayload.Should().NotBeNull();
 
         var deleteResponse = await _client.SendAuthorizedDeleteAsync(
@@ -48,7 +48,7 @@ public sealed class ConversationMessageAttachmentsTests : IClassFixture<Harmonie
             caller.AccessToken);
         listResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var listPayload = await listResponse.Content.ReadFromJsonAsync<GetMessagesResponse>();
+        var listPayload = await listResponse.Content.ReadFromJsonAsync<GetMessagesResponse>(TestContext.Current.CancellationToken);
         listPayload.Should().NotBeNull();
         listPayload!.Items.Should().ContainSingle();
         listPayload.Items[0].Attachments.Should().BeEmpty();
@@ -68,7 +68,7 @@ public sealed class ConversationMessageAttachmentsTests : IClassFixture<Harmonie
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Conversation.NotFound);
     }
@@ -88,7 +88,7 @@ public sealed class ConversationMessageAttachmentsTests : IClassFixture<Harmonie
             participantOne.AccessToken);
         sendResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var sendPayload = await sendResponse.Content.ReadFromJsonAsync<SendMessageResponse>();
+        var sendPayload = await sendResponse.Content.ReadFromJsonAsync<SendMessageResponse>(TestContext.Current.CancellationToken);
         sendPayload.Should().NotBeNull();
 
         var response = await _client.SendAuthorizedDeleteAsync(
@@ -97,7 +97,7 @@ public sealed class ConversationMessageAttachmentsTests : IClassFixture<Harmonie
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Conversation.AccessDenied);
     }
@@ -116,7 +116,7 @@ public sealed class ConversationMessageAttachmentsTests : IClassFixture<Harmonie
             participantOne.AccessToken);
         sendResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var sendPayload = await sendResponse.Content.ReadFromJsonAsync<SendMessageResponse>();
+        var sendPayload = await sendResponse.Content.ReadFromJsonAsync<SendMessageResponse>(TestContext.Current.CancellationToken);
         sendPayload.Should().NotBeNull();
 
         var response = await _client.SendAuthorizedDeleteAsync(
@@ -125,7 +125,7 @@ public sealed class ConversationMessageAttachmentsTests : IClassFixture<Harmonie
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Message.DeleteForbidden);
     }
@@ -145,7 +145,7 @@ public sealed class ConversationMessageAttachmentsTests : IClassFixture<Harmonie
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Message.AttachmentNotFound);
     }
@@ -154,7 +154,8 @@ public sealed class ConversationMessageAttachmentsTests : IClassFixture<Harmonie
     public async Task DeleteConversationMessageAttachment_WithoutAuthentication_ShouldReturnUnauthorized()
     {
         var response = await _client.DeleteAsync(
-            $"/api/conversations/{Guid.NewGuid()}/messages/{Guid.NewGuid()}/attachments/{Guid.NewGuid()}");
+            $"/api/conversations/{Guid.NewGuid()}/messages/{Guid.NewGuid()}/attachments/{Guid.NewGuid()}",
+            TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -179,7 +180,7 @@ public sealed class ConversationMessageAttachmentsTests : IClassFixture<Harmonie
         var response = await _client.SendAsync(request);
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var payload = await response.Content.ReadFromJsonAsync<UploadFileResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<UploadFileResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         return payload!;
     }

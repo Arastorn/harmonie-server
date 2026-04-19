@@ -28,9 +28,9 @@ public sealed class SearchConversationMessagesEndpointTests : IClassFixture<Harm
         var conversationId = await ConversationTestHelper.OpenConversationAsync(_client, caller.AccessToken, target.UserId);
 
         await SendConversationMessageAsync(conversationId, "deploy alpha", caller.AccessToken);
-        await Task.Delay(20);
+        await Task.Delay(20, TestContext.Current.CancellationToken);
         await SendConversationMessageAsync(conversationId, "random chatter", caller.AccessToken);
-        await Task.Delay(20);
+        await Task.Delay(20, TestContext.Current.CancellationToken);
         await SendConversationMessageAsync(conversationId, "deploy beta", target.AccessToken);
 
         var response = await _client.SendAuthorizedGetAsync(
@@ -39,7 +39,7 @@ public sealed class SearchConversationMessagesEndpointTests : IClassFixture<Harm
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var payload = await response.Content.ReadFromJsonAsync<SearchConversationMessagesResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<SearchConversationMessagesResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.ConversationId.Should().Be(conversationId);
         payload.Items.Select(item => item.Content).Should().Equal("deploy beta", "deploy alpha");
@@ -55,9 +55,9 @@ public sealed class SearchConversationMessagesEndpointTests : IClassFixture<Harm
         var conversationId = await ConversationTestHelper.OpenConversationAsync(_client, caller.AccessToken, target.UserId);
 
         await SendConversationMessageAsync(conversationId, "incident one", caller.AccessToken);
-        await Task.Delay(20);
+        await Task.Delay(20, TestContext.Current.CancellationToken);
         await SendConversationMessageAsync(conversationId, "incident two", target.AccessToken);
-        await Task.Delay(20);
+        await Task.Delay(20, TestContext.Current.CancellationToken);
         await SendConversationMessageAsync(conversationId, "incident three", caller.AccessToken);
 
         var firstResponse = await _client.SendAuthorizedGetAsync(
@@ -66,7 +66,7 @@ public sealed class SearchConversationMessagesEndpointTests : IClassFixture<Harm
 
         firstResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var firstPayload = await firstResponse.Content.ReadFromJsonAsync<SearchConversationMessagesResponse>();
+        var firstPayload = await firstResponse.Content.ReadFromJsonAsync<SearchConversationMessagesResponse>(TestContext.Current.CancellationToken);
         firstPayload.Should().NotBeNull();
         firstPayload!.Items.Select(item => item.Content).Should().Equal("incident three", "incident two");
         firstPayload.NextCursor.Should().NotBeNullOrWhiteSpace();
@@ -77,7 +77,7 @@ public sealed class SearchConversationMessagesEndpointTests : IClassFixture<Harm
 
         secondResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var secondPayload = await secondResponse.Content.ReadFromJsonAsync<SearchConversationMessagesResponse>();
+        var secondPayload = await secondResponse.Content.ReadFromJsonAsync<SearchConversationMessagesResponse>(TestContext.Current.CancellationToken);
         secondPayload.Should().NotBeNull();
         secondPayload!.Items.Select(item => item.Content).Should().Equal("incident one");
         secondPayload.NextCursor.Should().BeNull();
@@ -97,7 +97,7 @@ public sealed class SearchConversationMessagesEndpointTests : IClassFixture<Harm
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Conversation.AccessDenied);
     }
@@ -106,7 +106,8 @@ public sealed class SearchConversationMessagesEndpointTests : IClassFixture<Harm
     public async Task SearchConversationMessages_WithoutAuthentication_ShouldReturnUnauthorized()
     {
         var response = await _client.GetAsync(
-            $"/api/conversations/{Guid.NewGuid()}/messages/search?q=incident");
+            $"/api/conversations/{Guid.NewGuid()}/messages/search?q=incident",
+            TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }

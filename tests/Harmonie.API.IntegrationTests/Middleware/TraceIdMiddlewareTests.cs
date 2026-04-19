@@ -22,7 +22,7 @@ public sealed class TraceIdMiddlewareTests : IClassFixture<HarmonieWebApplicatio
     public async Task XTraceIdHeader_PresentInResponse()
     {
         // Act
-        var response = await _client.GetAsync("/health");
+        var response = await _client.GetAsync("/health", TestContext.Current.CancellationToken);
 
         // Assert
         response.Headers.TryGetValues("X-Trace-Id", out var traceIdValues);
@@ -37,8 +37,8 @@ public sealed class TraceIdMiddlewareTests : IClassFixture<HarmonieWebApplicatio
     public async Task XTraceIdHeader_DifferentForEachRequest()
     {
         // Act
-        var response1 = await _client.GetAsync("/health");
-        var response2 = await _client.GetAsync("/health");
+        var response1 = await _client.GetAsync("/health", TestContext.Current.CancellationToken);
+        var response2 = await _client.GetAsync("/health", TestContext.Current.CancellationToken);
 
         // Assert
         var traceId1 = response1.Headers.GetValues("X-Trace-Id").FirstOrDefault();
@@ -58,7 +58,7 @@ public sealed class TraceIdMiddlewareTests : IClassFixture<HarmonieWebApplicatio
         request.Headers.Add("traceparent", $"00-{expectedTraceId}-{ActivitySpanId.CreateRandom().ToHexString()}-01");
 
         // Act
-        var response = await _client.SendAsync(request);
+        var response = await _client.SendAsync(request, TestContext.Current.CancellationToken);
 
         // Assert
         var traceId = response.Headers.GetValues("X-Trace-Id").FirstOrDefault();
@@ -73,7 +73,7 @@ public sealed class TraceIdMiddlewareTests : IClassFixture<HarmonieWebApplicatio
         request.Headers.Add("traceparent", "invalid-format");
 
         // Act
-        var response = await _client.SendAsync(request);
+        var response = await _client.SendAsync(request, TestContext.Current.CancellationToken);
 
         // Assert
         var traceId = response.Headers.GetValues("X-Trace-Id").FirstOrDefault();
@@ -86,7 +86,7 @@ public sealed class TraceIdMiddlewareTests : IClassFixture<HarmonieWebApplicatio
     public async Task XTraceIdHeader_PresentOnErrorResponse()
     {
         // Act
-        var response = await _client.PostAsJsonAsync("/api/auth/login", new { email = "", password = "" });
+        var response = await _client.PostAsJsonAsync("/api/auth/login", new { email = "", password = "" }, TestContext.Current.CancellationToken);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -104,13 +104,13 @@ public sealed class TraceIdMiddlewareTests : IClassFixture<HarmonieWebApplicatio
         request.Content = JsonContent.Create(new { email = "", password = "" });
 
         // Act
-        var response = await _client.SendAsync(request);
+        var response = await _client.SendAsync(request, TestContext.Current.CancellationToken);
 
         // Assert
         var headerTraceId = response.Headers.GetValues("X-Trace-Id").FirstOrDefault();
         headerTraceId.Should().NotBeNull();
 
-        var body = await response.Content.ReadAsStringAsync();
+        var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         var error = JsonSerializer.Deserialize<ApplicationError>(body, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         error.Should().NotBeNull();
         error!.TraceId.Should().NotBeNull();

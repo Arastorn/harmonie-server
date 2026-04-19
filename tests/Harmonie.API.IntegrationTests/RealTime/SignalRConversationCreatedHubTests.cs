@@ -35,8 +35,8 @@ public sealed class SignalRConversationCreatedHubTests : IClassFixture<HarmonieW
             eventReceived.TrySetResult(payload);
         });
 
-        await connection.StartAsync();
-        await ready.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        await connection.StartAsync(TestContext.Current.CancellationToken);
+        await ready.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
 
         var group = await ConversationTestHelper.CreateGroupConversationAsync(
             _client, creator.AccessToken, "Integration Test Group",

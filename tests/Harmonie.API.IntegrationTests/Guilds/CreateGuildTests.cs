@@ -33,7 +33,7 @@ public sealed class CreateGuildTests : IClassFixture<HarmonieWebApplicationFacto
             userA.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
         createGuildPayload!.IconFileId.Should().BeNull();
         createGuildPayload.Icon.Should().BeNull();
@@ -45,7 +45,7 @@ public sealed class CreateGuildTests : IClassFixture<HarmonieWebApplicationFacto
             userB.AccessToken);
         channelsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var channelsPayload = await channelsResponse.Content.ReadFromJsonAsync<GetGuildChannelsResponse>();
+        var channelsPayload = await channelsResponse.Content.ReadFromJsonAsync<GetGuildChannelsResponse>(TestContext.Current.CancellationToken);
         channelsPayload.Should().NotBeNull();
 
         channelsPayload!.Channels.Should().HaveCount(2);
@@ -60,7 +60,7 @@ public sealed class CreateGuildTests : IClassFixture<HarmonieWebApplicationFacto
             userA.AccessToken);
         sendMessageResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var sendMessagePayload = await sendMessageResponse.Content.ReadFromJsonAsync<SendMessageResponse>();
+        var sendMessagePayload = await sendMessageResponse.Content.ReadFromJsonAsync<SendMessageResponse>(TestContext.Current.CancellationToken);
         sendMessagePayload.Should().NotBeNull();
 
         sendMessagePayload!.Content.Should().Be("Hello team");
@@ -70,7 +70,7 @@ public sealed class CreateGuildTests : IClassFixture<HarmonieWebApplicationFacto
             userB.AccessToken);
         getMessagesResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var getMessagesPayload = await getMessagesResponse.Content.ReadFromJsonAsync<GetMessagesResponse>();
+        var getMessagesPayload = await getMessagesResponse.Content.ReadFromJsonAsync<GetMessagesResponse>(TestContext.Current.CancellationToken);
         getMessagesPayload.Should().NotBeNull();
 
         getMessagesPayload!.Items.Should().Contain(item => item.MessageId == sendMessagePayload.MessageId);
@@ -89,7 +89,7 @@ public sealed class CreateGuildTests : IClassFixture<HarmonieWebApplicationFacto
             owner.AccessToken);
         ownerGuildOneResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var ownerGuildOne = await ownerGuildOneResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var ownerGuildOne = await ownerGuildOneResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         ownerGuildOne.Should().NotBeNull();
 
         var ownerGuildTwoResponse = await _client.SendAuthorizedPostAsync(
@@ -98,7 +98,7 @@ public sealed class CreateGuildTests : IClassFixture<HarmonieWebApplicationFacto
             owner.AccessToken);
         ownerGuildTwoResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var ownerGuildTwo = await ownerGuildTwoResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var ownerGuildTwo = await ownerGuildTwoResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         ownerGuildTwo.Should().NotBeNull();
 
         var inviterGuildResponse = await _client.SendAuthorizedPostAsync(
@@ -107,7 +107,7 @@ public sealed class CreateGuildTests : IClassFixture<HarmonieWebApplicationFacto
             inviter.AccessToken);
         inviterGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var inviterGuild = await inviterGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var inviterGuild = await inviterGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         inviterGuild.Should().NotBeNull();
 
         await GuildTestHelper.InviteMemberAsync(_client, inviterGuild!.GuildId, inviter.AccessToken, owner.AccessToken);
@@ -115,7 +115,7 @@ public sealed class CreateGuildTests : IClassFixture<HarmonieWebApplicationFacto
         var listResponse = await _client.SendAuthorizedGetAsync("/api/guilds", owner.AccessToken);
         listResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var listPayload = await listResponse.Content.ReadFromJsonAsync<ListUserGuildsResponse>();
+        var listPayload = await listResponse.Content.ReadFromJsonAsync<ListUserGuildsResponse>(TestContext.Current.CancellationToken);
         listPayload.Should().NotBeNull();
 
         listPayload!.Guilds.Should().HaveCount(3);
@@ -142,7 +142,7 @@ public sealed class CreateGuildTests : IClassFixture<HarmonieWebApplicationFacto
             owner.AccessToken);
         createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createPayload = await createResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createPayload = await createResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createPayload.Should().NotBeNull();
         createPayload!.IconFileId.Should().Be(iconFileId);
         createPayload.Icon.Should().NotBeNull();
@@ -153,7 +153,7 @@ public sealed class CreateGuildTests : IClassFixture<HarmonieWebApplicationFacto
         var listResponse = await _client.SendAuthorizedGetAsync("/api/guilds", owner.AccessToken);
         listResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var listPayload = await listResponse.Content.ReadFromJsonAsync<ListUserGuildsResponse>();
+        var listPayload = await listResponse.Content.ReadFromJsonAsync<ListUserGuildsResponse>(TestContext.Current.CancellationToken);
         listPayload.Should().NotBeNull();
         listPayload!.Guilds.Should().Contain(guild =>
             guild.GuildId == createPayload.GuildId
@@ -179,7 +179,7 @@ public sealed class CreateGuildTests : IClassFixture<HarmonieWebApplicationFacto
             owner.AccessToken);
         createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createPayload = await createResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createPayload = await createResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createPayload.Should().NotBeNull();
         createPayload!.IconFileId.Should().BeNull();
         createPayload.Icon.Should().NotBeNull();

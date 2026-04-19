@@ -41,7 +41,7 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<HarmonieWebAp
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
-        var payload = await response.Content.ReadFromJsonAsync<UploadFileResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<UploadFileResponse>(TestContext.Current.CancellationToken);
         Assert.NotNull(payload);
         Assert.Equal("hello.txt", payload!.Filename);
         Assert.Equal("text/plain", payload.ContentType);
@@ -51,7 +51,7 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<HarmonieWebAp
         var downloadResponse = await client.SendAuthorizedGetAsync($"/api/files/{payload.FileId}", user.AccessToken);
         Assert.Equal(HttpStatusCode.OK, downloadResponse.StatusCode);
 
-        var diskContent = await downloadResponse.Content.ReadAsStringAsync();
+        var diskContent = await downloadResponse.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         Assert.Equal("hello from filesystem", diskContent);
     }
 
@@ -67,7 +67,7 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<HarmonieWebAp
         var uploadResponse = await SendAuthorizedMultipartAsync(client, "/api/files/uploads", multipart, user.AccessToken);
         Assert.Equal(HttpStatusCode.Created, uploadResponse.StatusCode);
 
-        var payload = await uploadResponse.Content.ReadFromJsonAsync<UploadFileResponse>();
+        var payload = await uploadResponse.Content.ReadFromJsonAsync<UploadFileResponse>(TestContext.Current.CancellationToken);
         Assert.NotNull(payload);
 
         var fileResponse = await client.SendAuthorizedGetAsync($"/api/files/{payload!.FileId}", user.AccessToken);
@@ -75,7 +75,7 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<HarmonieWebAp
         Assert.Equal(HttpStatusCode.OK, fileResponse.StatusCode);
         Assert.Equal("image/png", fileResponse.Content.Headers.ContentType?.MediaType);
 
-        var fileContent = await fileResponse.Content.ReadAsStringAsync();
+        var fileContent = await fileResponse.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         Assert.Equal("fake-png-content", fileContent);
     }
 
@@ -91,10 +91,10 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<HarmonieWebAp
         var uploadResponse = await SendAuthorizedMultipartAsync(client, "/api/files/uploads", multipart, user.AccessToken);
         Assert.Equal(HttpStatusCode.Created, uploadResponse.StatusCode);
 
-        var payload = await uploadResponse.Content.ReadFromJsonAsync<UploadFileResponse>();
+        var payload = await uploadResponse.Content.ReadFromJsonAsync<UploadFileResponse>(TestContext.Current.CancellationToken);
         Assert.NotNull(payload);
 
-        var fileResponse = await client.GetAsync($"/api/files/{payload!.FileId}");
+        var fileResponse = await client.GetAsync($"/api/files/{payload!.FileId}", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Unauthorized, fileResponse.StatusCode);
     }
@@ -110,7 +110,7 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<HarmonieWebAp
         using var multipart = CreateMultipartContent("doc.txt", "text/plain", "test content");
 
         var response = await SendAuthorizedMultipartAsync(client, "/api/files/uploads", multipart, user.AccessToken);
-        var payload = await response.Content.ReadFromJsonAsync<UploadFileResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<UploadFileResponse>(TestContext.Current.CancellationToken);
 
         Assert.NotNull(payload);
         Assert.NotEqual(Guid.Empty, payload!.FileId);
@@ -131,7 +131,7 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<HarmonieWebAp
         var uploadResponse = await SendAuthorizedMultipartAsync(client, "/api/files/uploads", multipart, user.AccessToken);
         Assert.Equal(HttpStatusCode.Created, uploadResponse.StatusCode);
 
-        var uploadPayload = await uploadResponse.Content.ReadFromJsonAsync<UploadFileResponse>();
+        var uploadPayload = await uploadResponse.Content.ReadFromJsonAsync<UploadFileResponse>(TestContext.Current.CancellationToken);
         Assert.NotNull(uploadPayload);
 
         var createGuildResponse = await client.SendAuthorizedPostAsync(
@@ -140,7 +140,7 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<HarmonieWebAp
             user.AccessToken);
         Assert.Equal(HttpStatusCode.Created, createGuildResponse.StatusCode);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         Assert.NotNull(createGuildPayload);
 
         var setIconResponse = await client.SendAuthorizedPatchAsync(
@@ -175,8 +175,8 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<HarmonieWebAp
         var replacementUploadResponse = await SendAuthorizedMultipartAsync(client, "/api/files/uploads", replacementMultipart, user.AccessToken);
         Assert.Equal(HttpStatusCode.Created, replacementUploadResponse.StatusCode);
 
-        var initialUploadPayload = await initialUploadResponse.Content.ReadFromJsonAsync<UploadFileResponse>();
-        var replacementUploadPayload = await replacementUploadResponse.Content.ReadFromJsonAsync<UploadFileResponse>();
+        var initialUploadPayload = await initialUploadResponse.Content.ReadFromJsonAsync<UploadFileResponse>(TestContext.Current.CancellationToken);
+        var replacementUploadPayload = await replacementUploadResponse.Content.ReadFromJsonAsync<UploadFileResponse>(TestContext.Current.CancellationToken);
         Assert.NotNull(initialUploadPayload);
         Assert.NotNull(replacementUploadPayload);
 
@@ -186,7 +186,7 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<HarmonieWebAp
             user.AccessToken);
         Assert.Equal(HttpStatusCode.Created, createGuildResponse.StatusCode);
 
-        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         Assert.NotNull(guild);
 
         var setInitialIconResponse = await client.SendAuthorizedPatchAsync(
@@ -207,7 +207,7 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<HarmonieWebAp
         var newFileResponse = await client.SendAuthorizedGetAsync($"/api/files/{replacementUploadPayload.FileId}", user.AccessToken);
         Assert.Equal(HttpStatusCode.OK, newFileResponse.StatusCode);
 
-        var newFileContent = await newFileResponse.Content.ReadAsStringAsync();
+        var newFileContent = await newFileResponse.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         Assert.Equal("replacement guild icon", newFileContent);
     }
 
@@ -223,7 +223,7 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<HarmonieWebAp
         var uploadResponse = await SendAuthorizedMultipartAsync(client, "/api/files/uploads", multipart, user.AccessToken);
         Assert.Equal(HttpStatusCode.Created, uploadResponse.StatusCode);
 
-        var uploadPayload = await uploadResponse.Content.ReadFromJsonAsync<UploadFileResponse>();
+        var uploadPayload = await uploadResponse.Content.ReadFromJsonAsync<UploadFileResponse>(TestContext.Current.CancellationToken);
         Assert.NotNull(uploadPayload);
 
         var createGuildResponse = await client.SendAuthorizedPostAsync(
@@ -236,7 +236,7 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<HarmonieWebAp
             user.AccessToken);
         Assert.Equal(HttpStatusCode.Created, createGuildResponse.StatusCode);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         Assert.NotNull(createGuildPayload);
 
         var deleteGuildResponse = await client.SendAuthorizedDeleteAsync(
@@ -260,7 +260,7 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<HarmonieWebAp
         var uploadResponse = await SendAuthorizedMultipartAsync(client, "/api/files/uploads", multipart, user.AccessToken);
         Assert.Equal(HttpStatusCode.Created, uploadResponse.StatusCode);
 
-        var uploadPayload = await uploadResponse.Content.ReadFromJsonAsync<UploadFileResponse>();
+        var uploadPayload = await uploadResponse.Content.ReadFromJsonAsync<UploadFileResponse>(TestContext.Current.CancellationToken);
         Assert.NotNull(uploadPayload);
 
         var setAvatarResponse = await client.SendAuthorizedPatchAsync(
@@ -292,7 +292,7 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<HarmonieWebAp
         var uploadResponse = await SendAuthorizedMultipartAsync(client, "/api/files/uploads", multipart, user.AccessToken);
         Assert.Equal(HttpStatusCode.Created, uploadResponse.StatusCode);
 
-        var uploadPayload = await uploadResponse.Content.ReadFromJsonAsync<UploadFileResponse>();
+        var uploadPayload = await uploadResponse.Content.ReadFromJsonAsync<UploadFileResponse>(TestContext.Current.CancellationToken);
         Assert.NotNull(uploadPayload);
 
         var sendMessageResponse = await client.SendAuthorizedPostAsync(
@@ -301,7 +301,7 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<HarmonieWebAp
             user.AccessToken);
         Assert.Equal(HttpStatusCode.Created, sendMessageResponse.StatusCode);
 
-        var sendMessagePayload = await sendMessageResponse.Content.ReadFromJsonAsync<SendMessageResponse>();
+        var sendMessagePayload = await sendMessageResponse.Content.ReadFromJsonAsync<SendMessageResponse>(TestContext.Current.CancellationToken);
         Assert.NotNull(sendMessagePayload);
 
         var deleteAttachmentResponse = await client.SendAuthorizedDeleteAsync(
@@ -327,7 +327,7 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<HarmonieWebAp
         var uploadResponse = await SendAuthorizedMultipartAsync(client, "/api/files/uploads", multipart, caller.AccessToken);
         Assert.Equal(HttpStatusCode.Created, uploadResponse.StatusCode);
 
-        var uploadPayload = await uploadResponse.Content.ReadFromJsonAsync<UploadFileResponse>();
+        var uploadPayload = await uploadResponse.Content.ReadFromJsonAsync<UploadFileResponse>(TestContext.Current.CancellationToken);
         Assert.NotNull(uploadPayload);
 
         var sendMessageResponse = await client.SendAuthorizedPostAsync(
@@ -336,7 +336,7 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<HarmonieWebAp
             caller.AccessToken);
         Assert.Equal(HttpStatusCode.Created, sendMessageResponse.StatusCode);
 
-        var sendMessagePayload = await sendMessageResponse.Content.ReadFromJsonAsync<ConversationSendMessageResponse>();
+        var sendMessagePayload = await sendMessageResponse.Content.ReadFromJsonAsync<ConversationSendMessageResponse>(TestContext.Current.CancellationToken);
         Assert.NotNull(sendMessagePayload);
 
         var deleteAttachmentResponse = await client.SendAuthorizedDeleteAsync(
@@ -360,7 +360,7 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<HarmonieWebAp
         var uploadResponse = await SendAuthorizedMultipartAsync(client, "/api/files/uploads", multipart, user.AccessToken);
         Assert.Equal(HttpStatusCode.Created, uploadResponse.StatusCode);
 
-        var uploadPayload = await uploadResponse.Content.ReadFromJsonAsync<UploadFileResponse>();
+        var uploadPayload = await uploadResponse.Content.ReadFromJsonAsync<UploadFileResponse>(TestContext.Current.CancellationToken);
         Assert.NotNull(uploadPayload);
 
         var createGuildResponse = await client.SendAuthorizedPostAsync(
@@ -369,7 +369,7 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<HarmonieWebAp
             user.AccessToken);
         Assert.Equal(HttpStatusCode.Created, createGuildResponse.StatusCode);
 
-        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         Assert.NotNull(guild);
 
         var setIconResponse = await client.SendAuthorizedPatchAsync(
@@ -418,7 +418,7 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<HarmonieWebAp
             accessToken);
         Assert.True(response.StatusCode is HttpStatusCode.Created or HttpStatusCode.OK);
 
-        var payload = await response.Content.ReadFromJsonAsync<OpenConversationResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<OpenConversationResponse>(TestContext.Current.CancellationToken);
         Assert.NotNull(payload);
         return payload!.ConversationId;
     }
@@ -434,7 +434,7 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<HarmonieWebAp
             accessToken);
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
-        var payload = await response.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         Assert.NotNull(payload);
         return payload!.GuildId;
     }
@@ -451,7 +451,7 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<HarmonieWebAp
             accessToken);
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
-        var payload = await response.Content.ReadFromJsonAsync<CreateChannelResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<CreateChannelResponse>(TestContext.Current.CancellationToken);
         Assert.NotNull(payload);
         return payload!.ChannelId;
     }
@@ -476,6 +476,6 @@ public sealed class UploadsLocalFileSystemE2ETests : IClassFixture<HarmonieWebAp
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, uri) { Content = content };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-        return await client.SendAsync(request);
+        return await client.SendAsync(request, TestContext.Current.CancellationToken);
     }
 }

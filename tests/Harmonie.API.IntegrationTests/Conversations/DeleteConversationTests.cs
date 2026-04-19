@@ -41,7 +41,7 @@ public sealed class DeleteConversationTests : IClassFixture<HarmonieWebApplicati
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Conversation.NotFound);
     }
@@ -60,7 +60,7 @@ public sealed class DeleteConversationTests : IClassFixture<HarmonieWebApplicati
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Conversation.AccessDenied);
     }
@@ -68,7 +68,7 @@ public sealed class DeleteConversationTests : IClassFixture<HarmonieWebApplicati
     [Fact]
     public async Task DeleteConversation_WithoutAuthentication_ShouldReturnUnauthorized()
     {
-        var response = await _client.DeleteAsync($"/api/conversations/{Guid.NewGuid()}");
+        var response = await _client.DeleteAsync($"/api/conversations/{Guid.NewGuid()}", TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }

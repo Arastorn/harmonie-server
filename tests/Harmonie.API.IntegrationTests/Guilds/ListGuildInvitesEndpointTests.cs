@@ -31,7 +31,7 @@ public sealed class ListGuildInvitesEndpointTests : IClassFixture<HarmonieWebApp
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         guild.Should().NotBeNull();
 
         var listResponse = await _client.SendAuthorizedGetAsync(
@@ -39,7 +39,7 @@ public sealed class ListGuildInvitesEndpointTests : IClassFixture<HarmonieWebApp
             owner.AccessToken);
         listResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var result = await listResponse.Content.ReadFromJsonAsync<ListGuildInvitesResponse>();
+        var result = await listResponse.Content.ReadFromJsonAsync<ListGuildInvitesResponse>(TestContext.Current.CancellationToken);
         result.Should().NotBeNull();
         result!.GuildId.Should().Be(guild.GuildId);
         result.Invites.Should().BeEmpty();
@@ -56,7 +56,7 @@ public sealed class ListGuildInvitesEndpointTests : IClassFixture<HarmonieWebApp
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         guild.Should().NotBeNull();
 
         var invite1Response = await _client.SendAuthorizedPostAsync(
@@ -76,7 +76,7 @@ public sealed class ListGuildInvitesEndpointTests : IClassFixture<HarmonieWebApp
             owner.AccessToken);
         listResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var result = await listResponse.Content.ReadFromJsonAsync<ListGuildInvitesResponse>();
+        var result = await listResponse.Content.ReadFromJsonAsync<ListGuildInvitesResponse>(TestContext.Current.CancellationToken);
         result.Should().NotBeNull();
         result!.GuildId.Should().Be(guild.GuildId);
         result.Invites.Should().HaveCount(2);
@@ -100,7 +100,7 @@ public sealed class ListGuildInvitesEndpointTests : IClassFixture<HarmonieWebApp
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         guild.Should().NotBeNull();
 
         // Valid invite (no limits)
@@ -115,7 +115,7 @@ public sealed class ListGuildInvitesEndpointTests : IClassFixture<HarmonieWebApp
             owner.AccessToken);
         listResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var result = await listResponse.Content.ReadFromJsonAsync<ListGuildInvitesResponse>();
+        var result = await listResponse.Content.ReadFromJsonAsync<ListGuildInvitesResponse>(TestContext.Current.CancellationToken);
         result.Should().NotBeNull();
         result!.Invites.Should().ContainSingle();
         result.Invites[0].IsExpired.Should().BeFalse();
@@ -135,7 +135,7 @@ public sealed class ListGuildInvitesEndpointTests : IClassFixture<HarmonieWebApp
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         guild.Should().NotBeNull();
 
         await GuildTestHelper.InviteMemberAsync(_client, guild!.GuildId, owner.AccessToken, member.AccessToken);
@@ -145,7 +145,7 @@ public sealed class ListGuildInvitesEndpointTests : IClassFixture<HarmonieWebApp
             member.AccessToken);
         listResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        var error = await listResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await listResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Guild.InviteForbidden);
     }
@@ -161,7 +161,7 @@ public sealed class ListGuildInvitesEndpointTests : IClassFixture<HarmonieWebApp
             user.AccessToken);
         listResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-        var error = await listResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await listResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Guild.NotFound);
     }
@@ -171,7 +171,7 @@ public sealed class ListGuildInvitesEndpointTests : IClassFixture<HarmonieWebApp
     {
         var nonExistentGuildId = Guid.NewGuid();
 
-        var listResponse = await _client.GetAsync($"/api/guilds/{nonExistentGuildId}/invites");
+        var listResponse = await _client.GetAsync($"/api/guilds/{nonExistentGuildId}/invites", TestContext.Current.CancellationToken);
         listResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
@@ -185,7 +185,7 @@ public sealed class ListGuildInvitesEndpointTests : IClassFixture<HarmonieWebApp
             user.AccessToken);
         listResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
-        var error = await listResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await listResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Common.ValidationFailed);
     }
@@ -201,7 +201,7 @@ public sealed class ListGuildInvitesEndpointTests : IClassFixture<HarmonieWebApp
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         guild.Should().NotBeNull();
 
         var first = await _client.SendAuthorizedPostAsync(
@@ -209,21 +209,21 @@ public sealed class ListGuildInvitesEndpointTests : IClassFixture<HarmonieWebApp
             new CreateGuildInviteRequest(MaxUses: 1),
             owner.AccessToken);
         first.StatusCode.Should().Be(HttpStatusCode.Created);
-        var firstInvite = await first.Content.ReadFromJsonAsync<CreateGuildInviteResponse>();
+        var firstInvite = await first.Content.ReadFromJsonAsync<CreateGuildInviteResponse>(TestContext.Current.CancellationToken);
 
         var second = await _client.SendAuthorizedPostAsync(
             $"/api/guilds/{guild.GuildId}/invites",
             new CreateGuildInviteRequest(MaxUses: 2),
             owner.AccessToken);
         second.StatusCode.Should().Be(HttpStatusCode.Created);
-        var secondInvite = await second.Content.ReadFromJsonAsync<CreateGuildInviteResponse>();
+        var secondInvite = await second.Content.ReadFromJsonAsync<CreateGuildInviteResponse>(TestContext.Current.CancellationToken);
 
         var listResponse = await _client.SendAuthorizedGetAsync(
             $"/api/guilds/{guild.GuildId}/invites",
             owner.AccessToken);
         listResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var result = await listResponse.Content.ReadFromJsonAsync<ListGuildInvitesResponse>();
+        var result = await listResponse.Content.ReadFromJsonAsync<ListGuildInvitesResponse>(TestContext.Current.CancellationToken);
         result.Should().NotBeNull();
         result!.Invites.Should().HaveCount(2);
         // Most recent first

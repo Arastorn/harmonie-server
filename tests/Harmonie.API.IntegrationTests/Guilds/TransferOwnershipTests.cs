@@ -31,7 +31,7 @@ public sealed class TransferOwnershipTests : IClassFixture<HarmonieWebApplicatio
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         await GuildTestHelper.InviteMemberAsync(_client, createGuildPayload!.GuildId, owner.AccessToken, member.AccessToken);
@@ -56,7 +56,7 @@ public sealed class TransferOwnershipTests : IClassFixture<HarmonieWebApplicatio
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         await GuildTestHelper.InviteMemberAsync(_client, createGuildPayload!.GuildId, owner.AccessToken, member.AccessToken);
@@ -69,7 +69,7 @@ public sealed class TransferOwnershipTests : IClassFixture<HarmonieWebApplicatio
             member.AccessToken);
         transferResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        var error = await transferResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await transferResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Guild.AccessDenied);
     }
@@ -85,7 +85,7 @@ public sealed class TransferOwnershipTests : IClassFixture<HarmonieWebApplicatio
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         var transferResponse = await _client.SendAuthorizedPostAsync(
@@ -94,7 +94,7 @@ public sealed class TransferOwnershipTests : IClassFixture<HarmonieWebApplicatio
             owner.AccessToken);
         transferResponse.StatusCode.Should().Be(HttpStatusCode.Conflict);
 
-        var error = await transferResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await transferResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Guild.OwnerTransferToSelf);
     }
@@ -111,7 +111,7 @@ public sealed class TransferOwnershipTests : IClassFixture<HarmonieWebApplicatio
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         var transferResponse = await _client.SendAuthorizedPostAsync(
@@ -120,7 +120,7 @@ public sealed class TransferOwnershipTests : IClassFixture<HarmonieWebApplicatio
             owner.AccessToken);
         transferResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-        var error = await transferResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await transferResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Guild.MemberNotFound);
     }
@@ -138,7 +138,7 @@ public sealed class TransferOwnershipTests : IClassFixture<HarmonieWebApplicatio
             user.AccessToken);
         transferResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-        var error = await transferResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await transferResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Guild.NotFound);
     }
@@ -151,7 +151,8 @@ public sealed class TransferOwnershipTests : IClassFixture<HarmonieWebApplicatio
 
         var transferResponse = await _client.PostAsJsonAsync(
             $"/api/guilds/{nonExistentGuildId}/owner/transfer",
-            new TransferOwnershipRequest(target.UserId));
+            new TransferOwnershipRequest(target.UserId),
+            TestContext.Current.CancellationToken);
         transferResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 }

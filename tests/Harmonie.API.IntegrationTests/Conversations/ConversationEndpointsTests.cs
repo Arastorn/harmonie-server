@@ -32,7 +32,7 @@ public sealed class ConversationEndpointsTests : IClassFixture<HarmonieWebApplic
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var payload = await response.Content.ReadFromJsonAsync<OpenConversationResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<OpenConversationResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.Created.Should().BeTrue();
         payload.ConversationId.Should().NotBeEmpty();
@@ -54,7 +54,7 @@ public sealed class ConversationEndpointsTests : IClassFixture<HarmonieWebApplic
             caller.AccessToken);
         firstResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var firstPayload = await firstResponse.Content.ReadFromJsonAsync<OpenConversationResponse>();
+        var firstPayload = await firstResponse.Content.ReadFromJsonAsync<OpenConversationResponse>(TestContext.Current.CancellationToken);
         firstPayload.Should().NotBeNull();
 
         var secondResponse = await _client.SendAuthorizedPostAsync(
@@ -64,7 +64,7 @@ public sealed class ConversationEndpointsTests : IClassFixture<HarmonieWebApplic
 
         secondResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var secondPayload = await secondResponse.Content.ReadFromJsonAsync<OpenConversationResponse>();
+        var secondPayload = await secondResponse.Content.ReadFromJsonAsync<OpenConversationResponse>(TestContext.Current.CancellationToken);
         secondPayload.Should().NotBeNull();
         secondPayload!.Created.Should().BeFalse();
         secondPayload.ConversationId.Should().Be(firstPayload!.ConversationId);
@@ -82,7 +82,7 @@ public sealed class ConversationEndpointsTests : IClassFixture<HarmonieWebApplic
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.User.NotFound);
     }
@@ -99,7 +99,7 @@ public sealed class ConversationEndpointsTests : IClassFixture<HarmonieWebApplic
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Conversation.CannotOpenSelf);
     }
@@ -109,7 +109,8 @@ public sealed class ConversationEndpointsTests : IClassFixture<HarmonieWebApplic
     {
         var response = await _client.PostAsJsonAsync(
             "/api/conversations",
-            new OpenConversationRequest(Guid.NewGuid()));
+            new OpenConversationRequest(Guid.NewGuid()),
+            TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -137,7 +138,7 @@ public sealed class ConversationEndpointsTests : IClassFixture<HarmonieWebApplic
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var payload = await response.Content.ReadFromJsonAsync<ListConversationsResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<ListConversationsResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.Conversations.Should().HaveCount(2);
         payload.Conversations.Should().Contain(x =>
@@ -156,7 +157,7 @@ public sealed class ConversationEndpointsTests : IClassFixture<HarmonieWebApplic
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var payload = await response.Content.ReadFromJsonAsync<ListConversationsResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<ListConversationsResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.Conversations.Should().BeEmpty();
     }
@@ -164,7 +165,7 @@ public sealed class ConversationEndpointsTests : IClassFixture<HarmonieWebApplic
     [Fact]
     public async Task ListConversations_WithoutAuthentication_ShouldReturnUnauthorized()
     {
-        var response = await _client.GetAsync("/api/conversations");
+        var response = await _client.GetAsync("/api/conversations", TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }

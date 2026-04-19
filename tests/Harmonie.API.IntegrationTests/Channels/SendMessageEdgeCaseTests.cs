@@ -31,7 +31,7 @@ public sealed class SendMessageEdgeCaseTests : IClassFixture<HarmonieWebApplicat
             user.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         var channelsResponse = await _client.SendAuthorizedGetAsync(
@@ -39,7 +39,7 @@ public sealed class SendMessageEdgeCaseTests : IClassFixture<HarmonieWebApplicat
             user.AccessToken);
         channelsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var channelsPayload = await channelsResponse.Content.ReadFromJsonAsync<GetGuildChannelsResponse>();
+        var channelsPayload = await channelsResponse.Content.ReadFromJsonAsync<GetGuildChannelsResponse>(TestContext.Current.CancellationToken);
         channelsPayload.Should().NotBeNull();
 
         var voiceChannel = channelsPayload!.Channels.First(channel => channel.Type == "Voice");
@@ -50,7 +50,7 @@ public sealed class SendMessageEdgeCaseTests : IClassFixture<HarmonieWebApplicat
             user.AccessToken);
         sendMessageResponse.StatusCode.Should().Be(HttpStatusCode.Conflict);
 
-        var error = await sendMessageResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await sendMessageResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
 
         error!.Code.Should().Be(ApplicationErrorCodes.Channel.NotText);
@@ -67,7 +67,7 @@ public sealed class SendMessageEdgeCaseTests : IClassFixture<HarmonieWebApplicat
             user.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         var channelsResponse = await _client.SendAuthorizedGetAsync(
@@ -75,7 +75,7 @@ public sealed class SendMessageEdgeCaseTests : IClassFixture<HarmonieWebApplicat
             user.AccessToken);
         channelsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var channelsPayload = await channelsResponse.Content.ReadFromJsonAsync<GetGuildChannelsResponse>();
+        var channelsPayload = await channelsResponse.Content.ReadFromJsonAsync<GetGuildChannelsResponse>(TestContext.Current.CancellationToken);
         channelsPayload.Should().NotBeNull();
 
         var textChannel = channelsPayload!.Channels.First(channel => channel.Type == "Text");

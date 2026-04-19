@@ -32,7 +32,7 @@ public sealed class ListBansEndpointTests : IClassFixture<HarmonieWebApplication
             owner.AccessToken);
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var payload = await response.Content.ReadFromJsonAsync<ListBansResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<ListBansResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.GuildId.Should().Be(guild.GuildId);
         payload.Bans.Should().BeEmpty();
@@ -62,7 +62,7 @@ public sealed class ListBansEndpointTests : IClassFixture<HarmonieWebApplication
             owner.AccessToken);
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var payload = await response.Content.ReadFromJsonAsync<ListBansResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<ListBansResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.GuildId.Should().Be(guild.GuildId);
         payload.Bans.Should().HaveCount(1);
@@ -90,7 +90,7 @@ public sealed class ListBansEndpointTests : IClassFixture<HarmonieWebApplication
             member.AccessToken);
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Guild.AccessDenied);
     }
@@ -106,7 +106,7 @@ public sealed class ListBansEndpointTests : IClassFixture<HarmonieWebApplication
             owner.AccessToken);
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Guild.NotFound);
     }
@@ -115,7 +115,8 @@ public sealed class ListBansEndpointTests : IClassFixture<HarmonieWebApplication
     public async Task ListBans_WhenNotAuthenticated_ShouldReturn401()
     {
         var response = await _client.GetAsync(
-            $"/api/guilds/{Guid.NewGuid()}/bans");
+            $"/api/guilds/{Guid.NewGuid()}/bans",
+            TestContext.Current.CancellationToken);
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
@@ -149,7 +150,7 @@ public sealed class ListBansEndpointTests : IClassFixture<HarmonieWebApplication
             owner.AccessToken);
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var payload = await response.Content.ReadFromJsonAsync<ListBansResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<ListBansResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.Bans.Should().BeEmpty();
     }

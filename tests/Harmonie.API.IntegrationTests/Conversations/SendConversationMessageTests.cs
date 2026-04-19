@@ -33,7 +33,7 @@ public sealed class SendConversationMessageTests : IClassFixture<HarmonieWebAppl
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var payload = await response.Content.ReadFromJsonAsync<SendMessageResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<SendMessageResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.ConversationId.Should().Be(conversationId);
         payload.AuthorUserId.Should().Be(caller.UserId);
@@ -54,7 +54,7 @@ public sealed class SendConversationMessageTests : IClassFixture<HarmonieWebAppl
             caller.AccessToken);
         sendResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var sendPayload = await sendResponse.Content.ReadFromJsonAsync<SendMessageResponse>();
+        var sendPayload = await sendResponse.Content.ReadFromJsonAsync<SendMessageResponse>(TestContext.Current.CancellationToken);
         sendPayload.Should().NotBeNull();
         sendPayload!.Attachments.Should().ContainSingle();
         sendPayload.Attachments[0].FileId.Should().Be(uploadedFileId);
@@ -64,7 +64,7 @@ public sealed class SendConversationMessageTests : IClassFixture<HarmonieWebAppl
             caller.AccessToken);
         listResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var listPayload = await listResponse.Content.ReadFromJsonAsync<GetMessagesResponse>();
+        var listPayload = await listResponse.Content.ReadFromJsonAsync<GetMessagesResponse>(TestContext.Current.CancellationToken);
         listPayload.Should().NotBeNull();
         listPayload!.Items.Should().ContainSingle();
         listPayload.Items[0].Attachments.Should().ContainSingle();
@@ -83,7 +83,7 @@ public sealed class SendConversationMessageTests : IClassFixture<HarmonieWebAppl
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Conversation.NotFound);
     }
@@ -103,7 +103,7 @@ public sealed class SendConversationMessageTests : IClassFixture<HarmonieWebAppl
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Conversation.AccessDenied);
     }
@@ -113,7 +113,8 @@ public sealed class SendConversationMessageTests : IClassFixture<HarmonieWebAppl
     {
         var response = await _client.PostAsJsonAsync(
             $"/api/conversations/{Guid.NewGuid()}/messages",
-            new SendMessageRequest("hello direct"));
+            new SendMessageRequest("hello direct"),
+            TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
