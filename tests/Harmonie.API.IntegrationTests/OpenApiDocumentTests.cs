@@ -24,11 +24,11 @@ public sealed class OpenApiDocumentTests : IClassFixture<HarmonieWebApplicationF
         using var factory = _factory.WithWebHostBuilder(builder => builder.UseEnvironment("Development"));
         using var client = factory.CreateClient();
 
-        var response = await client.GetAsync("/openapi/v1.json");
+        var response = await client.GetAsync("/openapi/v1.json", TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var document = JsonNode.Parse(await response.Content.ReadAsStringAsync());
+        var document = JsonNode.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
         document.Should().NotBeNull();
 
         var getGuildChannels = document!["paths"]?["/api/guilds/{guildId}/channels"]?["get"]?["responses"];
@@ -71,11 +71,11 @@ public sealed class OpenApiDocumentTests : IClassFixture<HarmonieWebApplicationF
         using var factory = _factory.WithWebHostBuilder(builder => builder.UseEnvironment("Development"));
         using var client = factory.CreateClient();
 
-        var response = await client.GetAsync("/openapi/v1.json");
+        var response = await client.GetAsync("/openapi/v1.json", TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var document = JsonNode.Parse(await response.Content.ReadAsStringAsync());
+        var document = JsonNode.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
         document.Should().NotBeNull();
 
         var registerConflict = document!["paths"]?["/api/auth/register"]?["post"]?["responses"]?["409"];
@@ -99,11 +99,11 @@ public sealed class OpenApiDocumentTests : IClassFixture<HarmonieWebApplicationF
         using var factory = _factory.WithWebHostBuilder(builder => builder.UseEnvironment("Development"));
         using var client = factory.CreateClient();
 
-        var response = await client.GetAsync("/openapi/v1.json");
+        var response = await client.GetAsync("/openapi/v1.json", TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var document = JsonNode.Parse(await response.Content.ReadAsStringAsync());
+        var document = JsonNode.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
         document.Should().NotBeNull();
 
         if (document is null)
@@ -171,11 +171,11 @@ public sealed class OpenApiDocumentTests : IClassFixture<HarmonieWebApplicationF
         using var factory = _factory.WithWebHostBuilder(builder => builder.UseEnvironment("Development"));
         using var client = factory.CreateClient();
 
-        var response = await client.GetAsync("/openapi/v1.json");
+        var response = await client.GetAsync("/openapi/v1.json", TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var document = JsonNode.Parse(await response.Content.ReadAsStringAsync());
+        var document = JsonNode.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
         document.Should().NotBeNull();
 
         var requestBody = document!["paths"]?["/api/files/uploads"]?["post"]?["requestBody"];

@@ -31,7 +31,7 @@ public sealed class ListConversationsHandlerTests
             .Setup(x => x.GetUserConversationsAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
-        var response = await _handler.HandleAsync(Unit.Value, userId);
+        var response = await _handler.HandleAsync(Unit.Value, userId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Error.Should().BeNull();
@@ -72,7 +72,7 @@ public sealed class ListConversationsHandlerTests
                     firstCreatedAt)
             ]);
 
-        var response = await _handler.HandleAsync(Unit.Value, userId);
+        var response = await _handler.HandleAsync(Unit.Value, userId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Error.Should().BeNull();

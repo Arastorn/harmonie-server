@@ -66,7 +66,8 @@ public sealed class SendConversationMessageHandlerTests
 
         var response = await _handler.HandleAsync(
             new SendConversationMessageInput(conversationId, "hello"),
-            userId);
+            userId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -88,7 +89,8 @@ public sealed class SendConversationMessageHandlerTests
 
         var response = await _handler.HandleAsync(
             new SendConversationMessageInput(conversation.Id, "hello"),
-            outsider);
+            outsider,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -110,7 +112,8 @@ public sealed class SendConversationMessageHandlerTests
 
         var response = await _handler.HandleAsync(
             new SendConversationMessageInput(conversation.Id, rawContent),
-            currentUserId);
+            currentUserId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -136,7 +139,8 @@ public sealed class SendConversationMessageHandlerTests
 
         var response = await _handler.HandleAsync(
             new SendConversationMessageInput(conversation.Id, "  hello dm  "),
-            currentUserId);
+            currentUserId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Error.Should().BeNull();
@@ -179,7 +183,8 @@ public sealed class SendConversationMessageHandlerTests
 
         var response = await _handler.HandleAsync(
             new SendConversationMessageInput(conversation.Id, "hello dm", [attachment.Id]),
-            currentUserId);
+            currentUserId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();
@@ -212,7 +217,8 @@ public sealed class SendConversationMessageHandlerTests
 
         var response = await _handler.HandleAsync(
             new SendConversationMessageInput(conversation.Id, "hello"),
-            currentUserId);
+            currentUserId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Error.Should().BeNull();

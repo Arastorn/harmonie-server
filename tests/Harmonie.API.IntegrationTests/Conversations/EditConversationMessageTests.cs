@@ -33,7 +33,7 @@ public sealed class EditConversationMessageTests : IClassFixture<HarmonieWebAppl
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var payload = await response.Content.ReadFromJsonAsync<EditMessageResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<EditMessageResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.MessageId.Should().Be(message.MessageId);
         payload.ConversationId.Should().Be(conversationId);
@@ -54,7 +54,7 @@ public sealed class EditConversationMessageTests : IClassFixture<HarmonieWebAppl
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Conversation.NotFound);
     }
@@ -75,7 +75,7 @@ public sealed class EditConversationMessageTests : IClassFixture<HarmonieWebAppl
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Conversation.AccessDenied);
     }
@@ -95,7 +95,7 @@ public sealed class EditConversationMessageTests : IClassFixture<HarmonieWebAppl
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Message.EditForbidden);
     }
@@ -114,7 +114,7 @@ public sealed class EditConversationMessageTests : IClassFixture<HarmonieWebAppl
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Message.NotFound);
     }
@@ -124,7 +124,8 @@ public sealed class EditConversationMessageTests : IClassFixture<HarmonieWebAppl
     {
         var response = await _client.PatchAsJsonAsync(
             $"/api/conversations/{Guid.NewGuid()}/messages/{Guid.NewGuid()}",
-            new EditMessageRequest("updated direct"));
+            new EditMessageRequest("updated direct"),
+            TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }

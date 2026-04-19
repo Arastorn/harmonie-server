@@ -52,7 +52,7 @@ public sealed class CreateGuildHandlerTests
         var request = new CreateGuildRequest("Harmonie Team");
         var userId = UserId.New();
 
-        var response = await _handler.HandleAsync(request, userId);
+        var response = await _handler.HandleAsync(request, userId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Error.Should().BeNull();
@@ -82,7 +82,7 @@ public sealed class CreateGuildHandlerTests
         var request = new CreateGuildRequest("ab");
         var userId = UserId.New();
 
-        var response = await _handler.HandleAsync(request, userId);
+        var response = await _handler.HandleAsync(request, userId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Data.Should().BeNull();
@@ -104,7 +104,7 @@ public sealed class CreateGuildHandlerTests
                 Bg: "#1F2937"));
         var userId = UserId.New();
 
-        var response = await _handler.HandleAsync(request, userId);
+        var response = await _handler.HandleAsync(request, userId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();
@@ -123,7 +123,7 @@ public sealed class CreateGuildHandlerTests
             Icon: new CreateGuildIconRequest(Color: "#F59E0B"));
         var userId = UserId.New();
 
-        var response = await _handler.HandleAsync(request, userId);
+        var response = await _handler.HandleAsync(request, userId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();
@@ -143,7 +143,7 @@ public sealed class CreateGuildHandlerTests
             IconFileId: iconFileId);
         var userId = UserId.New();
 
-        var response = await _handler.HandleAsync(request, userId);
+        var response = await _handler.HandleAsync(request, userId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();

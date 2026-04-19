@@ -49,7 +49,7 @@ public sealed class RevokeInviteEndpointTests : IClassFixture<HarmonieWebApplica
             owner.AccessToken);
         listResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var result = await listResponse.Content.ReadFromJsonAsync<ListGuildInvitesResponse>();
+        var result = await listResponse.Content.ReadFromJsonAsync<ListGuildInvitesResponse>(TestContext.Current.CancellationToken);
         result.Should().NotBeNull();
         result!.Invites.Should().ContainSingle();
         result.Invites[0].Code.Should().Be(invite.Code);
@@ -69,7 +69,7 @@ public sealed class RevokeInviteEndpointTests : IClassFixture<HarmonieWebApplica
             new CreateGuildRequest($"Revoke Creator Guild {Guid.NewGuid():N}"[..40]),
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
-        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         guild.Should().NotBeNull();
 
         // Add second user as admin
@@ -86,7 +86,7 @@ public sealed class RevokeInviteEndpointTests : IClassFixture<HarmonieWebApplica
             new CreateGuildInviteRequest(),
             owner.AccessToken);
         inviteResponse.StatusCode.Should().Be(HttpStatusCode.Created);
-        var invite = await inviteResponse.Content.ReadFromJsonAsync<CreateGuildInviteResponse>();
+        var invite = await inviteResponse.Content.ReadFromJsonAsync<CreateGuildInviteResponse>(TestContext.Current.CancellationToken);
         invite.Should().NotBeNull();
 
         // Second admin (not the creator) can also revoke because they are an admin
@@ -108,7 +108,7 @@ public sealed class RevokeInviteEndpointTests : IClassFixture<HarmonieWebApplica
             new CreateGuildRequest($"Revoke Forbidden Guild {Guid.NewGuid():N}"[..40]),
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
-        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         guild.Should().NotBeNull();
 
         await GuildTestHelper.InviteMemberAsync(_client, guild!.GuildId, owner.AccessToken, member.AccessToken);
@@ -119,7 +119,7 @@ public sealed class RevokeInviteEndpointTests : IClassFixture<HarmonieWebApplica
             new CreateGuildInviteRequest(),
             owner.AccessToken);
         inviteResponse.StatusCode.Should().Be(HttpStatusCode.Created);
-        var invite = await inviteResponse.Content.ReadFromJsonAsync<CreateGuildInviteResponse>();
+        var invite = await inviteResponse.Content.ReadFromJsonAsync<CreateGuildInviteResponse>(TestContext.Current.CancellationToken);
         invite.Should().NotBeNull();
 
         // Member (not admin, not creator) tries to revoke
@@ -129,7 +129,7 @@ public sealed class RevokeInviteEndpointTests : IClassFixture<HarmonieWebApplica
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Invite.RevokeForbidden);
     }
@@ -143,7 +143,7 @@ public sealed class RevokeInviteEndpointTests : IClassFixture<HarmonieWebApplica
             new CreateGuildRequest($"Revoke NotFound Guild {Guid.NewGuid():N}"[..40]),
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
-        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         guild.Should().NotBeNull();
 
         var response = await _client.SendAuthorizedDeleteAsync(
@@ -152,7 +152,7 @@ public sealed class RevokeInviteEndpointTests : IClassFixture<HarmonieWebApplica
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Invite.NotFound);
     }
@@ -160,7 +160,7 @@ public sealed class RevokeInviteEndpointTests : IClassFixture<HarmonieWebApplica
     [Fact]
     public async Task RevokeInvite_WhenNotAuthenticated_ShouldReturn401()
     {
-        var response = await _client.DeleteAsync($"/api/guilds/{Guid.NewGuid()}/invites/ABCD1234");
+        var response = await _client.DeleteAsync($"/api/guilds/{Guid.NewGuid()}/invites/ABCD1234", TestContext.Current.CancellationToken);
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
@@ -175,7 +175,7 @@ public sealed class RevokeInviteEndpointTests : IClassFixture<HarmonieWebApplica
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Common.ValidationFailed);
     }
@@ -191,7 +191,7 @@ public sealed class RevokeInviteEndpointTests : IClassFixture<HarmonieWebApplica
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Common.ValidationFailed);
     }
@@ -206,21 +206,21 @@ public sealed class RevokeInviteEndpointTests : IClassFixture<HarmonieWebApplica
             new CreateGuildRequest($"Revoke Other Guild 1 {Guid.NewGuid():N}"[..40]),
             owner.AccessToken);
         guild1Response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var guild1 = await guild1Response.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var guild1 = await guild1Response.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
 
         var guild2Response = await _client.SendAuthorizedPostAsync(
             "/api/guilds",
             new CreateGuildRequest($"Revoke Other Guild 2 {Guid.NewGuid():N}"[..40]),
             owner.AccessToken);
         guild2Response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var guild2 = await guild2Response.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var guild2 = await guild2Response.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
 
         var inviteResponse = await _client.SendAuthorizedPostAsync(
             $"/api/guilds/{guild1!.GuildId}/invites",
             new CreateGuildInviteRequest(),
             owner.AccessToken);
         inviteResponse.StatusCode.Should().Be(HttpStatusCode.Created);
-        var invite = await inviteResponse.Content.ReadFromJsonAsync<CreateGuildInviteResponse>();
+        var invite = await inviteResponse.Content.ReadFromJsonAsync<CreateGuildInviteResponse>(TestContext.Current.CancellationToken);
         invite.Should().NotBeNull();
 
         // Try to revoke guild1's invite via guild2's route
@@ -238,7 +238,7 @@ public sealed class RevokeInviteEndpointTests : IClassFixture<HarmonieWebApplica
             new CreateGuildRequest($"Revoke Test Guild {Guid.NewGuid():N}"[..40]),
             accessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
-        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         guild.Should().NotBeNull();
 
         var inviteResponse = await _client.SendAuthorizedPostAsync(
@@ -246,7 +246,7 @@ public sealed class RevokeInviteEndpointTests : IClassFixture<HarmonieWebApplica
             new CreateGuildInviteRequest(),
             accessToken);
         inviteResponse.StatusCode.Should().Be(HttpStatusCode.Created);
-        var invite = await inviteResponse.Content.ReadFromJsonAsync<CreateGuildInviteResponse>();
+        var invite = await inviteResponse.Content.ReadFromJsonAsync<CreateGuildInviteResponse>(TestContext.Current.CancellationToken);
         invite.Should().NotBeNull();
 
         return (guild, invite!);

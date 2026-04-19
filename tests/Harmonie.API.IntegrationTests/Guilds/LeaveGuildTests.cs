@@ -30,7 +30,7 @@ public sealed class LeaveGuildTests : IClassFixture<HarmonieWebApplicationFactor
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         await GuildTestHelper.InviteMemberAsync(_client, createGuildPayload!.GuildId, owner.AccessToken, member.AccessToken);
@@ -52,7 +52,7 @@ public sealed class LeaveGuildTests : IClassFixture<HarmonieWebApplicationFactor
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         var leaveResponse = await _client.SendAuthorizedPostNoBodyAsync(
@@ -60,7 +60,7 @@ public sealed class LeaveGuildTests : IClassFixture<HarmonieWebApplicationFactor
             owner.AccessToken);
         leaveResponse.StatusCode.Should().Be(HttpStatusCode.Conflict);
 
-        var error = await leaveResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await leaveResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Guild.OwnerCannotLeave);
     }
@@ -77,7 +77,7 @@ public sealed class LeaveGuildTests : IClassFixture<HarmonieWebApplicationFactor
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         var leaveResponse = await _client.SendAuthorizedPostNoBodyAsync(
@@ -85,7 +85,7 @@ public sealed class LeaveGuildTests : IClassFixture<HarmonieWebApplicationFactor
             outsider.AccessToken);
         leaveResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        var error = await leaveResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await leaveResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Guild.AccessDenied);
     }
@@ -101,12 +101,13 @@ public sealed class LeaveGuildTests : IClassFixture<HarmonieWebApplicationFactor
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         var leaveResponse = await _client.PostAsync(
             $"/api/guilds/{createGuildPayload!.GuildId}/leave",
-            null);
+            null,
+            TestContext.Current.CancellationToken);
         leaveResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
@@ -121,7 +122,7 @@ public sealed class LeaveGuildTests : IClassFixture<HarmonieWebApplicationFactor
             user.AccessToken);
         leaveResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-        var error = await leaveResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await leaveResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Guild.NotFound);
     }

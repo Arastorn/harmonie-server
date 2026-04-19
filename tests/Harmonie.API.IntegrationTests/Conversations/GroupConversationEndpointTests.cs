@@ -37,7 +37,7 @@ public sealed class GroupConversationEndpointTests : IClassFixture<HarmonieWebAp
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var payload = await response.Content.ReadFromJsonAsync<CreateGroupConversationResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<CreateGroupConversationResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.Type.Should().Be("group");
         payload.Name.Should().Be("Dev Team");
@@ -65,7 +65,7 @@ public sealed class GroupConversationEndpointTests : IClassFixture<HarmonieWebAp
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Conversation.AccessDenied);
     }
@@ -85,7 +85,7 @@ public sealed class GroupConversationEndpointTests : IClassFixture<HarmonieWebAp
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.User.NotFound);
     }
@@ -105,7 +105,7 @@ public sealed class GroupConversationEndpointTests : IClassFixture<HarmonieWebAp
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Common.ValidationFailed);
     }
@@ -178,7 +178,7 @@ public sealed class GroupConversationEndpointTests : IClassFixture<HarmonieWebAp
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var payload = await response.Content.ReadFromJsonAsync<ListConversationsResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<ListConversationsResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.Conversations.Should().Contain(x =>
             x.ConversationId == group.ConversationId

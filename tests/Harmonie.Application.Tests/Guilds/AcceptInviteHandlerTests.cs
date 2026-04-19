@@ -57,7 +57,7 @@ public sealed class AcceptInviteHandlerTests
             .Setup(x => x.GetAcceptDetailsByCodeAsync(InviteCode, It.IsAny<CancellationToken>()))
             .ReturnsAsync((InviteAcceptDetails?)null);
 
-        var response = await _handler.HandleAsync(InviteCode, _callerId);
+        var response = await _handler.HandleAsync(InviteCode, _callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error!.Code.Should().Be(ApplicationErrorCodes.Invite.NotFound);
@@ -74,7 +74,7 @@ public sealed class AcceptInviteHandlerTests
             .Setup(x => x.GetAcceptDetailsByCodeAsync(InviteCode, It.IsAny<CancellationToken>()))
             .ReturnsAsync(details);
 
-        var response = await _handler.HandleAsync(InviteCode, _callerId);
+        var response = await _handler.HandleAsync(InviteCode, _callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error!.Code.Should().Be(ApplicationErrorCodes.Invite.Expired);
@@ -91,7 +91,7 @@ public sealed class AcceptInviteHandlerTests
             .Setup(x => x.GetAcceptDetailsByCodeAsync(InviteCode, It.IsAny<CancellationToken>()))
             .ReturnsAsync(details);
 
-        var response = await _handler.HandleAsync(InviteCode, _callerId);
+        var response = await _handler.HandleAsync(InviteCode, _callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error!.Code.Should().Be(ApplicationErrorCodes.Invite.Exhausted);
@@ -112,7 +112,7 @@ public sealed class AcceptInviteHandlerTests
             .Setup(x => x.IsMemberAsync(_guildId, _callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
-        var response = await _handler.HandleAsync(InviteCode, _callerId);
+        var response = await _handler.HandleAsync(InviteCode, _callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error!.Code.Should().Be(ApplicationErrorCodes.Guild.MemberAlreadyExists);
@@ -137,7 +137,7 @@ public sealed class AcceptInviteHandlerTests
             .Setup(x => x.TryAddAsync(It.IsAny<GuildMember>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
-        var response = await _handler.HandleAsync(InviteCode, _callerId);
+        var response = await _handler.HandleAsync(InviteCode, _callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();
@@ -172,7 +172,7 @@ public sealed class AcceptInviteHandlerTests
             .Setup(x => x.TryAddAsync(It.IsAny<GuildMember>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
-        var response = await _handler.HandleAsync(InviteCode, _callerId);
+        var response = await _handler.HandleAsync(InviteCode, _callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error!.Code.Should().Be(ApplicationErrorCodes.Guild.MemberAlreadyExists);

@@ -55,7 +55,7 @@ public sealed class DeleteConversationHandlerTests
             .Setup(x => x.GetByIdWithParticipantCheckAsync(conversationId, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((ConversationAccess?)null);
 
-        var response = await _handler.HandleAsync(new DeleteConversationInput(conversationId), callerId);
+        var response = await _handler.HandleAsync(new DeleteConversationInput(conversationId), callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error!.Code.Should().Be(ApplicationErrorCodes.Conversation.NotFound);
@@ -76,7 +76,7 @@ public sealed class DeleteConversationHandlerTests
             .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, outsider, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ConversationAccess(conversation, IsParticipant: false));
 
-        var response = await _handler.HandleAsync(new DeleteConversationInput(conversation.Id), outsider);
+        var response = await _handler.HandleAsync(new DeleteConversationInput(conversation.Id), outsider, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error!.Code.Should().Be(ApplicationErrorCodes.Conversation.AccessDenied);
@@ -100,7 +100,7 @@ public sealed class DeleteConversationHandlerTests
             .Setup(x => x.RemoveParticipantAsync(conversation.Id, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);
 
-        var response = await _handler.HandleAsync(new DeleteConversationInput(conversation.Id), callerId);
+        var response = await _handler.HandleAsync(new DeleteConversationInput(conversation.Id), callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Error.Should().BeNull();
@@ -121,7 +121,7 @@ public sealed class DeleteConversationHandlerTests
             .Setup(x => x.RemoveParticipantAsync(conversation.Id, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);
 
-        await _handler.HandleAsync(new DeleteConversationInput(conversation.Id), callerId);
+        await _handler.HandleAsync(new DeleteConversationInput(conversation.Id), callerId, TestContext.Current.CancellationToken);
 
         _conversationNotifierMock.Verify(
             x => x.NotifyParticipantLeftAsync(
@@ -150,7 +150,7 @@ public sealed class DeleteConversationHandlerTests
             .Setup(x => x.RemoveParticipantAsync(conversation.Id, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(0);
 
-        await _handler.HandleAsync(new DeleteConversationInput(conversation.Id), callerId);
+        await _handler.HandleAsync(new DeleteConversationInput(conversation.Id), callerId, TestContext.Current.CancellationToken);
 
         _conversationRepositoryMock.Verify(
             x => x.DeleteAsync(conversation.Id, It.IsAny<CancellationToken>()),
@@ -172,7 +172,7 @@ public sealed class DeleteConversationHandlerTests
             .Setup(x => x.RemoveParticipantAsync(conversation.Id, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);
 
-        await _handler.HandleAsync(new DeleteConversationInput(conversation.Id), callerId);
+        await _handler.HandleAsync(new DeleteConversationInput(conversation.Id), callerId, TestContext.Current.CancellationToken);
 
         _conversationRepositoryMock.Verify(
             x => x.DeleteAsync(It.IsAny<ConversationId>(), It.IsAny<CancellationToken>()),
@@ -200,7 +200,7 @@ public sealed class DeleteConversationHandlerTests
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("SignalR unavailable"));
 
-        var response = await _handler.HandleAsync(new DeleteConversationInput(conversation.Id), callerId);
+        var response = await _handler.HandleAsync(new DeleteConversationInput(conversation.Id), callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         _conversationRepositoryMock.Verify(

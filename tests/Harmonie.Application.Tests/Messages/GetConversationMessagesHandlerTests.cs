@@ -35,7 +35,8 @@ public sealed class GetConversationMessagesHandlerTests
     {
         var response = await _handler.HandleAsync(
             new GetConversationMessagesInput(ConversationId.New(), Cursor: "invalid-cursor", Limit: 50),
-            UserId.New());
+            UserId.New(),
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -54,7 +55,8 @@ public sealed class GetConversationMessagesHandlerTests
 
         var response = await _handler.HandleAsync(
             new GetConversationMessagesInput(conversationId, Limit: 50),
-            userId);
+            userId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -75,7 +77,8 @@ public sealed class GetConversationMessagesHandlerTests
 
         var response = await _handler.HandleAsync(
             new GetConversationMessagesInput(conversation.Id, Limit: 50),
-            outsider);
+            outsider,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -110,7 +113,8 @@ public sealed class GetConversationMessagesHandlerTests
 
         var response = await _handler.HandleAsync(
             new GetConversationMessagesInput(conversation.Id, Limit: 50),
-            participantOne);
+            participantOne,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Error.Should().BeNull();

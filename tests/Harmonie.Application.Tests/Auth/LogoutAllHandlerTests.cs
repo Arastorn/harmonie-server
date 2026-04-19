@@ -39,7 +39,7 @@ public sealed class LogoutAllHandlerTests
             .Returns(Task.CompletedTask);
 
         // Act
-        var response = await _handler.HandleAsync(Unit.Value, currentUserId);
+        var response = await _handler.HandleAsync(Unit.Value, currentUserId, TestContext.Current.CancellationToken);
 
         // Assert
         response.Success.Should().BeTrue();

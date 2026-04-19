@@ -31,7 +31,7 @@ public sealed class GuildChannelsTests : IClassFixture<HarmonieWebApplicationFac
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         var createChannelResponse = await _client.SendAuthorizedPostAsync(
@@ -40,7 +40,7 @@ public sealed class GuildChannelsTests : IClassFixture<HarmonieWebApplicationFac
             owner.AccessToken);
         createChannelResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var payload = await createChannelResponse.Content.ReadFromJsonAsync<CreateChannelResponse>();
+        var payload = await createChannelResponse.Content.ReadFromJsonAsync<CreateChannelResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.GuildId.Should().Be(createGuildPayload.GuildId);
         payload.Name.Should().Be("announcements");
@@ -61,7 +61,7 @@ public sealed class GuildChannelsTests : IClassFixture<HarmonieWebApplicationFac
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         var createChannelResponse = await _client.SendAuthorizedPostAsync(
@@ -70,7 +70,7 @@ public sealed class GuildChannelsTests : IClassFixture<HarmonieWebApplicationFac
             owner.AccessToken);
         createChannelResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var payload = await createChannelResponse.Content.ReadFromJsonAsync<CreateChannelResponse>();
+        var payload = await createChannelResponse.Content.ReadFromJsonAsync<CreateChannelResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.Type.Should().Be("Voice");
         payload.Name.Should().Be("Gaming");
@@ -88,7 +88,7 @@ public sealed class GuildChannelsTests : IClassFixture<HarmonieWebApplicationFac
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         await GuildTestHelper.InviteMemberAsync(_client, createGuildPayload!.GuildId, owner.AccessToken, member.AccessToken);
@@ -99,7 +99,7 @@ public sealed class GuildChannelsTests : IClassFixture<HarmonieWebApplicationFac
             member.AccessToken);
         createChannelResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        var error = await createChannelResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await createChannelResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Guild.AccessDenied);
     }
@@ -116,7 +116,7 @@ public sealed class GuildChannelsTests : IClassFixture<HarmonieWebApplicationFac
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         var createChannelResponse = await _client.SendAuthorizedPostAsync(
@@ -125,7 +125,7 @@ public sealed class GuildChannelsTests : IClassFixture<HarmonieWebApplicationFac
             outsider.AccessToken);
         createChannelResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        var error = await createChannelResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await createChannelResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Guild.AccessDenied);
     }
@@ -142,7 +142,7 @@ public sealed class GuildChannelsTests : IClassFixture<HarmonieWebApplicationFac
             user.AccessToken);
         createChannelResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-        var error = await createChannelResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await createChannelResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Guild.NotFound);
     }
@@ -154,7 +154,8 @@ public sealed class GuildChannelsTests : IClassFixture<HarmonieWebApplicationFac
 
         var createChannelResponse = await _client.PostAsJsonAsync(
             $"/api/guilds/{nonExistentGuildId}/channels",
-            new CreateChannelRequest("anon-channel", ChannelTypeInput.Text, 0));
+            new CreateChannelRequest("anon-channel", ChannelTypeInput.Text, 0),
+            TestContext.Current.CancellationToken);
         createChannelResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
@@ -169,7 +170,7 @@ public sealed class GuildChannelsTests : IClassFixture<HarmonieWebApplicationFac
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         var createChannelResponse = await SendAuthorizedPostRawAsync(
@@ -178,7 +179,7 @@ public sealed class GuildChannelsTests : IClassFixture<HarmonieWebApplicationFac
             owner.AccessToken);
         createChannelResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
-        var error = await createChannelResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await createChannelResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Common.ValidationFailed);
         error.Errors.Should().ContainKey("type");
@@ -196,7 +197,7 @@ public sealed class GuildChannelsTests : IClassFixture<HarmonieWebApplicationFac
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         var createChannelResponse = await _client.SendAuthorizedPostAsync(
@@ -205,7 +206,7 @@ public sealed class GuildChannelsTests : IClassFixture<HarmonieWebApplicationFac
             owner.AccessToken);
         createChannelResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
-        var error = await createChannelResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await createChannelResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Common.DomainRuleViolation);
     }
@@ -220,6 +221,6 @@ public sealed class GuildChannelsTests : IClassFixture<HarmonieWebApplicationFac
             Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json")
         };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-        return await _client.SendAsync(request);
+        return await _client.SendAsync(request, TestContext.Current.CancellationToken);
     }
 }

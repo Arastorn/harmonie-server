@@ -83,7 +83,7 @@ public sealed class RegisterHandlerTests
             .Returns(DateTime.UtcNow.AddDays(30));
 
         // Act
-        var response = await _handler.HandleAsync(request);
+        var response = await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
 
         // Assert
         response.Should().NotBeNull();
@@ -166,7 +166,7 @@ public sealed class RegisterHandlerTests
             .ThrowsAsync(new InvalidOperationException("Simulated write failure"));
 
         // Act
-        var act = async () => await _handler.HandleAsync(request);
+        var act = async () => await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>();
@@ -210,7 +210,7 @@ public sealed class RegisterHandlerTests
             .ReturnsAsync(new UserDuplicateCheck(true, false));
 
         // Act
-        var response = await _handler.HandleAsync(request);
+        var response = await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
 
         // Assert
         response.Success.Should().BeFalse();
@@ -233,7 +233,7 @@ public sealed class RegisterHandlerTests
             .ReturnsAsync(new UserDuplicateCheck(false, true));
 
         // Act
-        var response = await _handler.HandleAsync(request);
+        var response = await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
 
         // Assert
         response.Success.Should().BeFalse();
@@ -258,7 +258,7 @@ public sealed class RegisterHandlerTests
             .ReturnsAsync(new UserDuplicateCheck(false, false));
 
         // Act
-        var response = await _handler.HandleAsync(request);
+        var response = await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
 
         // Assert
         response.Success.Should().BeTrue();
@@ -284,7 +284,7 @@ public sealed class RegisterHandlerTests
             .ReturnsAsync(new UserDuplicateCheck(false, false));
 
         // Act
-        var response = await _handler.HandleAsync(request);
+        var response = await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
 
         // Assert
         response.Success.Should().BeTrue();
@@ -312,7 +312,7 @@ public sealed class RegisterHandlerTests
             .ReturnsAsync(new UserDuplicateCheck(false, false));
 
         // Act
-        var response = await _handler.HandleAsync(request);
+        var response = await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
 
         // Assert
         response.Success.Should().BeTrue();

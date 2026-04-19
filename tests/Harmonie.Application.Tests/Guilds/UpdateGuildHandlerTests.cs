@@ -60,7 +60,7 @@ public sealed class UpdateGuildHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guildId, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((GuildAccessContext?)null);
 
-        var response = await _handler.HandleAsync(new UpdateGuildInput(guildId, null, null, null, null, null, false, false, false, false, false), callerId);
+        var response = await _handler.HandleAsync(new UpdateGuildInput(guildId, null, null, null, null, null, false, false, false, false, false), callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -77,7 +77,7 @@ public sealed class UpdateGuildHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GuildAccessContext(guild, GuildRole.Member));
 
-        var response = await _handler.HandleAsync(new UpdateGuildInput(guild.Id, null, null, null, null, null, false, false, false, false, false), callerId);
+        var response = await _handler.HandleAsync(new UpdateGuildInput(guild.Id, null, null, null, null, null, false, false, false, false, false), callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -109,7 +109,7 @@ public sealed class UpdateGuildHandlerTests
             IconBgIsSet = true
         };
 
-        var response = await _handler.HandleAsync(new UpdateGuildInput(guild.Id, request.Name, request.IconFileId, request.IconColor, request.IconName, request.IconBg, request.NameIsSet, request.IconFileIdIsSet, request.IconColorIsSet, request.IconNameIsSet, request.IconBgIsSet), adminId);
+        var response = await _handler.HandleAsync(new UpdateGuildInput(guild.Id, request.Name, request.IconFileId, request.IconColor, request.IconName, request.IconBg, request.NameIsSet, request.IconFileIdIsSet, request.IconColorIsSet, request.IconNameIsSet, request.IconBgIsSet), adminId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();
@@ -157,7 +157,7 @@ public sealed class UpdateGuildHandlerTests
             IconBgIsSet = true
         };
 
-        var response = await _handler.HandleAsync(new UpdateGuildInput(guild.Id, request.Name, request.IconFileId, request.IconColor, request.IconName, request.IconBg, request.NameIsSet, request.IconFileIdIsSet, request.IconColorIsSet, request.IconNameIsSet, request.IconBgIsSet), ownerId);
+        var response = await _handler.HandleAsync(new UpdateGuildInput(guild.Id, request.Name, request.IconFileId, request.IconColor, request.IconName, request.IconBg, request.NameIsSet, request.IconFileIdIsSet, request.IconColorIsSet, request.IconNameIsSet, request.IconBgIsSet), ownerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();
@@ -174,7 +174,7 @@ public sealed class UpdateGuildHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, ownerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GuildAccessContext(guild, GuildRole.Member));
 
-        var response = await _handler.HandleAsync(new UpdateGuildInput(guild.Id, null, null, null, null, null, false, false, false, false, false), ownerId);
+        var response = await _handler.HandleAsync(new UpdateGuildInput(guild.Id, null, null, null, null, null, false, false, false, false, false), ownerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         _guildRepositoryMock.Verify(
@@ -207,7 +207,7 @@ public sealed class UpdateGuildHandlerTests
             IconFileIdIsSet = true
         };
 
-        var response = await _handler.HandleAsync(new UpdateGuildInput(guild.Id, request.Name, request.IconFileId, request.IconColor, request.IconName, request.IconBg, request.NameIsSet, request.IconFileIdIsSet, request.IconColorIsSet, request.IconNameIsSet, request.IconBgIsSet), ownerId);
+        var response = await _handler.HandleAsync(new UpdateGuildInput(guild.Id, request.Name, request.IconFileId, request.IconColor, request.IconName, request.IconBg, request.NameIsSet, request.IconFileIdIsSet, request.IconColorIsSet, request.IconNameIsSet, request.IconBgIsSet), ownerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         _objectStorageServiceMock.Verify(
@@ -240,7 +240,7 @@ public sealed class UpdateGuildHandlerTests
             IconFileIdIsSet = true
         };
 
-        var response = await _handler.HandleAsync(new UpdateGuildInput(guild.Id, request.Name, request.IconFileId, request.IconColor, request.IconName, request.IconBg, request.NameIsSet, request.IconFileIdIsSet, request.IconColorIsSet, request.IconNameIsSet, request.IconBgIsSet), ownerId);
+        var response = await _handler.HandleAsync(new UpdateGuildInput(guild.Id, request.Name, request.IconFileId, request.IconColor, request.IconName, request.IconBg, request.NameIsSet, request.IconFileIdIsSet, request.IconColorIsSet, request.IconNameIsSet, request.IconBgIsSet), ownerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         _uploadedFileRepositoryMock.Verify(
@@ -267,7 +267,8 @@ public sealed class UpdateGuildHandlerTests
 
         var response = await _handler.HandleAsync(
             new UpdateGuildInput(guild.Id, "Updated Name", null, null, null, null, true, false, false, false, false),
-            ownerId);
+            ownerId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
 
@@ -293,7 +294,8 @@ public sealed class UpdateGuildHandlerTests
 
         var response = await _handler.HandleAsync(
             new UpdateGuildInput(guild.Id, null, null, null, null, null, false, false, false, false, false),
-            ownerId);
+            ownerId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         _guildNotifierMock.Verify(

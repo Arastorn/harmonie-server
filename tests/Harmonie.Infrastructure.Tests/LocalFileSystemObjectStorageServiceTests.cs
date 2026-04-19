@@ -29,7 +29,8 @@ public sealed class LocalFileSystemObjectStorageServiceTests : IDisposable
                 "uploads/2026/03/test.txt",
                 "text/plain",
                 content.Length,
-                content));
+                content),
+            TestContext.Current.CancellationToken);
 
         result.Success.Should().BeTrue();
         File.ReadAllText(Path.Combine(_tempDirectory, "uploads", "2026", "03", "test.txt"))
@@ -47,7 +48,8 @@ public sealed class LocalFileSystemObjectStorageServiceTests : IDisposable
                 "../outside.txt",
                 "text/plain",
                 content.Length,
-                content));
+                content),
+            TestContext.Current.CancellationToken);
 
         result.Success.Should().BeFalse();
         File.Exists(Path.Combine(_tempDirectory, "..", "outside.txt")).Should().BeFalse();

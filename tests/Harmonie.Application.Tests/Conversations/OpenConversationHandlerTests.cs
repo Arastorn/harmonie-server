@@ -39,7 +39,8 @@ public sealed class OpenConversationHandlerTests
 
         var response = await _handler.HandleAsync(
             new OpenConversationRequest(callerUserId),
-            callerUserId);
+            callerUserId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -61,7 +62,8 @@ public sealed class OpenConversationHandlerTests
 
         var response = await _handler.HandleAsync(
             new OpenConversationRequest(targetUserId),
-            callerUserId);
+            callerUserId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -89,7 +91,8 @@ public sealed class OpenConversationHandlerTests
 
         var response = await _handler.HandleAsync(
             new OpenConversationRequest(targetUserId),
-            callerUserId);
+            callerUserId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();
@@ -120,7 +123,8 @@ public sealed class OpenConversationHandlerTests
 
         var response = await _handler.HandleAsync(
             new OpenConversationRequest(targetUserId),
-            callerUserId);
+            callerUserId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();

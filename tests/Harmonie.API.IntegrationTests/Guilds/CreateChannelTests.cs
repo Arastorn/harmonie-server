@@ -30,7 +30,7 @@ public sealed class CreateChannelTests : IClassFixture<HarmonieWebApplicationFac
             owner.AccessToken);
         createResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
-        var error = await createResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await createResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Common.ValidationFailed);
     }
@@ -52,7 +52,7 @@ public sealed class CreateChannelTests : IClassFixture<HarmonieWebApplicationFac
             owner.AccessToken);
         createResponse.StatusCode.Should().Be(HttpStatusCode.Conflict);
 
-        var error = await createResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await createResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Channel.NameConflict);
     }

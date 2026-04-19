@@ -36,7 +36,7 @@ public sealed class UserProfileTests : IClassFixture<HarmonieWebApplicationFacto
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var payload = await response.Content.ReadFromJsonAsync<GetMyProfileResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<GetMyProfileResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
 
         payload!.UserId.Should().Be(user.UserId);
@@ -52,12 +52,12 @@ public sealed class UserProfileTests : IClassFixture<HarmonieWebApplicationFacto
     [Fact]
     public async Task GetMyProfile_WithoutAuthentication_ShouldReturnUnauthorized()
     {
-        var response = await _client.GetAsync("/api/users/me");
+        var response = await _client.GetAsync("/api/users/me", TestContext.Current.CancellationToken);
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
 
         response.Content.Headers.ContentType?.MediaType.Should().Be("application/json");
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Auth.InvalidCredentials);
         error.Status.Should().Be((int)HttpStatusCode.Unauthorized);
@@ -73,7 +73,7 @@ public sealed class UserProfileTests : IClassFixture<HarmonieWebApplicationFacto
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.User.NotFound);
     }
@@ -102,7 +102,7 @@ public sealed class UserProfileTests : IClassFixture<HarmonieWebApplicationFacto
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var payload = await response.Content.ReadFromJsonAsync<UpdateMyProfileResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<UpdateMyProfileResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.UserId.Should().Be(user.UserId);
         payload.Username.Should().Be(user.Username);
@@ -112,7 +112,7 @@ public sealed class UserProfileTests : IClassFixture<HarmonieWebApplicationFacto
 
         var getResponse = await _client.SendAuthorizedGetAsync("/api/users/me", user.AccessToken);
         getResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        var profile = await getResponse.Content.ReadFromJsonAsync<GetMyProfileResponse>();
+        var profile = await getResponse.Content.ReadFromJsonAsync<GetMyProfileResponse>(TestContext.Current.CancellationToken);
         profile.Should().NotBeNull();
         profile!.DisplayName.Should().Be("Updated Name");
         profile.Bio.Should().Be("Initial bio");
@@ -147,7 +147,7 @@ public sealed class UserProfileTests : IClassFixture<HarmonieWebApplicationFacto
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var payload = await response.Content.ReadFromJsonAsync<UpdateMyProfileResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<UpdateMyProfileResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.DisplayName.Should().Be("Alice");
         payload.Bio.Should().BeNull();
@@ -166,7 +166,7 @@ public sealed class UserProfileTests : IClassFixture<HarmonieWebApplicationFacto
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Common.ValidationFailed);
         error.Status.Should().Be((int)HttpStatusCode.BadRequest);
@@ -189,7 +189,7 @@ public sealed class UserProfileTests : IClassFixture<HarmonieWebApplicationFacto
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Common.ValidationFailed);
     }
@@ -199,7 +199,8 @@ public sealed class UserProfileTests : IClassFixture<HarmonieWebApplicationFacto
     {
         var response = await _client.PatchAsJsonAsync(
             "/api/users/me",
-            new { displayName = "NoAuth" });
+            new { displayName = "NoAuth" },
+            TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -216,13 +217,13 @@ public sealed class UserProfileTests : IClassFixture<HarmonieWebApplicationFacto
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var payload = await response.Content.ReadFromJsonAsync<UpdateMyProfileResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<UpdateMyProfileResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.Theme.Should().Be("dark");
         payload.Language.Should().Be("fr");
 
         var getResponse = await _client.SendAuthorizedGetAsync("/api/users/me", user.AccessToken);
-        var profile = await getResponse.Content.ReadFromJsonAsync<GetMyProfileResponse>();
+        var profile = await getResponse.Content.ReadFromJsonAsync<GetMyProfileResponse>(TestContext.Current.CancellationToken);
         profile.Should().NotBeNull();
         profile!.Theme.Should().Be("dark");
         profile.Language.Should().Be("fr");
@@ -240,7 +241,7 @@ public sealed class UserProfileTests : IClassFixture<HarmonieWebApplicationFacto
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var payload = await response.Content.ReadFromJsonAsync<UpdateMyProfileResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<UpdateMyProfileResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.Avatar.Should().NotBeNull();
         payload.Avatar!.Color.Should().Be("#FFF4D6");
@@ -248,7 +249,7 @@ public sealed class UserProfileTests : IClassFixture<HarmonieWebApplicationFacto
         payload.Avatar.Bg.Should().Be("#1F2937");
 
         var getResponse = await _client.SendAuthorizedGetAsync("/api/users/me", user.AccessToken);
-        var profile = await getResponse.Content.ReadFromJsonAsync<GetMyProfileResponse>();
+        var profile = await getResponse.Content.ReadFromJsonAsync<GetMyProfileResponse>(TestContext.Current.CancellationToken);
         profile.Should().NotBeNull();
         profile!.Avatar.Should().NotBeNull();
         profile.Avatar!.Color.Should().Be("#FFF4D6");
@@ -271,7 +272,7 @@ public sealed class UserProfileTests : IClassFixture<HarmonieWebApplicationFacto
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var payload = await response.Content.ReadFromJsonAsync<UpdateMyProfileResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<UpdateMyProfileResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.Avatar.Should().NotBeNull();
         payload.Avatar!.Color.Should().Be("#UPDATED");
@@ -296,7 +297,7 @@ public sealed class UserProfileTests : IClassFixture<HarmonieWebApplicationFacto
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var payload = await response.Content.ReadFromJsonAsync<UpdateMyProfileResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<UpdateMyProfileResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.Avatar.Should().BeNull();
     }
@@ -318,7 +319,7 @@ public sealed class UserProfileTests : IClassFixture<HarmonieWebApplicationFacto
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var payload = await response.Content.ReadFromJsonAsync<UpdateMyProfileResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<UpdateMyProfileResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.Language.Should().BeNull();
     }
@@ -342,7 +343,7 @@ public sealed class UserProfileTests : IClassFixture<HarmonieWebApplicationFacto
         var profileResponse = await _client.SendAuthorizedGetAsync("/api/users/me", user.AccessToken);
         profileResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var profile = await profileResponse.Content.ReadFromJsonAsync<GetMyProfileResponse>();
+        var profile = await profileResponse.Content.ReadFromJsonAsync<GetMyProfileResponse>(TestContext.Current.CancellationToken);
         profile.Should().NotBeNull();
         profile!.AvatarFileId.Should().BeNull();
 
@@ -359,7 +360,7 @@ public sealed class UserProfileTests : IClassFixture<HarmonieWebApplicationFacto
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Upload.NotFound);
     }
@@ -367,7 +368,7 @@ public sealed class UserProfileTests : IClassFixture<HarmonieWebApplicationFacto
     [Fact]
     public async Task DeleteMyAvatar_WithoutAuthentication_ShouldReturnUnauthorized()
     {
-        var response = await _client.DeleteAsync("/api/users/me/avatar");
+        var response = await _client.DeleteAsync("/api/users/me/avatar", TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }

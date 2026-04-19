@@ -44,7 +44,7 @@ public sealed class DeleteFileHandlerTests
             .Setup(x => x.GetByIdAsync(fileId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Domain.Entities.Uploads.UploadedFile?)null);
 
-        var response = await _handler.HandleAsync(new DeleteFileInput(fileId), userId);
+        var response = await _handler.HandleAsync(new DeleteFileInput(fileId), userId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error!.Code.Should().Be(ApplicationErrorCodes.Upload.NotFound);
@@ -61,7 +61,7 @@ public sealed class DeleteFileHandlerTests
             .Setup(x => x.GetByIdAsync(uploadedFile.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(uploadedFile);
 
-        var response = await _handler.HandleAsync(new DeleteFileInput(uploadedFile.Id), requestingUser);
+        var response = await _handler.HandleAsync(new DeleteFileInput(uploadedFile.Id), requestingUser, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error!.Code.Should().Be(ApplicationErrorCodes.Upload.AccessDenied);
@@ -82,7 +82,7 @@ public sealed class DeleteFileHandlerTests
             .Setup(x => x.DeleteIfExistsAsync(uploadedFile.StorageKey, It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        var response = await _handler.HandleAsync(new DeleteFileInput(uploadedFile.Id), user.Id);
+        var response = await _handler.HandleAsync(new DeleteFileInput(uploadedFile.Id), user.Id, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         _uploadedFileRepositoryMock.Verify(
@@ -108,7 +108,7 @@ public sealed class DeleteFileHandlerTests
             .Setup(x => x.DeleteIfExistsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("Storage unavailable"));
 
-        var response = await _handler.HandleAsync(new DeleteFileInput(uploadedFile.Id), user.Id);
+        var response = await _handler.HandleAsync(new DeleteFileInput(uploadedFile.Id), user.Id, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         _transactionMock.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);

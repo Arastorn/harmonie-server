@@ -67,7 +67,7 @@ public sealed class JoinVoiceChannelHandlerTests
             .Setup(x => x.GetByIdAsync(channelId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((GuildChannel?)null);
 
-        var response = await _handler.HandleAsync(channelId, userId);
+        var response = await _handler.HandleAsync(channelId, userId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -84,7 +84,7 @@ public sealed class JoinVoiceChannelHandlerTests
             .Setup(x => x.GetByIdAsync(channel.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(channel);
 
-        var response = await _handler.HandleAsync(channel.Id, userId);
+        var response = await _handler.HandleAsync(channel.Id, userId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -105,7 +105,7 @@ public sealed class JoinVoiceChannelHandlerTests
             .Setup(x => x.IsMemberAsync(channel.GuildId, userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
-        var response = await _handler.HandleAsync(channel.Id, userId);
+        var response = await _handler.HandleAsync(channel.Id, userId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -130,7 +130,7 @@ public sealed class JoinVoiceChannelHandlerTests
             .Setup(x => x.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((User?)null);
 
-        var response = await _handler.HandleAsync(channel.Id, userId);
+        var response = await _handler.HandleAsync(channel.Id, userId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -163,7 +163,7 @@ public sealed class JoinVoiceChannelHandlerTests
             .Setup(x => x.GenerateRoomTokenAsync(channel.Id, user.Id, user.Username.Value, It.IsAny<CancellationToken>()))
             .ReturnsAsync(roomToken);
 
-        var response = await _handler.HandleAsync(channel.Id, user.Id);
+        var response = await _handler.HandleAsync(channel.Id, user.Id, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();
@@ -215,7 +215,7 @@ public sealed class JoinVoiceChannelHandlerTests
             .Setup(x => x.GetAsync(channel.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync([cachedParticipant]);
 
-        var response = await _handler.HandleAsync(channel.Id, user.Id);
+        var response = await _handler.HandleAsync(channel.Id, user.Id, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data!.CurrentParticipants.Should().HaveCount(1);
@@ -270,7 +270,7 @@ public sealed class JoinVoiceChannelHandlerTests
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync([dbUser]);
 
-        var response = await _handler.HandleAsync(channel.Id, user.Id);
+        var response = await _handler.HandleAsync(channel.Id, user.Id, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data!.CurrentParticipants.Should().HaveCount(1);
@@ -324,7 +324,7 @@ public sealed class JoinVoiceChannelHandlerTests
             .Setup(x => x.GetAsync(channel.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync([staleParticipant]);
 
-        var response = await _handler.HandleAsync(channel.Id, user.Id);
+        var response = await _handler.HandleAsync(channel.Id, user.Id, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data!.CurrentParticipants.Should().BeEmpty();

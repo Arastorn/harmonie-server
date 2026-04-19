@@ -36,7 +36,7 @@ public sealed class GetMyProfileHandlerTests
             .Setup(x => x.GetByIdAsync(user.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
-        var response = await _handler.HandleAsync(Unit.Value, user.Id);
+        var response = await _handler.HandleAsync(Unit.Value, user.Id, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Error.Should().BeNull();
@@ -60,7 +60,7 @@ public sealed class GetMyProfileHandlerTests
             .Setup(x => x.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((User?)null);
 
-        var response = await _handler.HandleAsync(Unit.Value, userId);
+        var response = await _handler.HandleAsync(Unit.Value, userId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Data.Should().BeNull();
@@ -80,7 +80,7 @@ public sealed class GetMyProfileHandlerTests
             .Setup(x => x.GetByIdAsync(user.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
-        var response = await _handler.HandleAsync(Unit.Value, user.Id);
+        var response = await _handler.HandleAsync(Unit.Value, user.Id, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();
@@ -101,7 +101,7 @@ public sealed class GetMyProfileHandlerTests
             .Setup(x => x.GetByIdAsync(user.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
-        var response = await _handler.HandleAsync(Unit.Value, user.Id);
+        var response = await _handler.HandleAsync(Unit.Value, user.Id, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();

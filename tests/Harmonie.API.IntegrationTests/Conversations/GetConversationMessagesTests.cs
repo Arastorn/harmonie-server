@@ -30,7 +30,7 @@ public sealed class GetConversationMessagesTests : IClassFixture<HarmonieWebAppl
         var conversationId = await ConversationTestHelper.OpenConversationAsync(_client, caller.AccessToken, target.UserId);
 
         await ConversationTestHelper.SendConversationMessageAsync(_client, conversationId, "first direct", caller.AccessToken);
-        await Task.Delay(20);
+        await Task.Delay(20, TestContext.Current.CancellationToken);
         await ConversationTestHelper.SendConversationMessageAsync(_client, conversationId, "second direct", target.AccessToken);
 
         var response = await _client.SendAuthorizedGetAsync(
@@ -39,7 +39,7 @@ public sealed class GetConversationMessagesTests : IClassFixture<HarmonieWebAppl
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var payload = await response.Content.ReadFromJsonAsync<GetMessagesResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<GetMessagesResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.ConversationId.Should().Be(conversationId);
         payload.Items.Select(x => x.Content).Should().Equal("first direct", "second direct");
@@ -56,7 +56,7 @@ public sealed class GetConversationMessagesTests : IClassFixture<HarmonieWebAppl
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Conversation.NotFound);
     }
@@ -75,7 +75,7 @@ public sealed class GetConversationMessagesTests : IClassFixture<HarmonieWebAppl
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Conversation.AccessDenied);
     }
@@ -88,9 +88,9 @@ public sealed class GetConversationMessagesTests : IClassFixture<HarmonieWebAppl
         var conversationId = await ConversationTestHelper.OpenConversationAsync(_client, caller.AccessToken, target.UserId);
 
         await ConversationTestHelper.SendConversationMessageAsync(_client, conversationId, "first page item", caller.AccessToken);
-        await Task.Delay(20);
+        await Task.Delay(20, TestContext.Current.CancellationToken);
         await ConversationTestHelper.SendConversationMessageAsync(_client, conversationId, "second page item", target.AccessToken);
-        await Task.Delay(20);
+        await Task.Delay(20, TestContext.Current.CancellationToken);
         await ConversationTestHelper.SendConversationMessageAsync(_client, conversationId, "third page item", caller.AccessToken);
 
         var firstResponse = await _client.SendAuthorizedGetAsync(
@@ -99,7 +99,7 @@ public sealed class GetConversationMessagesTests : IClassFixture<HarmonieWebAppl
 
         firstResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var firstPayload = await firstResponse.Content.ReadFromJsonAsync<GetMessagesResponse>();
+        var firstPayload = await firstResponse.Content.ReadFromJsonAsync<GetMessagesResponse>(TestContext.Current.CancellationToken);
         firstPayload.Should().NotBeNull();
         firstPayload!.Items.Select(x => x.Content).Should().Equal("second page item", "third page item");
         firstPayload.NextCursor.Should().NotBeNullOrWhiteSpace();
@@ -110,7 +110,7 @@ public sealed class GetConversationMessagesTests : IClassFixture<HarmonieWebAppl
 
         secondResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var secondPayload = await secondResponse.Content.ReadFromJsonAsync<GetMessagesResponse>();
+        var secondPayload = await secondResponse.Content.ReadFromJsonAsync<GetMessagesResponse>(TestContext.Current.CancellationToken);
         secondPayload.Should().NotBeNull();
         secondPayload!.Items.Select(x => x.Content).Should().Equal("first page item");
         secondPayload.NextCursor.Should().BeNull();
@@ -124,7 +124,7 @@ public sealed class GetConversationMessagesTests : IClassFixture<HarmonieWebAppl
         var conversationId = await ConversationTestHelper.OpenConversationAsync(_client, caller.AccessToken, target.UserId);
 
         var visibleMessage = await ConversationTestHelper.SendConversationMessageAsync(_client, conversationId, "visible direct", caller.AccessToken);
-        await Task.Delay(20);
+        await Task.Delay(20, TestContext.Current.CancellationToken);
         var deletedMessage = await ConversationTestHelper.SendConversationMessageAsync(_client, conversationId, "deleted direct", target.AccessToken);
 
         await SoftDeleteConversationMessageAsync(deletedMessage.MessageId);
@@ -135,7 +135,7 @@ public sealed class GetConversationMessagesTests : IClassFixture<HarmonieWebAppl
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var payload = await response.Content.ReadFromJsonAsync<GetMessagesResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<GetMessagesResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.Items.Should().ContainSingle();
         payload.Items[0].MessageId.Should().Be(visibleMessage.MessageId);
@@ -146,7 +146,8 @@ public sealed class GetConversationMessagesTests : IClassFixture<HarmonieWebAppl
     public async Task GetConversationMessages_WithoutAuthentication_ShouldReturnUnauthorized()
     {
         var response = await _client.GetAsync(
-            $"/api/conversations/{Guid.NewGuid()}/messages");
+            $"/api/conversations/{Guid.NewGuid()}/messages",
+            TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }

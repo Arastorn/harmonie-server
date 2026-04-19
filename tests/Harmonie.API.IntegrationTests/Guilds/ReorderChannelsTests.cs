@@ -36,7 +36,7 @@ public sealed class ReorderChannelsTests : IClassFixture<HarmonieWebApplicationF
             owner.AccessToken);
         reorderResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var payload = await reorderResponse.Content.ReadFromJsonAsync<ReorderChannelsResponse>();
+        var payload = await reorderResponse.Content.ReadFromJsonAsync<ReorderChannelsResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.GuildId.Should().Be(guildId);
 
@@ -68,7 +68,7 @@ public sealed class ReorderChannelsTests : IClassFixture<HarmonieWebApplicationF
             owner.AccessToken);
         getResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var channels = await getResponse.Content.ReadFromJsonAsync<GetGuildChannelsResponse>();
+        var channels = await getResponse.Content.ReadFromJsonAsync<GetGuildChannelsResponse>(TestContext.Current.CancellationToken);
         channels.Should().NotBeNull();
 
         var getCh1 = channels!.Channels.First(c => c.ChannelId == ch1);
@@ -131,7 +131,8 @@ public sealed class ReorderChannelsTests : IClassFixture<HarmonieWebApplicationF
             $"/api/guilds/{Guid.NewGuid()}/channels/reorder",
             JsonContent.Create(new ReorderChannelsRequest([
                 new ReorderChannelsItemRequest(Guid.NewGuid(), 0)
-            ])));
+            ])),
+            TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }

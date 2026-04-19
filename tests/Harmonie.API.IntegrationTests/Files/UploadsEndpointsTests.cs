@@ -47,7 +47,7 @@ public sealed class UploadsEndpointsTests : IClassFixture<HarmonieWebApplication
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var payload = await response.Content.ReadFromJsonAsync<UploadFileResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<UploadFileResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.Filename.Should().Be("avatar.png");
         payload.ContentType.Should().Be("image/png");
@@ -78,7 +78,7 @@ public sealed class UploadsEndpointsTests : IClassFixture<HarmonieWebApplication
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Common.ValidationFailed);
         fakeStorage.UploadedObjects.Should().BeEmpty();
@@ -107,7 +107,7 @@ public sealed class UploadsEndpointsTests : IClassFixture<HarmonieWebApplication
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var payload = await response.Content.ReadFromJsonAsync<UploadFileResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<UploadFileResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.Filename.Should().Be("icon.png");
         fakeStorage.UploadedObjects.Should().ContainSingle();
@@ -136,7 +136,7 @@ public sealed class UploadsEndpointsTests : IClassFixture<HarmonieWebApplication
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Common.ValidationFailed);
         fakeStorage.UploadedObjects.Should().BeEmpty();
@@ -165,7 +165,7 @@ public sealed class UploadsEndpointsTests : IClassFixture<HarmonieWebApplication
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Common.ValidationFailed);
         fakeStorage.UploadedObjects.Should().BeEmpty();
@@ -176,7 +176,7 @@ public sealed class UploadsEndpointsTests : IClassFixture<HarmonieWebApplication
     {
         using var content = CreateMultipartContent("avatar.png", "image/png", [1, 2, 3, 4]);
 
-        var response = await _client.PostAsync("/api/files/uploads", content);
+        var response = await _client.PostAsync("/api/files/uploads", content, TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -213,7 +213,7 @@ public sealed class UploadsEndpointsTests : IClassFixture<HarmonieWebApplication
 
         var request = new HttpRequestMessage(HttpMethod.Delete, $"/api/files/{fileId}");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user.AccessToken);
-        var response = await client.SendAsync(request);
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         fakeStorage.UploadedObjects.Should().BeEmpty();
@@ -227,7 +227,7 @@ public sealed class UploadsEndpointsTests : IClassFixture<HarmonieWebApplication
 
         var request = new HttpRequestMessage(HttpMethod.Delete, $"/api/files/{unknownId}");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user.AccessToken);
-        var response = await _client.SendAsync(request);
+        var response = await _client.SendAsync(request, TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
@@ -253,7 +253,7 @@ public sealed class UploadsEndpointsTests : IClassFixture<HarmonieWebApplication
 
         var request = new HttpRequestMessage(HttpMethod.Delete, $"/api/files/{fileId}");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", otherUser.AccessToken);
-        var response = await client.SendAsync(request);
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         fakeStorage.UploadedObjects.Should().ContainSingle();
@@ -262,7 +262,7 @@ public sealed class UploadsEndpointsTests : IClassFixture<HarmonieWebApplication
     [Fact]
     public async Task DeleteFile_WithoutAuthentication_ShouldReturnUnauthorized()
     {
-        var response = await _client.DeleteAsync($"/api/files/{Guid.NewGuid()}");
+        var response = await _client.DeleteAsync($"/api/files/{Guid.NewGuid()}", TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }

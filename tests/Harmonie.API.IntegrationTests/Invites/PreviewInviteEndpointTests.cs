@@ -31,7 +31,7 @@ public sealed class PreviewInviteEndpointTests : IClassFixture<HarmonieWebApplic
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
 
         var createInviteResponse = await _client.SendAuthorizedPostAsync(
             $"/api/guilds/{guild!.GuildId}/invites",
@@ -39,12 +39,12 @@ public sealed class PreviewInviteEndpointTests : IClassFixture<HarmonieWebApplic
             owner.AccessToken);
         createInviteResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var invite = await createInviteResponse.Content.ReadFromJsonAsync<CreateGuildInviteResponse>();
+        var invite = await createInviteResponse.Content.ReadFromJsonAsync<CreateGuildInviteResponse>(TestContext.Current.CancellationToken);
 
-        var previewResponse = await _client.GetAsync($"/api/invites/{invite!.Code}");
+        var previewResponse = await _client.GetAsync($"/api/invites/{invite!.Code}", TestContext.Current.CancellationToken);
         previewResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var preview = await previewResponse.Content.ReadFromJsonAsync<PreviewInviteResponse>();
+        var preview = await previewResponse.Content.ReadFromJsonAsync<PreviewInviteResponse>(TestContext.Current.CancellationToken);
         preview.Should().NotBeNull();
         preview!.GuildName.Should().Be("Preview Invite Guild");
         preview.MemberCount.Should().BeGreaterThanOrEqualTo(1);
@@ -64,7 +64,7 @@ public sealed class PreviewInviteEndpointTests : IClassFixture<HarmonieWebApplic
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
 
         var createInviteResponse = await _client.SendAuthorizedPostAsync(
             $"/api/guilds/{guild!.GuildId}/invites",
@@ -72,12 +72,12 @@ public sealed class PreviewInviteEndpointTests : IClassFixture<HarmonieWebApplic
             owner.AccessToken);
         createInviteResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var invite = await createInviteResponse.Content.ReadFromJsonAsync<CreateGuildInviteResponse>();
+        var invite = await createInviteResponse.Content.ReadFromJsonAsync<CreateGuildInviteResponse>(TestContext.Current.CancellationToken);
 
-        var previewResponse = await _client.GetAsync($"/api/invites/{invite!.Code}");
+        var previewResponse = await _client.GetAsync($"/api/invites/{invite!.Code}", TestContext.Current.CancellationToken);
         previewResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var preview = await previewResponse.Content.ReadFromJsonAsync<PreviewInviteResponse>();
+        var preview = await previewResponse.Content.ReadFromJsonAsync<PreviewInviteResponse>(TestContext.Current.CancellationToken);
         preview.Should().NotBeNull();
         preview!.MaxUses.Should().BeNull();
         preview.ExpiresAtUtc.Should().BeNull();
@@ -94,7 +94,7 @@ public sealed class PreviewInviteEndpointTests : IClassFixture<HarmonieWebApplic
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
 
         var createInviteResponse = await _client.SendAuthorizedPostAsync(
             $"/api/guilds/{guild!.GuildId}/invites",
@@ -102,20 +102,20 @@ public sealed class PreviewInviteEndpointTests : IClassFixture<HarmonieWebApplic
             owner.AccessToken);
         createInviteResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var invite = await createInviteResponse.Content.ReadFromJsonAsync<CreateGuildInviteResponse>();
+        var invite = await createInviteResponse.Content.ReadFromJsonAsync<CreateGuildInviteResponse>(TestContext.Current.CancellationToken);
 
         // Use a raw HttpClient with no auth header
-        var previewResponse = await _client.GetAsync($"/api/invites/{invite!.Code}");
+        var previewResponse = await _client.GetAsync($"/api/invites/{invite!.Code}", TestContext.Current.CancellationToken);
         previewResponse.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     [Fact]
     public async Task PreviewInvite_WhenInviteNotFound_ShouldReturn404()
     {
-        var previewResponse = await _client.GetAsync("/api/invites/ZZZZZZZZ");
+        var previewResponse = await _client.GetAsync("/api/invites/ZZZZZZZZ", TestContext.Current.CancellationToken);
         previewResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-        var error = await previewResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await previewResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Invite.NotFound);
     }
@@ -123,10 +123,10 @@ public sealed class PreviewInviteEndpointTests : IClassFixture<HarmonieWebApplic
     [Fact]
     public async Task PreviewInvite_WhenInvalidCodeFormat_ShouldReturn400()
     {
-        var previewResponse = await _client.GetAsync("/api/invites/abc");
+        var previewResponse = await _client.GetAsync("/api/invites/abc", TestContext.Current.CancellationToken);
         previewResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
-        var error = await previewResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await previewResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Common.ValidationFailed);
     }
@@ -134,7 +134,7 @@ public sealed class PreviewInviteEndpointTests : IClassFixture<HarmonieWebApplic
     [Fact]
     public async Task PreviewInvite_WhenCodeContainsSpecialChars_ShouldReturn400()
     {
-        var previewResponse = await _client.GetAsync("/api/invites/abc!@#$%");
+        var previewResponse = await _client.GetAsync("/api/invites/abc!@#$%", TestContext.Current.CancellationToken);
         previewResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 }

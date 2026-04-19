@@ -31,7 +31,7 @@ public sealed class UpdateChannelTests : IClassFixture<HarmonieWebApplicationFac
             owner.AccessToken);
         updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var payload = await updateResponse.Content.ReadFromJsonAsync<UpdateChannelResponse>();
+        var payload = await updateResponse.Content.ReadFromJsonAsync<UpdateChannelResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.ChannelId.Should().Be(channelId);
         payload.Name.Should().Be("renamed-channel");
@@ -49,7 +49,7 @@ public sealed class UpdateChannelTests : IClassFixture<HarmonieWebApplicationFac
             owner.AccessToken);
         updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var payload = await updateResponse.Content.ReadFromJsonAsync<UpdateChannelResponse>();
+        var payload = await updateResponse.Content.ReadFromJsonAsync<UpdateChannelResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.Position.Should().Be(10);
     }
@@ -66,7 +66,7 @@ public sealed class UpdateChannelTests : IClassFixture<HarmonieWebApplicationFac
             owner.AccessToken);
         updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var payload = await updateResponse.Content.ReadFromJsonAsync<UpdateChannelResponse>();
+        var payload = await updateResponse.Content.ReadFromJsonAsync<UpdateChannelResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.Name.Should().Be("stable-channel");
         payload.Position.Should().Be(3);
@@ -89,7 +89,7 @@ public sealed class UpdateChannelTests : IClassFixture<HarmonieWebApplicationFac
             member.AccessToken);
         updateResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        var error = await updateResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await updateResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Guild.AccessDenied);
     }
@@ -107,7 +107,7 @@ public sealed class UpdateChannelTests : IClassFixture<HarmonieWebApplicationFac
             outsider.AccessToken);
         updateResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        var error = await updateResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await updateResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Channel.AccessDenied);
     }
@@ -124,7 +124,7 @@ public sealed class UpdateChannelTests : IClassFixture<HarmonieWebApplicationFac
             owner.AccessToken);
         updateResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-        var error = await updateResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await updateResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Channel.NotFound);
     }
@@ -153,7 +153,7 @@ public sealed class UpdateChannelTests : IClassFixture<HarmonieWebApplicationFac
             owner.AccessToken);
         updateResponse.StatusCode.Should().Be(HttpStatusCode.Conflict);
 
-        var error = await updateResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await updateResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Channel.NameConflict);
     }
@@ -165,7 +165,8 @@ public sealed class UpdateChannelTests : IClassFixture<HarmonieWebApplicationFac
 
         var updateResponse = await _client.PatchAsJsonAsync(
             $"/api/channels/{nonExistentChannelId}",
-            new { name = "anon-rename" });
+            new { name = "anon-rename" },
+            TestContext.Current.CancellationToken);
         updateResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
@@ -181,7 +182,7 @@ public sealed class UpdateChannelTests : IClassFixture<HarmonieWebApplicationFac
             owner.AccessToken);
         updateResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
-        var error = await updateResponse.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await updateResponse.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Common.ValidationFailed);
     }

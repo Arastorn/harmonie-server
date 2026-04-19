@@ -36,7 +36,7 @@ public sealed class SignalRUserProfileHubTests : IClassFixture<HarmonieWebApplic
             updatingUser.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         await GuildTestHelper.InviteMemberAsync(_client, createGuildPayload!.GuildId, updatingUser.AccessToken, observer.AccessToken);
@@ -53,8 +53,8 @@ public sealed class SignalRUserProfileHubTests : IClassFixture<HarmonieWebApplic
                 eventReceived.TrySetResult(payload);
         });
 
-        await connection.StartAsync();
-        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await connection.StartAsync(TestContext.Current.CancellationToken);
+        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
         var updateResponse = await _client.SendAuthorizedPatchAsync(
             "/api/users/me",
@@ -85,7 +85,7 @@ public sealed class SignalRUserProfileHubTests : IClassFixture<HarmonieWebApplic
             updatingUser.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         await GuildTestHelper.InviteMemberAsync(_client, createGuildPayload!.GuildId, updatingUser.AccessToken, observer.AccessToken);
@@ -102,8 +102,8 @@ public sealed class SignalRUserProfileHubTests : IClassFixture<HarmonieWebApplic
                 eventReceived.TrySetResult(payload);
         });
 
-        await connection.StartAsync();
-        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await connection.StartAsync(TestContext.Current.CancellationToken);
+        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
         var updateResponse = await _client.SendAuthorizedPatchAsync(
             "/api/users/me",

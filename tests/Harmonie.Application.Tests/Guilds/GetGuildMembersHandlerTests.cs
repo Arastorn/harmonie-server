@@ -38,7 +38,7 @@ public sealed class GetGuildMembersHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guildId, requesterUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((GuildAccessContext?)null);
 
-        var response = await _handler.HandleAsync(guildId, requesterUserId);
+        var response = await _handler.HandleAsync(guildId, requesterUserId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -55,7 +55,7 @@ public sealed class GetGuildMembersHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, requesterUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GuildAccessContext(guild, null));
 
-        var response = await _handler.HandleAsync(guild.Id, requesterUserId);
+        var response = await _handler.HandleAsync(guild.Id, requesterUserId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -78,7 +78,7 @@ public sealed class GetGuildMembersHandlerTests
             .Setup(x => x.GetGuildMembersAsync(guild.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync([adminUser, memberUser]);
 
-        var response = await _handler.HandleAsync(guild.Id, requesterUserId);
+        var response = await _handler.HandleAsync(guild.Id, requesterUserId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Error.Should().BeNull();

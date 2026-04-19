@@ -42,8 +42,8 @@ public sealed class SignalRConversationMessagesHubTests : IClassFixture<Harmonie
             messageReceived.TrySetResult(payload);
         });
 
-        await connection.StartAsync();
-        await ready.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        await connection.StartAsync(TestContext.Current.CancellationToken);
+        await ready.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
 
         var sendResponse = await _client.SendAuthorizedPostAsync(
             $"/api/conversations/{conversationId}/messages",
@@ -51,7 +51,7 @@ public sealed class SignalRConversationMessagesHubTests : IClassFixture<Harmonie
             sender.AccessToken);
         sendResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var sendPayload = await sendResponse.Content.ReadFromJsonAsync<SendMessageResponse>();
+        var sendPayload = await sendResponse.Content.ReadFromJsonAsync<SendMessageResponse>(TestContext.Current.CancellationToken);
         sendPayload.Should().NotBeNull();
 
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
@@ -78,7 +78,7 @@ public sealed class SignalRConversationMessagesHubTests : IClassFixture<Harmonie
             sender.AccessToken);
         sendResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var sendPayload = await sendResponse.Content.ReadFromJsonAsync<SendMessageResponse>();
+        var sendPayload = await sendResponse.Content.ReadFromJsonAsync<SendMessageResponse>(TestContext.Current.CancellationToken);
         sendPayload.Should().NotBeNull();
 
         await using var connection = CreateHubConnection(receiver.AccessToken);
@@ -92,8 +92,8 @@ public sealed class SignalRConversationMessagesHubTests : IClassFixture<Harmonie
             messageReceived.TrySetResult(payload);
         });
 
-        await connection.StartAsync();
-        await ready.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        await connection.StartAsync(TestContext.Current.CancellationToken);
+        await ready.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
 
         var editResponse = await _client.SendAuthorizedPatchAsync(
             $"/api/conversations/{conversationId}/messages/{sendPayload!.MessageId}",
@@ -125,7 +125,7 @@ public sealed class SignalRConversationMessagesHubTests : IClassFixture<Harmonie
             sender.AccessToken);
         sendResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var sendPayload = await sendResponse.Content.ReadFromJsonAsync<SendMessageResponse>();
+        var sendPayload = await sendResponse.Content.ReadFromJsonAsync<SendMessageResponse>(TestContext.Current.CancellationToken);
         sendPayload.Should().NotBeNull();
 
         await using var connection = CreateHubConnection(receiver.AccessToken);
@@ -139,8 +139,8 @@ public sealed class SignalRConversationMessagesHubTests : IClassFixture<Harmonie
             messageReceived.TrySetResult(payload);
         });
 
-        await connection.StartAsync();
-        await ready.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        await connection.StartAsync(TestContext.Current.CancellationToken);
+        await ready.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
 
         var deleteResponse = await _client.SendAuthorizedDeleteAsync(
             $"/api/conversations/{conversationId}/messages/{sendPayload!.MessageId}",

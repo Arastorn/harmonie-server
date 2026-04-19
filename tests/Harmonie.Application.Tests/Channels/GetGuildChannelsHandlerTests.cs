@@ -49,7 +49,7 @@ public sealed class GetGuildChannelsHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guildId, userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((GuildAccessContext?)null);
 
-        var response = await _handler.HandleAsync(guildId, userId);
+        var response = await _handler.HandleAsync(guildId, userId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -66,7 +66,7 @@ public sealed class GetGuildChannelsHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GuildAccessContext(guild, null));
 
-        var response = await _handler.HandleAsync(guild.Id, userId);
+        var response = await _handler.HandleAsync(guild.Id, userId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -89,7 +89,7 @@ public sealed class GetGuildChannelsHandlerTests
             .Setup(x => x.GetByGuildIdAsync(guild.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync([textChannel, voiceChannel]);
 
-        var response = await _handler.HandleAsync(guild.Id, userId);
+        var response = await _handler.HandleAsync(guild.Id, userId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Error.Should().BeNull();
@@ -131,7 +131,7 @@ public sealed class GetGuildChannelsHandlerTests
             .Setup(x => x.GetAsync(voiceChannel.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync([participant]);
 
-        var response = await _handler.HandleAsync(guild.Id, userId);
+        var response = await _handler.HandleAsync(guild.Id, userId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();

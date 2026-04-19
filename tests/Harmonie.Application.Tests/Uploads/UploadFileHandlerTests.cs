@@ -54,7 +54,7 @@ public sealed class UploadFileHandlerTests
         using var stream = CreateStream("hello");
         var input = new UploadFileInput("hello.txt", "text/plain", stream.Length, stream, UploadPurpose.Attachment);
 
-        var response = await _handler.HandleAsync(input, userId);
+        var response = await _handler.HandleAsync(input, userId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -80,7 +80,7 @@ public sealed class UploadFileHandlerTests
         using var stream = CreateStream("hello");
         var input = new UploadFileInput("hello.txt", "text/plain", stream.Length, stream, UploadPurpose.Attachment);
 
-        var response = await _handler.HandleAsync(input, user.Id);
+        var response = await _handler.HandleAsync(input, user.Id, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -110,7 +110,7 @@ public sealed class UploadFileHandlerTests
         using var stream = CreateStream("hello");
         var input = new UploadFileInput("hello.txt", "text/plain", stream.Length, stream, UploadPurpose.Attachment);
 
-        var response = await _handler.HandleAsync(input, user.Id);
+        var response = await _handler.HandleAsync(input, user.Id, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();
@@ -145,7 +145,7 @@ public sealed class UploadFileHandlerTests
         using var stream = CreateStream("hello");
         var input = new UploadFileInput("hello.txt", "text/plain", stream.Length, stream, UploadPurpose.Attachment);
 
-        var action = async () => await _handler.HandleAsync(input, user.Id);
+        var action = async () => await _handler.HandleAsync(input, user.Id, TestContext.Current.CancellationToken);
 
         await action.Should().ThrowAsync<InvalidOperationException>();
 

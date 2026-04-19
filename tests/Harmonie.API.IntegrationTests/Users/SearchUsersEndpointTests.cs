@@ -41,7 +41,7 @@ public sealed class SearchUsersEndpointTests : IClassFixture<HarmonieWebApplicat
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var payload = await response.Content.ReadFromJsonAsync<SearchUsersResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<SearchUsersResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.Users.Should().Contain(user => user.Username == alpha.Username);
         payload.Users.Should().Contain(user => user.Username == beta.Username);
@@ -68,7 +68,7 @@ public sealed class SearchUsersEndpointTests : IClassFixture<HarmonieWebApplicat
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var payload = await response.Content.ReadFromJsonAsync<SearchUsersResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<SearchUsersResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.Users.Should().ContainSingle(user => user.UserId == guildMember.UserId);
         payload.Users.Should().NotContain(user => user.UserId == outsider.UserId);
@@ -87,7 +87,7 @@ public sealed class SearchUsersEndpointTests : IClassFixture<HarmonieWebApplicat
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Guild.AccessDenied);
     }
@@ -110,7 +110,7 @@ public sealed class SearchUsersEndpointTests : IClassFixture<HarmonieWebApplicat
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var payload = await response.Content.ReadFromJsonAsync<SearchUsersResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<SearchUsersResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.Users.Should().Contain(user => user.UserId == activeUser.UserId);
         payload.Users.Should().NotContain(user => user.UserId == inactiveUser.UserId);
@@ -134,7 +134,7 @@ public sealed class SearchUsersEndpointTests : IClassFixture<HarmonieWebApplicat
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var payload = await response.Content.ReadFromJsonAsync<SearchUsersResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<SearchUsersResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         var user = payload!.Users.Should().ContainSingle(u => u.UserId == target.UserId).Subject;
         user.Avatar.Should().NotBeNull();
@@ -146,11 +146,11 @@ public sealed class SearchUsersEndpointTests : IClassFixture<HarmonieWebApplicat
     [Fact]
     public async Task SearchUsers_WithoutAuthentication_ShouldReturnUnauthorized()
     {
-        var response = await _client.GetAsync("/api/users/search?q=al");
+        var response = await _client.GetAsync("/api/users/search?q=al", TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Auth.InvalidCredentials);
     }

@@ -36,7 +36,7 @@ public sealed class SignalRGuildHubTests : IClassFixture<HarmonieWebApplicationF
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         await GuildTestHelper.InviteMemberAsync(_client, createGuildPayload!.GuildId, owner.AccessToken, member.AccessToken);
@@ -52,8 +52,8 @@ public sealed class SignalRGuildHubTests : IClassFixture<HarmonieWebApplicationF
             eventReceived.TrySetResult(payload);
         });
 
-        await connection.StartAsync();
-        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await connection.StartAsync(TestContext.Current.CancellationToken);
+        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
         var deleteGuildResponse = await _client.SendAuthorizedDeleteAsync(
             $"/api/guilds/{createGuildPayload.GuildId}",
@@ -82,7 +82,7 @@ public sealed class SignalRGuildHubTests : IClassFixture<HarmonieWebApplicationF
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         await GuildTestHelper.InviteMemberAsync(_client, createGuildPayload!.GuildId, owner.AccessToken, member.AccessToken);
@@ -105,8 +105,8 @@ public sealed class SignalRGuildHubTests : IClassFixture<HarmonieWebApplicationF
             eventReceived.TrySetResult(payload);
         });
 
-        await connection.StartAsync();
-        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await connection.StartAsync(TestContext.Current.CancellationToken);
+        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
         var updateResponse = await _client.SendAuthorizedPatchAsync(
             $"/api/channels/{channelId}",
@@ -138,7 +138,7 @@ public sealed class SignalRGuildHubTests : IClassFixture<HarmonieWebApplicationF
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         await GuildTestHelper.InviteMemberAsync(_client, createGuildPayload!.GuildId, owner.AccessToken, member.AccessToken);
@@ -161,8 +161,8 @@ public sealed class SignalRGuildHubTests : IClassFixture<HarmonieWebApplicationF
             eventReceived.TrySetResult(payload);
         });
 
-        await connection.StartAsync();
-        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await connection.StartAsync(TestContext.Current.CancellationToken);
+        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
         var deleteResponse = await _client.SendAuthorizedDeleteAsync(
             $"/api/channels/{channelId}",
@@ -192,7 +192,7 @@ public sealed class SignalRGuildHubTests : IClassFixture<HarmonieWebApplicationF
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         await GuildTestHelper.InviteMemberAsync(_client, createGuildPayload!.GuildId, owner.AccessToken, member.AccessToken);
@@ -222,8 +222,8 @@ public sealed class SignalRGuildHubTests : IClassFixture<HarmonieWebApplicationF
             eventReceived.TrySetResult(payload);
         });
 
-        await connection.StartAsync();
-        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await connection.StartAsync(TestContext.Current.CancellationToken);
+        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
         var reorderResponse = await _client.SendAuthorizedPatchAsync(
             $"/api/guilds/{createGuildPayload.GuildId}/channels/reorder",
@@ -260,7 +260,7 @@ public sealed class SignalRGuildHubTests : IClassFixture<HarmonieWebApplicationF
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         await GuildTestHelper.InviteMemberAsync(_client, createGuildPayload!.GuildId, owner.AccessToken, existingMember.AccessToken);
@@ -276,8 +276,8 @@ public sealed class SignalRGuildHubTests : IClassFixture<HarmonieWebApplicationF
             eventReceived.TrySetResult(payload);
         });
 
-        await connection.StartAsync();
-        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await connection.StartAsync(TestContext.Current.CancellationToken);
+        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
         await GuildTestHelper.InviteMemberAsync(_client, createGuildPayload.GuildId, owner.AccessToken, joiningMember.AccessToken);
 
@@ -305,7 +305,7 @@ public sealed class SignalRGuildHubTests : IClassFixture<HarmonieWebApplicationF
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         await GuildTestHelper.InviteMemberAsync(_client, createGuildPayload!.GuildId, owner.AccessToken, remainingMember.AccessToken);
@@ -322,8 +322,8 @@ public sealed class SignalRGuildHubTests : IClassFixture<HarmonieWebApplicationF
             eventReceived.TrySetResult(payload);
         });
 
-        await connection.StartAsync();
-        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await connection.StartAsync(TestContext.Current.CancellationToken);
+        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
         var leaveResponse = await _client.SendAuthorizedPostAsync(
             $"/api/guilds/{createGuildPayload.GuildId}/leave",
@@ -355,7 +355,7 @@ public sealed class SignalRGuildHubTests : IClassFixture<HarmonieWebApplicationF
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         await GuildTestHelper.InviteMemberAsync(_client, createGuildPayload!.GuildId, owner.AccessToken, remainingMember.AccessToken);
@@ -372,8 +372,8 @@ public sealed class SignalRGuildHubTests : IClassFixture<HarmonieWebApplicationF
             eventReceived.TrySetResult(payload);
         });
 
-        await connection.StartAsync();
-        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await connection.StartAsync(TestContext.Current.CancellationToken);
+        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
         var banResponse = await _client.SendAuthorizedPostAsync(
             $"/api/guilds/{createGuildPayload.GuildId}/bans",
@@ -450,7 +450,7 @@ public sealed class SignalRGuildHubTests : IClassFixture<HarmonieWebApplicationF
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         await GuildTestHelper.InviteMemberAsync(_client, createGuildPayload!.GuildId, owner.AccessToken, remainingMember.AccessToken);
@@ -467,8 +467,8 @@ public sealed class SignalRGuildHubTests : IClassFixture<HarmonieWebApplicationF
             eventReceived.TrySetResult(payload);
         });
 
-        await connection.StartAsync();
-        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await connection.StartAsync(TestContext.Current.CancellationToken);
+        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
         var removeResponse = await _client.SendAuthorizedDeleteAsync(
             $"/api/guilds/{createGuildPayload.GuildId}/members/{targetMember.UserId}",
@@ -499,7 +499,7 @@ public sealed class SignalRGuildHubTests : IClassFixture<HarmonieWebApplicationF
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         await GuildTestHelper.InviteMemberAsync(_client, createGuildPayload!.GuildId, owner.AccessToken, remainingMember.AccessToken);
@@ -516,8 +516,8 @@ public sealed class SignalRGuildHubTests : IClassFixture<HarmonieWebApplicationF
             eventReceived.TrySetResult(payload);
         });
 
-        await connection.StartAsync();
-        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await connection.StartAsync(TestContext.Current.CancellationToken);
+        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
         var updateRoleResponse = await _client.SendAuthorizedPutAsync(
             $"/api/guilds/{createGuildPayload.GuildId}/members/{targetMember.UserId}/role",
@@ -549,7 +549,7 @@ public sealed class SignalRGuildHubTests : IClassFixture<HarmonieWebApplicationF
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         await GuildTestHelper.InviteMemberAsync(_client, createGuildPayload!.GuildId, owner.AccessToken, member.AccessToken);
@@ -565,8 +565,8 @@ public sealed class SignalRGuildHubTests : IClassFixture<HarmonieWebApplicationF
             eventReceived.TrySetResult(payload);
         });
 
-        await connection.StartAsync();
-        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await connection.StartAsync(TestContext.Current.CancellationToken);
+        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
         var updateResponse = await _client.SendAuthorizedPatchAsync(
             $"/api/guilds/{createGuildPayload.GuildId}",

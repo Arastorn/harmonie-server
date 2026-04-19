@@ -47,7 +47,7 @@ public sealed class CreateGuildInviteHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guildId, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((GuildAccessContext?)null);
 
-        var response = await _handler.HandleAsync(new CreateGuildInviteInput(guildId), callerId);
+        var response = await _handler.HandleAsync(new CreateGuildInviteInput(guildId), callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error!.Code.Should().Be(ApplicationErrorCodes.Guild.NotFound);
@@ -63,7 +63,7 @@ public sealed class CreateGuildInviteHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GuildAccessContext(guild, GuildRole.Member));
 
-        var response = await _handler.HandleAsync(new CreateGuildInviteInput(guild.Id), callerId);
+        var response = await _handler.HandleAsync(new CreateGuildInviteInput(guild.Id), callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error!.Code.Should().Be(ApplicationErrorCodes.Guild.InviteForbidden);
@@ -79,7 +79,7 @@ public sealed class CreateGuildInviteHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GuildAccessContext(guild, null));
 
-        var response = await _handler.HandleAsync(new CreateGuildInviteInput(guild.Id), callerId);
+        var response = await _handler.HandleAsync(new CreateGuildInviteInput(guild.Id), callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error!.Code.Should().Be(ApplicationErrorCodes.Guild.InviteForbidden);
@@ -94,7 +94,7 @@ public sealed class CreateGuildInviteHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GuildAccessContext(guild, GuildRole.Admin));
 
-        var response = await _handler.HandleAsync(new CreateGuildInviteInput(guild.Id, MaxUses: 10, ExpiresInHours: 24), callerId);
+        var response = await _handler.HandleAsync(new CreateGuildInviteInput(guild.Id, MaxUses: 10, ExpiresInHours: 24), callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();
@@ -119,7 +119,7 @@ public sealed class CreateGuildInviteHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GuildAccessContext(guild, GuildRole.Admin));
 
-        var response = await _handler.HandleAsync(new CreateGuildInviteInput(guild.Id), callerId);
+        var response = await _handler.HandleAsync(new CreateGuildInviteInput(guild.Id), callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();

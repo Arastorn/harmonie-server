@@ -56,7 +56,7 @@ public sealed class DeleteChannelHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(channelId, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((ChannelAccessContext?)null);
 
-        var response = await _handler.HandleAsync(channelId, callerId);
+        var response = await _handler.HandleAsync(channelId, callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -73,7 +73,7 @@ public sealed class DeleteChannelHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(channel.Id, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ChannelAccessContext(channel, CallerRole: null));
 
-        var response = await _handler.HandleAsync(channel.Id, callerId);
+        var response = await _handler.HandleAsync(channel.Id, callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -90,7 +90,7 @@ public sealed class DeleteChannelHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(channel.Id, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ChannelAccessContext(channel, GuildRole.Member));
 
-        var response = await _handler.HandleAsync(channel.Id, callerId);
+        var response = await _handler.HandleAsync(channel.Id, callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -107,7 +107,7 @@ public sealed class DeleteChannelHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(channel.Id, adminId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ChannelAccessContext(channel, GuildRole.Admin));
 
-        var response = await _handler.HandleAsync(channel.Id, adminId);
+        var response = await _handler.HandleAsync(channel.Id, adminId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -128,7 +128,7 @@ public sealed class DeleteChannelHandlerTests
             .Setup(x => x.DeleteAsync(channel.Id, It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        var response = await _handler.HandleAsync(channel.Id, adminId);
+        var response = await _handler.HandleAsync(channel.Id, adminId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Error.Should().BeNull();

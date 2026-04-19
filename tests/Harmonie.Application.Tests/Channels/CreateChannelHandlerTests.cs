@@ -60,7 +60,7 @@ public sealed class CreateChannelHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guildId, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((GuildAccessContext?)null);
 
-        var response = await _handler.HandleAsync(new CreateChannelInput(guildId, "general", GuildChannelType.Text, 0), callerId);
+        var response = await _handler.HandleAsync(new CreateChannelInput(guildId, "general", GuildChannelType.Text, 0), callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -77,7 +77,7 @@ public sealed class CreateChannelHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GuildAccessContext(guild, null));
 
-        var response = await _handler.HandleAsync(new CreateChannelInput(guild.Id, "general", GuildChannelType.Text, 0), callerId);
+        var response = await _handler.HandleAsync(new CreateChannelInput(guild.Id, "general", GuildChannelType.Text, 0), callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -94,7 +94,7 @@ public sealed class CreateChannelHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GuildAccessContext(guild, GuildRole.Member));
 
-        var response = await _handler.HandleAsync(new CreateChannelInput(guild.Id, "general", GuildChannelType.Text, 0), callerId);
+        var response = await _handler.HandleAsync(new CreateChannelInput(guild.Id, "general", GuildChannelType.Text, 0), callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -119,7 +119,7 @@ public sealed class CreateChannelHandlerTests
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
-        var response = await _handler.HandleAsync(new CreateChannelInput(guild.Id, "announcements", GuildChannelType.Text, 2), adminId);
+        var response = await _handler.HandleAsync(new CreateChannelInput(guild.Id, "announcements", GuildChannelType.Text, 2), adminId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -136,7 +136,7 @@ public sealed class CreateChannelHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, adminId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GuildAccessContext(guild, GuildRole.Admin));
 
-        var response = await _handler.HandleAsync(new CreateChannelInput(guild.Id, "announcements", GuildChannelType.Text, 2), adminId);
+        var response = await _handler.HandleAsync(new CreateChannelInput(guild.Id, "announcements", GuildChannelType.Text, 2), adminId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Error.Should().BeNull();
@@ -159,7 +159,7 @@ public sealed class CreateChannelHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, adminId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GuildAccessContext(guild, GuildRole.Admin));
 
-        var response = await _handler.HandleAsync(new CreateChannelInput(guild.Id, "Gaming", GuildChannelType.Voice, 5), adminId);
+        var response = await _handler.HandleAsync(new CreateChannelInput(guild.Id, "Gaming", GuildChannelType.Voice, 5), adminId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Error.Should().BeNull();
@@ -179,7 +179,7 @@ public sealed class CreateChannelHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, adminId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GuildAccessContext(guild, GuildRole.Admin));
 
-        await _handler.HandleAsync(new CreateChannelInput(guild.Id, "lounge", GuildChannelType.Text, 3), adminId);
+        await _handler.HandleAsync(new CreateChannelInput(guild.Id, "lounge", GuildChannelType.Text, 3), adminId, TestContext.Current.CancellationToken);
 
         _guildChannelRepositoryMock.Verify(
             x => x.AddAsync(It.IsAny<GuildChannel>(), It.IsAny<CancellationToken>()),
@@ -200,7 +200,7 @@ public sealed class CreateChannelHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, adminId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GuildAccessContext(guild, GuildRole.Admin));
 
-        var response = await _handler.HandleAsync(new CreateChannelInput(guild.Id, "lounge", GuildChannelType.Text, 3), adminId);
+        var response = await _handler.HandleAsync(new CreateChannelInput(guild.Id, "lounge", GuildChannelType.Text, 3), adminId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
 
@@ -233,7 +233,7 @@ public sealed class CreateChannelHandlerTests
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
-        var response = await _handler.HandleAsync(new CreateChannelInput(guild.Id, "lounge", GuildChannelType.Text, 3), adminId);
+        var response = await _handler.HandleAsync(new CreateChannelInput(guild.Id, "lounge", GuildChannelType.Text, 3), adminId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
 

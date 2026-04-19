@@ -39,7 +39,7 @@ public sealed class ListBansHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guildId, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((GuildAccessContext?)null);
 
-        var response = await _handler.HandleAsync(guildId, callerId);
+        var response = await _handler.HandleAsync(guildId, callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -56,7 +56,7 @@ public sealed class ListBansHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GuildAccessContext(guild, GuildRole.Member));
 
-        var response = await _handler.HandleAsync(guild.Id, callerId);
+        var response = await _handler.HandleAsync(guild.Id, callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error!.Code.Should().Be(ApplicationErrorCodes.Guild.AccessDenied);
@@ -72,7 +72,7 @@ public sealed class ListBansHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(guild.Id, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new GuildAccessContext(guild, null));
 
-        var response = await _handler.HandleAsync(guild.Id, callerId);
+        var response = await _handler.HandleAsync(guild.Id, callerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error!.Code.Should().Be(ApplicationErrorCodes.Guild.AccessDenied);
@@ -92,7 +92,7 @@ public sealed class ListBansHandlerTests
             .Setup(x => x.GetByGuildIdAsync(guild.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<GuildBanWithUser>());
 
-        var response = await _handler.HandleAsync(guild.Id, ownerId);
+        var response = await _handler.HandleAsync(guild.Id, ownerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();
@@ -131,7 +131,7 @@ public sealed class ListBansHandlerTests
             .Setup(x => x.GetByGuildIdAsync(guild.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(bans);
 
-        var response = await _handler.HandleAsync(guild.Id, ownerId);
+        var response = await _handler.HandleAsync(guild.Id, ownerId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();

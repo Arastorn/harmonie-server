@@ -66,7 +66,7 @@ public sealed class UploadMyAvatarHandlerTests
         using var stream = CreateTestImageStream();
         var input = new UploadMyAvatarInput("avatar.png", "image/png", stream);
 
-        var response = await _handler.HandleAsync(input, userId);
+        var response = await _handler.HandleAsync(input, userId, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -92,7 +92,7 @@ public sealed class UploadMyAvatarHandlerTests
         using var stream = CreateTestImageStream();
         var input = new UploadMyAvatarInput("avatar.png", "image/png", stream);
 
-        var response = await _handler.HandleAsync(input, user.Id);
+        var response = await _handler.HandleAsync(input, user.Id, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -117,7 +117,7 @@ public sealed class UploadMyAvatarHandlerTests
         using var stream = CreateTestImageStream(512, 512);
         var input = new UploadMyAvatarInput("avatar.png", "image/png", stream);
 
-        var response = await _handler.HandleAsync(input, user.Id);
+        var response = await _handler.HandleAsync(input, user.Id, TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();
@@ -164,7 +164,7 @@ public sealed class UploadMyAvatarHandlerTests
         using var stream = CreateTestImageStream();
         var input = new UploadMyAvatarInput("avatar.png", "image/png", stream);
 
-        var action = async () => await _handler.HandleAsync(input, user.Id);
+        var action = async () => await _handler.HandleAsync(input, user.Id, TestContext.Current.CancellationToken);
 
         await action.Should().ThrowAsync<InvalidOperationException>();
 

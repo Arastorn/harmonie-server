@@ -80,7 +80,7 @@ public sealed class LoginHandlerTests
             .Returns(DateTime.UtcNow.AddDays(30));
 
         // Act
-        var response = await _handler.HandleAsync(request);
+        var response = await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
 
         // Assert
         response.Should().NotBeNull();
@@ -137,7 +137,7 @@ public sealed class LoginHandlerTests
             .Returns(DateTime.UtcNow.AddDays(30));
 
         // Act
-        var response = await _handler.HandleAsync(request);
+        var response = await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
 
         // Assert
         response.Success.Should().BeTrue();
@@ -157,7 +157,7 @@ public sealed class LoginHandlerTests
             .ReturnsAsync((User?)null);
 
         // Act
-        var response = await _handler.HandleAsync(request);
+        var response = await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
 
         // Assert
         response.Success.Should().BeFalse();
@@ -180,7 +180,7 @@ public sealed class LoginHandlerTests
             .ReturnsAsync(user);
 
         // Act
-        var response = await _handler.HandleAsync(request);
+        var response = await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
 
         // Assert
         response.Success.Should().BeFalse();
@@ -207,7 +207,7 @@ public sealed class LoginHandlerTests
             .Returns(false);
 
         // Act
-        var response = await _handler.HandleAsync(request);
+        var response = await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
 
         // Assert
         response.Success.Should().BeFalse();
@@ -262,7 +262,7 @@ public sealed class LoginHandlerTests
             .ThrowsAsync(new InvalidOperationException("Simulated write failure"));
 
         // Act
-        var act = async () => await _handler.HandleAsync(request);
+        var act = async () => await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>();

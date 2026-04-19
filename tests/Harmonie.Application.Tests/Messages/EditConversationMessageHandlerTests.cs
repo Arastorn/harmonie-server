@@ -52,7 +52,8 @@ public sealed class EditConversationMessageHandlerTests
     {
         var response = await _handler.HandleAsync(
             new EditConversationMessageInput(ConversationId.New(), MessageId.New(), "   "),
-            UserId.New());
+            UserId.New(),
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -72,7 +73,8 @@ public sealed class EditConversationMessageHandlerTests
 
         var response = await _handler.HandleAsync(
             new EditConversationMessageInput(conversationId, MessageId.New(), "updated content"),
-            callerId);
+            callerId,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -94,7 +96,8 @@ public sealed class EditConversationMessageHandlerTests
 
         var response = await _handler.HandleAsync(
             new EditConversationMessageInput(conversation.Id, MessageId.New(), "updated content"),
-            outsider);
+            outsider,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -120,7 +123,8 @@ public sealed class EditConversationMessageHandlerTests
 
         var response = await _handler.HandleAsync(
             new EditConversationMessageInput(conversation.Id, messageId, "updated content"),
-            participantOne);
+            participantOne,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -147,7 +151,8 @@ public sealed class EditConversationMessageHandlerTests
 
         var response = await _handler.HandleAsync(
             new EditConversationMessageInput(conversation.Id, messageId, "updated content"),
-            participantOne);
+            participantOne,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -174,7 +179,8 @@ public sealed class EditConversationMessageHandlerTests
 
         var response = await _handler.HandleAsync(
             new EditConversationMessageInput(conversation.Id, messageId, "updated content"),
-            participantOne);
+            participantOne,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeFalse();
         response.Error.Should().NotBeNull();
@@ -201,7 +207,8 @@ public sealed class EditConversationMessageHandlerTests
 
         var response = await _handler.HandleAsync(
             new EditConversationMessageInput(conversation.Id, messageId, "  updated content  "),
-            participantOne);
+            participantOne,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Error.Should().BeNull();
@@ -231,7 +238,8 @@ public sealed class EditConversationMessageHandlerTests
 
         var response = await _handler.HandleAsync(
             new EditConversationMessageInput(conversation.Id, messageId, "updated content"),
-            participantOne);
+            participantOne,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         _directMessageRepositoryMock.Verify(
@@ -278,7 +286,8 @@ public sealed class EditConversationMessageHandlerTests
 
         var response = await _handler.HandleAsync(
             new EditConversationMessageInput(conversation.Id, messageId, "updated content"),
-            participantOne);
+            participantOne,
+            TestContext.Current.CancellationToken);
 
         response.Success.Should().BeTrue();
         response.Error.Should().BeNull();

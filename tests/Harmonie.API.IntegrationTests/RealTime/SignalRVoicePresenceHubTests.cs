@@ -52,8 +52,8 @@ public sealed class SignalRVoicePresenceHubTests : IClassFixture<HarmonieWebAppl
         var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         connection.On("Ready", () => ready.TrySetResult());
 
-        await connection.StartAsync();
-        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await connection.StartAsync(TestContext.Current.CancellationToken);
+        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
         var webhookResponse = await SendLiveKitWebhookAsync(
             CreateParticipantWebhookBody("participant_joined", voiceChannelId.ToString(), member.UserId.ToString(), member.Username));
@@ -97,8 +97,8 @@ public sealed class SignalRVoicePresenceHubTests : IClassFixture<HarmonieWebAppl
         var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         connection.On("Ready", () => ready.TrySetResult());
 
-        await connection.StartAsync();
-        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await connection.StartAsync(TestContext.Current.CancellationToken);
+        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
         var webhookResponse = await SendLiveKitWebhookAsync(
             CreateParticipantWebhookBody("participant_left", voiceChannelId.ToString(), member.UserId.ToString(), member.Username));

@@ -40,7 +40,7 @@ public sealed class GuildVoiceParticipantsEndpointTests : IClassFixture<Harmonie
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         await GuildTestHelper.InviteMemberAsync(_client, createGuildPayload!.GuildId, owner.AccessToken, member.AccessToken);
@@ -50,7 +50,7 @@ public sealed class GuildVoiceParticipantsEndpointTests : IClassFixture<Harmonie
             member.AccessToken);
         channelsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var channelsPayload = await channelsResponse.Content.ReadFromJsonAsync<GetGuildChannelsResponse>();
+        var channelsPayload = await channelsResponse.Content.ReadFromJsonAsync<GetGuildChannelsResponse>(TestContext.Current.CancellationToken);
         channelsPayload.Should().NotBeNull();
 
         var voiceChannels = channelsPayload!.Channels
@@ -84,7 +84,7 @@ public sealed class GuildVoiceParticipantsEndpointTests : IClassFixture<Harmonie
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var payload = await response.Content.ReadFromJsonAsync<GetGuildVoiceParticipantsResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<GetGuildVoiceParticipantsResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.Channels.Should().HaveCount(1);
         payload.Channels.Should().Contain(channel =>
@@ -106,7 +106,7 @@ public sealed class GuildVoiceParticipantsEndpointTests : IClassFixture<Harmonie
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         var response = await _client.SendAuthorizedGetAsync(
@@ -115,7 +115,7 @@ public sealed class GuildVoiceParticipantsEndpointTests : IClassFixture<Harmonie
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Guild.AccessDenied);
     }

@@ -32,7 +32,7 @@ public sealed class UpdateGuildTests : IClassFixture<HarmonieWebApplicationFacto
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
         var iconFileId = await UploadTestHelper.UploadFileAsync(_client, owner.AccessToken, "guild-icon.png", "image/png", "guild icon");
 
@@ -57,7 +57,7 @@ public sealed class UpdateGuildTests : IClassFixture<HarmonieWebApplicationFacto
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var payload = await response.Content.ReadFromJsonAsync<UpdateGuildResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<UpdateGuildResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.GuildId.Should().Be(createGuildPayload.GuildId);
         payload.Name.Should().Be("Renamed Guild");
@@ -70,7 +70,7 @@ public sealed class UpdateGuildTests : IClassFixture<HarmonieWebApplicationFacto
         var listResponse = await _client.SendAuthorizedGetAsync("/api/guilds", owner.AccessToken);
         listResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var listPayload = await listResponse.Content.ReadFromJsonAsync<ListUserGuildsResponse>();
+        var listPayload = await listResponse.Content.ReadFromJsonAsync<ListUserGuildsResponse>(TestContext.Current.CancellationToken);
         listPayload.Should().NotBeNull();
         listPayload!.Guilds.Should().Contain(guild =>
             guild.GuildId == createGuildPayload.GuildId
@@ -94,7 +94,7 @@ public sealed class UpdateGuildTests : IClassFixture<HarmonieWebApplicationFacto
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
         var iconFileId = await UploadTestHelper.UploadFileAsync(_client, owner.AccessToken, "admin-guild.png", "image/png", "admin guild icon");
 
@@ -127,7 +127,7 @@ public sealed class UpdateGuildTests : IClassFixture<HarmonieWebApplicationFacto
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var payload = await response.Content.ReadFromJsonAsync<UpdateGuildResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<UpdateGuildResponse>(TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.IconFileId.Should().BeNull();
         payload.Icon.Should().BeNull();
@@ -145,7 +145,7 @@ public sealed class UpdateGuildTests : IClassFixture<HarmonieWebApplicationFacto
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         guild.Should().NotBeNull();
 
         var seedResponse = await _client.SendAuthorizedPatchAsync(
@@ -163,7 +163,7 @@ public sealed class UpdateGuildTests : IClassFixture<HarmonieWebApplicationFacto
         var listResponse = await _client.SendAuthorizedGetAsync("/api/guilds", owner.AccessToken);
         listResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var listPayload = await listResponse.Content.ReadFromJsonAsync<ListUserGuildsResponse>();
+        var listPayload = await listResponse.Content.ReadFromJsonAsync<ListUserGuildsResponse>(TestContext.Current.CancellationToken);
         listPayload.Should().NotBeNull();
         listPayload!.Guilds.Should().Contain(item =>
             item.GuildId == guild.GuildId &&
@@ -181,7 +181,7 @@ public sealed class UpdateGuildTests : IClassFixture<HarmonieWebApplicationFacto
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         guild.Should().NotBeNull();
 
         var response = await _client.SendAuthorizedDeleteAsync(
@@ -190,7 +190,7 @@ public sealed class UpdateGuildTests : IClassFixture<HarmonieWebApplicationFacto
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Upload.NotFound);
     }
@@ -208,7 +208,7 @@ public sealed class UpdateGuildTests : IClassFixture<HarmonieWebApplicationFacto
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var guild = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         guild.Should().NotBeNull();
 
         await GuildTestHelper.InviteMemberAsync(_client, guild!.GuildId, owner.AccessToken, member.AccessToken);
@@ -225,7 +225,7 @@ public sealed class UpdateGuildTests : IClassFixture<HarmonieWebApplicationFacto
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Guild.AccessDenied);
     }
@@ -242,7 +242,7 @@ public sealed class UpdateGuildTests : IClassFixture<HarmonieWebApplicationFacto
             owner.AccessToken);
         createGuildResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>();
+        var createGuildPayload = await createGuildResponse.Content.ReadFromJsonAsync<CreateGuildResponse>(TestContext.Current.CancellationToken);
         createGuildPayload.Should().NotBeNull();
 
         await GuildTestHelper.InviteMemberAsync(_client, createGuildPayload!.GuildId, owner.AccessToken, member.AccessToken);
@@ -254,7 +254,7 @@ public sealed class UpdateGuildTests : IClassFixture<HarmonieWebApplicationFacto
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        var error = await response.Content.ReadFromJsonAsync<ApplicationError>();
+        var error = await response.Content.ReadFromJsonAsync<ApplicationError>(TestContext.Current.CancellationToken);
         error.Should().NotBeNull();
         error!.Code.Should().Be(ApplicationErrorCodes.Guild.AccessDenied);
     }
