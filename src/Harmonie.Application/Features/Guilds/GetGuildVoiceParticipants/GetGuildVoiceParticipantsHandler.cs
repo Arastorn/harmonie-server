@@ -65,7 +65,8 @@ public sealed class GetGuildVoiceParticipantsHandler : IAuthenticatedHandler<Gui
                                 Username: participant.Username,
                                 DisplayName: member?.DisplayName,
                                 AvatarFileId: member?.AvatarFileId?.Value,
-                                Avatar: avatar);
+                                Avatar: avatar,
+                                IsSharingScreen: participant.IsSharingScreen);
                         })
                         .ToArray()))
                 .ToArray());

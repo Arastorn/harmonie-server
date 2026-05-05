@@ -14,4 +14,5 @@ public sealed record GetGuildVoiceParticipantResponse(
     string Username,
     string? DisplayName,
     Guid? AvatarFileId,
-    AvatarAppearanceDto? Avatar);
+    AvatarAppearanceDto? Avatar,
+    bool IsSharingScreen = false);

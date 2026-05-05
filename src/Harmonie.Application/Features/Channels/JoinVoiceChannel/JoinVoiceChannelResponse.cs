@@ -13,4 +13,5 @@ public sealed record JoinVoiceChannelParticipantResponse(
     Guid? AvatarFileId,
     string? AvatarColor,
     string? AvatarIcon,
-    string? AvatarBg);
+    string? AvatarBg,
+    bool IsSharingScreen = false);

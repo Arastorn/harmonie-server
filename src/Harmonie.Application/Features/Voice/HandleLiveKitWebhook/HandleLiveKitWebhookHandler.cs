@@ -11,7 +11,10 @@ public sealed class HandleLiveKitWebhookHandler : IHandler<HandleLiveKitWebhookR
 {
     private const string ParticipantJoinedEvent = "participant_joined";
     private const string ParticipantLeftEvent = "participant_left";
+    private const string TrackPublishedEvent = "track_published";
+    private const string TrackUnpublishedEvent = "track_unpublished";
     private const string ChannelRoomPrefix = "channel:";
+    private const string ScreenShareSource = "SCREEN_SHARE";
 
     private readonly ILiveKitWebhookReceiver _webhookReceiver;
     private readonly IGuildChannelRepository _guildChannelRepository;
@@ -53,7 +56,10 @@ public sealed class HandleLiveKitWebhookHandler : IHandler<HandleLiveKitWebhookR
             ? "unknown"
             : webhookEvent.EventType;
 
-        if (eventType is not ParticipantJoinedEvent and not ParticipantLeftEvent)
+        if (eventType is not ParticipantJoinedEvent
+            and not ParticipantLeftEvent
+            and not TrackPublishedEvent
+            and not TrackUnpublishedEvent)
         {
             return ApplicationResponse<HandleLiveKitWebhookResponse>.Ok(new(false, eventType));
         }
@@ -81,44 +87,18 @@ public sealed class HandleLiveKitWebhookHandler : IHandler<HandleLiveKitWebhookR
 
         if (eventType == ParticipantJoinedEvent)
         {
-            await _voiceParticipantCache.AddOrUpdateAsync(
-                result.Channel.Id,
-                new CachedVoiceParticipant(
-                    UserId: participantUserId,
-                    Username: result.Participant?.Username.Value,
-                    DisplayName: result.Participant?.DisplayName,
-                    AvatarFileId: result.Participant?.AvatarFileId,
-                    AvatarColor: result.Participant?.AvatarColor,
-                    AvatarIcon: result.Participant?.AvatarIcon,
-                    AvatarBg: result.Participant?.AvatarBg),
-                cancellationToken);
-
-            await _voicePresenceNotifier.NotifyParticipantJoinedAsync(
-                new VoiceParticipantJoinedNotification(
-                    GuildId: result.Channel.GuildId,
-                    ChannelId: result.Channel.Id,
-                    UserId: participantUserId,
-                    Username: result.Participant?.Username.Value,
-                    DisplayName: result.Participant?.DisplayName,
-                    AvatarFileId: result.Participant?.AvatarFileId,
-                    AvatarColor: result.Participant?.AvatarColor,
-                    AvatarIcon: result.Participant?.AvatarIcon,
-                    AvatarBg: result.Participant?.AvatarBg,
-                    JoinedAtUtc: webhookEvent.OccurredAtUtc),
-                cancellationToken);
+            await HandleParticipantJoinedAsync(
+                result, participantUserId, webhookEvent.OccurredAtUtc, cancellationToken);
         }
-        else
+        else if (eventType == ParticipantLeftEvent)
         {
-            await _voiceParticipantCache.RemoveAsync(result.Channel.Id, participantUserId, cancellationToken);
-
-            await _voicePresenceNotifier.NotifyParticipantLeftAsync(
-                new VoiceParticipantLeftNotification(
-                    result.Channel.GuildId,
-                    result.Channel.Id,
-                    participantUserId,
-                    result.Participant?.Username.Value,
-                    webhookEvent.OccurredAtUtc),
-                cancellationToken);
+            await HandleParticipantLeftAsync(
+                result, participantUserId, webhookEvent.OccurredAtUtc, cancellationToken);
+        }
+        else if (eventType is TrackPublishedEvent or TrackUnpublishedEvent)
+        {
+            await HandleTrackEventAsync(
+                eventType, result, participantUserId, webhookEvent, cancellationToken);
         }
 
         return ApplicationResponse<HandleLiveKitWebhookResponse>.Ok(new(true, eventType));
@@ -139,6 +119,108 @@ public sealed class HandleLiveKitWebhookHandler : IHandler<HandleLiveKitWebhookR
             return false;
 
         return true;
+    }
+
+    private async Task HandleParticipantJoinedAsync(
+        ChannelWithParticipant result,
+        UserId participantUserId,
+        DateTime occurredAtUtc,
+        CancellationToken ct)
+    {
+        await _voiceParticipantCache.AddOrUpdateAsync(
+            result.Channel.Id,
+            new CachedVoiceParticipant(
+                UserId: participantUserId,
+                Username: result.Participant?.Username.Value,
+                DisplayName: result.Participant?.DisplayName,
+                AvatarFileId: result.Participant?.AvatarFileId,
+                AvatarColor: result.Participant?.AvatarColor,
+                AvatarIcon: result.Participant?.AvatarIcon,
+                AvatarBg: result.Participant?.AvatarBg),
+            ct);
+
+        await _voicePresenceNotifier.NotifyParticipantJoinedAsync(
+            new VoiceParticipantJoinedNotification(
+                GuildId: result.Channel.GuildId,
+                ChannelId: result.Channel.Id,
+                UserId: participantUserId,
+                Username: result.Participant?.Username.Value,
+                DisplayName: result.Participant?.DisplayName,
+                AvatarFileId: result.Participant?.AvatarFileId,
+                AvatarColor: result.Participant?.AvatarColor,
+                AvatarIcon: result.Participant?.AvatarIcon,
+                AvatarBg: result.Participant?.AvatarBg,
+                JoinedAtUtc: occurredAtUtc),
+            ct);
+    }
+
+    private async Task HandleParticipantLeftAsync(
+        ChannelWithParticipant result,
+        UserId participantUserId,
+        DateTime occurredAtUtc,
+        CancellationToken ct)
+    {
+        // Clear screen share tracks for safety (LiveKit sends track_unpublished before participant_left,
+        // but we clean up here as a safety net).
+        await _voiceParticipantCache.ClearScreenShareTracksAsync(
+            result.Channel.Id, participantUserId, ct);
+
+        await _voiceParticipantCache.RemoveAsync(result.Channel.Id, participantUserId, ct);
+
+        await _voicePresenceNotifier.NotifyParticipantLeftAsync(
+            new VoiceParticipantLeftNotification(
+                result.Channel.GuildId,
+                result.Channel.Id,
+                participantUserId,
+                result.Participant?.Username.Value,
+                occurredAtUtc),
+            ct);
+    }
+
+    private async Task HandleTrackEventAsync(
+        string eventType,
+        ChannelWithParticipant result,
+        UserId participantUserId,
+        LiveKitWebhookEvent webhookEvent,
+        CancellationToken ct)
+    {
+        if (webhookEvent.Track is not { } track)
+            return;
+
+        // Only process ScreenShare tracks. Ignore SCREEN_SHARE_AUDIO, CAMERA, MICROPHONE.
+        if (track.Source != ScreenShareSource)
+            return;
+
+        var guildId = result.Channel.GuildId;
+        var channelId = result.Channel.Id;
+        var username = result.Participant?.Username.Value;
+
+        if (eventType == TrackPublishedEvent)
+        {
+            var addResult = await _voiceParticipantCache.TryAddScreenShareTrackAsync(
+                channelId, participantUserId, track.Sid, ct);
+
+            if (addResult.IsFirst)
+            {
+                await _voicePresenceNotifier.NotifyScreenShareStartedAsync(
+                    new VoiceScreenShareNotification(
+                        guildId, channelId, participantUserId, username, webhookEvent.OccurredAtUtc),
+                    ct);
+            }
+        }
+        else if (eventType == TrackUnpublishedEvent)
+        {
+            var removeResult = await _voiceParticipantCache.TryRemoveScreenShareTrackAsync(
+                channelId, participantUserId, track.Sid, ct);
+
+            if (removeResult.IsLast)
+            {
+                await _voicePresenceNotifier.NotifyScreenShareStoppedAsync(
+                    new VoiceScreenShareNotification(
+                        guildId, channelId, participantUserId, username, webhookEvent.OccurredAtUtc),
+                    ct);
+            }
+        }
     }
 
     private static bool TryParseUserId(string? participantIdentity, out UserId? userId)

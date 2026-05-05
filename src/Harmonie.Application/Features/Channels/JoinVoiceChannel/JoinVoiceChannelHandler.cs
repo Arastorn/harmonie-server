@@ -108,7 +108,9 @@ public sealed class JoinVoiceChannelHandler : IAuthenticatedHandler<GuildChannel
 
             if (cachedById.TryGetValue(lkParticipant.UserId.Value, out var existing))
             {
-                cached = existing;
+                cached = existing.IsSharingScreen != lkParticipant.IsSharingScreen
+                    ? existing with { IsSharingScreen = lkParticipant.IsSharingScreen }
+                    : existing;
             }
             else if (fetchedById.TryGetValue(lkParticipant.UserId.Value, out var dbUser))
             {
@@ -119,7 +121,8 @@ public sealed class JoinVoiceChannelHandler : IAuthenticatedHandler<GuildChannel
                     AvatarFileId: dbUser.AvatarFileId,
                     AvatarColor: dbUser.AvatarColor,
                     AvatarIcon: dbUser.AvatarIcon,
-                    AvatarBg: dbUser.AvatarBg);
+                    AvatarBg: dbUser.AvatarBg,
+                    IsSharingScreen: lkParticipant.IsSharingScreen);
             }
             else
             {
@@ -130,7 +133,8 @@ public sealed class JoinVoiceChannelHandler : IAuthenticatedHandler<GuildChannel
                     AvatarFileId: null,
                     AvatarColor: null,
                     AvatarIcon: null,
-                    AvatarBg: null);
+                    AvatarBg: null,
+                    IsSharingScreen: lkParticipant.IsSharingScreen);
             }
 
             await _voiceParticipantCache.AddOrUpdateAsync(request, cached, cancellationToken);
@@ -148,7 +152,8 @@ public sealed class JoinVoiceChannelHandler : IAuthenticatedHandler<GuildChannel
                 AvatarFileId: p.AvatarFileId?.Value,
                 AvatarColor: p.AvatarColor,
                 AvatarIcon: p.AvatarIcon,
-                AvatarBg: p.AvatarBg))
+                AvatarBg: p.AvatarBg,
+                IsSharingScreen: p.IsSharingScreen))
             .ToArray();
 
         var payload = new JoinVoiceChannelResponse(

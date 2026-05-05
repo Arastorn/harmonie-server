@@ -62,18 +62,54 @@ public sealed class LiveKitWebhookReceiver : ILiveKitWebhookReceiver
                 ? DateTimeOffset.FromUnixTimeSeconds(webhookEvent.CreatedAt).UtcDateTime
                 : DateTime.UnixEpoch;
 
+            LiveKitTrackInfo? track = null;
+            if (webhookEvent.Track is { } webhookTrack)
+            {
+                track = new LiveKitTrackInfo(
+                    Sid: webhookTrack.Sid,
+                    Source: MapTrackSourceToString(webhookTrack.Source),
+                    Type: MapTrackTypeToString(webhookTrack.Type),
+                    Muted: webhookTrack.Muted,
+                    Width: webhookTrack.Width,
+                    Height: webhookTrack.Height);
+            }
+
             return LiveKitWebhookReceiveResult.Ok(
                 new LiveKitWebhookEvent(
                     webhookEvent.Event,
                     roomName,
                     participantIdentity,
                     participantName,
-                    occurredAtUtc));
+                    occurredAtUtc,
+                    track));
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "LiveKit webhook validation failed.");
             return LiveKitWebhookReceiveResult.Fail("LiveKit webhook validation failed.");
         }
+    }
+
+    private static string MapTrackSourceToString(TrackSource source)
+    {
+        return source switch
+        {
+            TrackSource.Camera => "CAMERA",
+            TrackSource.Microphone => "MICROPHONE",
+            TrackSource.ScreenShare => "SCREEN_SHARE",
+            TrackSource.ScreenShareAudio => "SCREEN_SHARE_AUDIO",
+            _ => source.ToString().ToUpperInvariant()
+        };
+    }
+
+    private static string MapTrackTypeToString(TrackType type)
+    {
+        return type switch
+        {
+            TrackType.Audio => "AUDIO",
+            TrackType.Video => "VIDEO",
+            TrackType.Data => "DATA",
+            _ => type.ToString().ToUpperInvariant()
+        };
     }
 }

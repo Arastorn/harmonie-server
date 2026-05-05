@@ -24,4 +24,13 @@ public sealed record LiveKitWebhookEvent(
     string? RoomName,
     string? ParticipantIdentity,
     string? ParticipantName,
-    DateTime OccurredAtUtc);
+    DateTime OccurredAtUtc,
+    LiveKitTrackInfo? Track = null);
+
+public sealed record LiveKitTrackInfo(
+    string Sid,
+    string Source,
+    string Type,
+    bool Muted,
+    uint Width,
+    uint Height);

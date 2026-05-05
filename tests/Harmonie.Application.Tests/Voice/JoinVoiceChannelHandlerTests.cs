@@ -288,6 +288,56 @@ public sealed class JoinVoiceChannelHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsync_WhenLiveKitParticipantIsSharingScreen_ShouldPropagateFlag()
+    {
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Voice);
+        var user = ApplicationTestBuilders.CreateUser();
+        var roomToken = new LiveKitRoomToken("eyJ.token", "ws://localhost:7880", $"channel:{channel.Id}");
+
+        var participantUserId = UserId.New();
+        var lkParticipant = new VoiceChannelParticipant(participantUserId, "lk-username", IsSharingScreen: true);
+        var cachedParticipant = new CachedVoiceParticipant(
+            UserId: participantUserId,
+            Username: "cached-username",
+            DisplayName: "Cached Display",
+            AvatarFileId: null,
+            AvatarColor: "#abc",
+            AvatarIcon: "star",
+            AvatarBg: "#fff",
+            IsSharingScreen: false);
+
+        _guildChannelRepositoryMock
+            .Setup(x => x.GetByIdAsync(channel.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(channel);
+
+        _guildMemberRepositoryMock
+            .Setup(x => x.IsMemberAsync(channel.GuildId, user.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        _userRepositoryMock
+            .Setup(x => x.GetByIdAsync(user.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+        _liveKitTokenServiceMock
+            .Setup(x => x.GenerateRoomTokenAsync(channel.Id, user.Id, user.Username.Value, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(roomToken);
+
+        _liveKitRoomServiceMock
+            .Setup(x => x.ListChannelParticipantsAsync(channel.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([lkParticipant]);
+
+        _voiceParticipantCacheMock
+            .Setup(x => x.GetAsync(channel.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([cachedParticipant]);
+
+        var response = await _handler.HandleAsync(channel.Id, user.Id, TestContext.Current.CancellationToken);
+
+        response.Success.Should().BeTrue();
+        response.Data!.CurrentParticipants.Should().HaveCount(1);
+        response.Data.CurrentParticipants[0].IsSharingScreen.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task HandleAsync_WhenCachedParticipantNotInLiveKit_ShouldRemoveFromCache()
     {
         var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Voice);

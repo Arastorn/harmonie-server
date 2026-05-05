@@ -53,6 +53,42 @@ public sealed class SignalRVoicePresenceNotifier : IVoicePresenceNotifier
             .Group(RealtimeHub.GetGuildGroupName(notification.GuildId))
             .VoiceParticipantLeft(payload, cancellationToken);
     }
+
+    public async Task NotifyScreenShareStartedAsync(
+        VoiceScreenShareNotification notification,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(notification);
+
+        var payload = new VoiceScreenShareEvent(
+            GuildId: notification.GuildId.Value,
+            ChannelId: notification.ChannelId.Value,
+            UserId: notification.UserId.Value,
+            Username: notification.Username,
+            TimestampUtc: notification.TimestampUtc);
+
+        await _hubContext.Clients
+            .Group(RealtimeHub.GetGuildGroupName(notification.GuildId))
+            .VoiceScreenShareStarted(payload, cancellationToken);
+    }
+
+    public async Task NotifyScreenShareStoppedAsync(
+        VoiceScreenShareNotification notification,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(notification);
+
+        var payload = new VoiceScreenShareEvent(
+            GuildId: notification.GuildId.Value,
+            ChannelId: notification.ChannelId.Value,
+            UserId: notification.UserId.Value,
+            Username: notification.Username,
+            TimestampUtc: notification.TimestampUtc);
+
+        await _hubContext.Clients
+            .Group(RealtimeHub.GetGuildGroupName(notification.GuildId))
+            .VoiceScreenShareStopped(payload, cancellationToken);
+    }
 }
 
 public sealed record VoiceParticipantJoinedEvent(
@@ -73,3 +109,10 @@ public sealed record VoiceParticipantLeftEvent(
     Guid UserId,
     string? Username,
     DateTime LeftAtUtc);
+
+public sealed record VoiceScreenShareEvent(
+    Guid GuildId,
+    Guid ChannelId,
+    Guid UserId,
+    string? Username,
+    DateTime TimestampUtc);
