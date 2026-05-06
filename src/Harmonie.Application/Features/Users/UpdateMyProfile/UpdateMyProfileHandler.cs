@@ -115,11 +115,14 @@ public sealed class UpdateMyProfileHandler
         var anyFieldSet = request.DisplayNameIsSet || request.BioIsSet || request.AvatarFileIdIsSet
             || request.AvatarColorIsSet || request.AvatarIconIsSet || request.AvatarBgIsSet
             || request.ThemeIsSet || request.LanguageIsSet;
+        var shouldNotifyProfile = request.DisplayNameIsSet || request.BioIsSet || request.AvatarFileIdIsSet
+            || request.AvatarColorIsSet || request.AvatarIconIsSet || request.AvatarBgIsSet;
 
         if (anyFieldSet)
-        {
             await _userRepository.UpdateAsync(user, cancellationToken);
 
+        if (shouldNotifyProfile)
+        {
             var notificationContext = await _userRepository.GetUserNotificationContextAsync(
                 currentUserId, cancellationToken);
 

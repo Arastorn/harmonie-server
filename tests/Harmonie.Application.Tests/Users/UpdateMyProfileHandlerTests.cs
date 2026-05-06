@@ -288,8 +288,7 @@ public sealed class UpdateMyProfileHandlerTests
     [InlineData(nameof(UpdateMyProfileRequest.AvatarColorIsSet))]
     [InlineData(nameof(UpdateMyProfileRequest.AvatarIconIsSet))]
     [InlineData(nameof(UpdateMyProfileRequest.AvatarBgIsSet))]
-    [InlineData(nameof(UpdateMyProfileRequest.LanguageIsSet))]
-    public async Task HandleAsync_WhenAnyFieldIsSet_ShouldNotifyProfileUpdate(string fieldName)
+    public async Task HandleAsync_WhenVisibleFieldIsSet_ShouldNotifyProfileUpdate(string fieldName)
     {
         var user = ApplicationTestBuilders.CreateUser();
         var request = new UpdateMyProfileRequest();
@@ -308,11 +307,19 @@ public sealed class UpdateMyProfileHandlerTests
             Times.Once);
     }
 
-    [Fact]
-    public async Task HandleAsync_WhenThemeIsSet_ShouldNotifyProfileUpdate()
+    [Theory]
+    [InlineData("dark", true, false)]
+    [InlineData(null, false, true)]
+    public async Task HandleAsync_WhenOnlyPersonalSettingIsSet_ShouldNotNotify(
+        string? theme, bool themeIsSet, bool languageIsSet)
     {
         var user = ApplicationTestBuilders.CreateUser();
-        var request = new UpdateMyProfileRequest { Theme = "dark", ThemeIsSet = true };
+        var request = new UpdateMyProfileRequest
+        {
+            Theme = theme,
+            ThemeIsSet = themeIsSet,
+            LanguageIsSet = languageIsSet
+        };
 
         _userRepositoryMock
             .Setup(x => x.GetByIdAsync(user.Id, It.IsAny<CancellationToken>()))
@@ -321,10 +328,8 @@ public sealed class UpdateMyProfileHandlerTests
         await _handler.HandleAsync(request, user.Id, TestContext.Current.CancellationToken);
 
         _userProfileNotifierMock.Verify(
-            x => x.NotifyProfileUpdatedAsync(
-                It.Is<UserProfileUpdatedNotification>(n => n.UserId == user.Id),
-                It.IsAny<CancellationToken>()),
-            Times.Once);
+            x => x.NotifyProfileUpdatedAsync(It.IsAny<UserProfileUpdatedNotification>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
