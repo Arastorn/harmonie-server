@@ -369,7 +369,7 @@ public sealed class GuildChannelRepository : IGuildChannelRepository
         public bool IsDefault { get; init; }
         public int Position { get; init; }
         public DateTime CreatedAtUtc { get; init; }
-        public string? GuildName { get; init; }
+        public string GuildName { get; init; } = string.Empty;
         public string? Username { get; init; }
         public string? DisplayName { get; init; }
         public Guid? AvatarFileId { get; init; }
