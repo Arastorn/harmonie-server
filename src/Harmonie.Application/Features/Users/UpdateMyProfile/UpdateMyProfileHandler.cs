@@ -108,13 +108,15 @@ public sealed class UpdateMyProfileHandler
                 return BuildValidationFailure(nameof(request.Language), result);
         }
 
-        var anyFieldSet = request.DisplayNameIsSet || request.BioIsSet || request.AvatarFileIdIsSet
-            || request.AvatarColorIsSet || request.AvatarIconIsSet || request.AvatarBgIsSet
-            || request.ThemeIsSet || request.LanguageIsSet;
-        var shouldNotifyProfile = request.DisplayNameIsSet || request.BioIsSet || request.AvatarFileIdIsSet;
         var shouldDeletePreviousAvatar = request.AvatarFileIdIsSet
             && previousAvatarFileId is not null
             && previousAvatarFileId != user.AvatarFileId;
+
+        var anyFieldSet = request.DisplayNameIsSet || request.BioIsSet || request.AvatarFileIdIsSet
+            || request.AvatarColorIsSet || request.AvatarIconIsSet || request.AvatarBgIsSet
+            || request.ThemeIsSet || request.LanguageIsSet;
+        var shouldNotifyProfile = request.DisplayNameIsSet || request.BioIsSet || request.AvatarFileIdIsSet
+            || request.AvatarColorIsSet || request.AvatarIconIsSet || request.AvatarBgIsSet;
 
         if (anyFieldSet)
             await _userRepository.UpdateAsync(user, cancellationToken);
