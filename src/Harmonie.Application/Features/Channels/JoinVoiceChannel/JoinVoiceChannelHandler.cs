@@ -134,7 +134,8 @@ public sealed class JoinVoiceChannelHandler : IAuthenticatedHandler<GuildChannel
             }
 
             await _voiceParticipantCache.AddOrUpdateAsync(request, cached, cancellationToken);
-            reconciledParticipants.Add(cached);
+            // IsSharingScreen is derived from the SID set in cache; use LiveKit state for the immediate response.
+            reconciledParticipants.Add(cached with { IsSharingScreen = lkParticipant.IsSharingScreen });
         }
 
         foreach (var stale in cachedParticipants.Where(p => !liveKitIds.Contains(p.UserId.Value)))
@@ -148,7 +149,8 @@ public sealed class JoinVoiceChannelHandler : IAuthenticatedHandler<GuildChannel
                 AvatarFileId: p.AvatarFileId?.Value,
                 AvatarColor: p.AvatarColor,
                 AvatarIcon: p.AvatarIcon,
-                AvatarBg: p.AvatarBg))
+                AvatarBg: p.AvatarBg,
+                IsSharingScreen: p.IsSharingScreen))
             .ToArray();
 
         var payload = new JoinVoiceChannelResponse(

@@ -14,6 +14,14 @@ public interface IVoicePresenceNotifier
     Task NotifyParticipantLeftAsync(
         VoiceParticipantLeftNotification notification,
         CancellationToken cancellationToken = default);
+
+    Task NotifyScreenShareStartedAsync(
+        VoiceScreenShareNotification notification,
+        CancellationToken cancellationToken = default);
+
+    Task NotifyScreenShareStoppedAsync(
+        VoiceScreenShareNotification notification,
+        CancellationToken cancellationToken = default);
 }
 
 public sealed record VoiceParticipantJoinedNotification(
@@ -34,3 +42,10 @@ public sealed record VoiceParticipantLeftNotification(
     UserId UserId,
     string? Username,
     DateTime LeftAtUtc);
+
+public sealed record VoiceScreenShareNotification(
+    GuildId GuildId,
+    GuildChannelId ChannelId,
+    UserId UserId,
+    string? Username,
+    DateTime TimestampUtc);

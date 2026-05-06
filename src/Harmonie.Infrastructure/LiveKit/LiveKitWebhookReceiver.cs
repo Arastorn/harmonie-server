@@ -62,18 +62,54 @@ public sealed class LiveKitWebhookReceiver : ILiveKitWebhookReceiver
                 ? DateTimeOffset.FromUnixTimeSeconds(webhookEvent.CreatedAt).UtcDateTime
                 : DateTime.UnixEpoch;
 
+            LiveKitTrackInfo? track = null;
+            if (webhookEvent.Track is not null)
+            {
+                track = new LiveKitTrackInfo(
+                    Sid: webhookEvent.Track.Sid,
+                    Source: MapTrackSourceToString(webhookEvent.Track.Source),
+                    Type: MapTrackTypeToString(webhookEvent.Track.Type),
+                    Muted: webhookEvent.Track.Muted,
+                    Width: webhookEvent.Track.Width,
+                    Height: webhookEvent.Track.Height);
+            }
+
             return LiveKitWebhookReceiveResult.Ok(
                 new LiveKitWebhookEvent(
                     webhookEvent.Event,
                     roomName,
                     participantIdentity,
                     participantName,
-                    occurredAtUtc));
+                    occurredAtUtc,
+                    track));
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "LiveKit webhook validation failed.");
             return LiveKitWebhookReceiveResult.Fail("LiveKit webhook validation failed.");
         }
+    }
+
+    private static string MapTrackSourceToString(TrackSource source)
+    {
+        return source switch
+        {
+            TrackSource.Camera => "CAMERA",
+            TrackSource.Microphone => "MICROPHONE",
+            TrackSource.ScreenShare => "SCREEN_SHARE",
+            TrackSource.ScreenShareAudio => "SCREEN_SHARE_AUDIO",
+            _ => source.ToString().ToUpperInvariant()
+        };
+    }
+
+    private static string MapTrackTypeToString(TrackType type)
+    {
+        return type switch
+        {
+            TrackType.Audio => "AUDIO",
+            TrackType.Video => "VIDEO",
+            TrackType.Data => "DATA",
+            _ => type.ToString().ToUpperInvariant()
+        };
     }
 }

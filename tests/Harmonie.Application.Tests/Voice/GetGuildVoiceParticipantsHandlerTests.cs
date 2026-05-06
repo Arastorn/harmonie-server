@@ -69,6 +69,38 @@ public sealed class GetGuildVoiceParticipantsHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsync_WhenParticipantIsSharingScreen_ShouldPropagateFlag()
+    {
+        var guild = ApplicationTestBuilders.CreateGuild();
+        var requesterUserId = UserId.New();
+        var channelId = GuildChannelId.New();
+        var participantUserId = UserId.New();
+
+        _guildRepositoryMock
+            .Setup(x => x.GetWithCallerRoleAsync(guild.Id, requesterUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GuildAccessContext(guild, GuildRole.Member));
+
+        _liveKitRoomServiceMock
+            .Setup(x => x.GetGuildVoiceParticipantsAsync(guild.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([
+                new GuildVoiceChannelParticipants(
+                    channelId,
+                    [new VoiceChannelParticipant(participantUserId, "alice", IsSharingScreen: true)])
+            ]);
+
+        _guildMemberRepositoryMock
+            .Setup(x => x.GetGuildMembersAsync(guild.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<GuildMemberUser>());
+
+        var response = await _handler.HandleAsync(guild.Id, requesterUserId, TestContext.Current.CancellationToken);
+
+        response.Success.Should().BeTrue();
+        response.Data!.Channels.Should().HaveCount(1);
+        response.Data.Channels[0].Participants.Should().HaveCount(1);
+        response.Data.Channels[0].Participants[0].IsSharingScreen.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task HandleAsync_WithValidMember_ShouldReturnParticipantsGroupedByChannel()
     {
         var guild = ApplicationTestBuilders.CreateGuild();

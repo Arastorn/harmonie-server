@@ -21,4 +21,5 @@ public sealed record GuildVoiceChannelParticipants(
 
 public sealed record VoiceChannelParticipant(
     UserId UserId,
-    string Username);
+    string Username,
+    bool IsSharingScreen = false);

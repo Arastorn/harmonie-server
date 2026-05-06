@@ -284,6 +284,239 @@ public sealed class HandleLiveKitWebhookHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsync_WhenTrackPublishedAndSourceIsScreenShare_ShouldAddTrackAndNotifyFirstTime()
+    {
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Voice);
+        var participantUserId = UserId.New();
+        var occurredAtUtc = DateTime.UtcNow;
+        var trackSid = "TR_screen123";
+        var request = new HandleLiveKitWebhookRequest("{\"event\":\"track_published\"}", "Bearer token");
+
+        _webhookReceiverMock
+            .Setup(x => x.Receive(request.RawBody, request.AuthorizationHeader!))
+            .Returns(LiveKitWebhookReceiveResult.Ok(
+                new LiveKitWebhookEvent(
+                    "track_published",
+                    $"channel:{channel.Id}",
+                    participantUserId.ToString(),
+                    "alice",
+                    occurredAtUtc,
+                    new LiveKitTrackInfo(trackSid, "SCREEN_SHARE", "VIDEO", false, 1920, 1080))));
+
+        _guildChannelRepositoryMock
+            .Setup(x => x.GetWithParticipantAsync(channel.Id, participantUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ChannelWithParticipant(channel, null));
+
+        _voiceParticipantCacheMock
+            .Setup(x => x.TryAddScreenShareTrackAsync(
+                channel.Id, participantUserId, trackSid, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ScreenShareTrackAddResult(true));
+
+        var response = await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
+
+        response.Success.Should().BeTrue();
+        response.Data!.Processed.Should().BeTrue();
+        response.Data.EventType.Should().Be("track_published");
+
+        _voiceParticipantCacheMock.Verify(
+            x => x.TryAddScreenShareTrackAsync(channel.Id, participantUserId, trackSid, It.IsAny<CancellationToken>()),
+            Times.Once);
+
+        _voicePresenceNotifierMock.Verify(
+            x => x.NotifyScreenShareStartedAsync(
+                It.Is<VoiceScreenShareNotification>(n =>
+                    n.GuildId == channel.GuildId
+                    && n.ChannelId == channel.Id
+                    && n.UserId == participantUserId
+                    && n.TimestampUtc == occurredAtUtc),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenTrackPublishedButNotFirstScreenShare_ShouldNotNotify()
+    {
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Voice);
+        var participantUserId = UserId.New();
+        var trackSid = "TR_screen456";
+        var request = new HandleLiveKitWebhookRequest("{\"event\":\"track_published\"}", "Bearer token");
+
+        _webhookReceiverMock
+            .Setup(x => x.Receive(request.RawBody, request.AuthorizationHeader!))
+            .Returns(LiveKitWebhookReceiveResult.Ok(
+                new LiveKitWebhookEvent(
+                    "track_published",
+                    $"channel:{channel.Id}",
+                    participantUserId.ToString(),
+                    "alice",
+                    DateTime.UtcNow,
+                    new LiveKitTrackInfo(trackSid, "SCREEN_SHARE", "VIDEO", false, 1920, 1080))));
+
+        _guildChannelRepositoryMock
+            .Setup(x => x.GetWithParticipantAsync(channel.Id, participantUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ChannelWithParticipant(channel, null));
+
+        _voiceParticipantCacheMock
+            .Setup(x => x.TryAddScreenShareTrackAsync(
+                channel.Id, participantUserId, trackSid, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ScreenShareTrackAddResult(false));
+
+        await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
+
+        _voicePresenceNotifierMock.Verify(
+            x => x.NotifyScreenShareStartedAsync(It.IsAny<VoiceScreenShareNotification>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenTrackPublishedAndSourceIsNotScreenShare_ShouldIgnore()
+    {
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Voice);
+        var participantUserId = UserId.New();
+        var request = new HandleLiveKitWebhookRequest("{\"event\":\"track_published\"}", "Bearer token");
+
+        _webhookReceiverMock
+            .Setup(x => x.Receive(request.RawBody, request.AuthorizationHeader!))
+            .Returns(LiveKitWebhookReceiveResult.Ok(
+                new LiveKitWebhookEvent(
+                    "track_published",
+                    $"channel:{channel.Id}",
+                    participantUserId.ToString(),
+                    "alice",
+                    DateTime.UtcNow,
+                    new LiveKitTrackInfo("TR_cam123", "CAMERA", "VIDEO", false, 1280, 720))));
+
+        _guildChannelRepositoryMock
+            .Setup(x => x.GetWithParticipantAsync(channel.Id, participantUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ChannelWithParticipant(channel, null));
+
+        var response = await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
+
+        response.Success.Should().BeTrue();
+        response.Data!.Processed.Should().BeTrue();
+        response.Data.EventType.Should().Be("track_published");
+
+        _voiceParticipantCacheMock.Verify(
+            x => x.TryAddScreenShareTrackAsync(
+                It.IsAny<GuildChannelId>(), It.IsAny<UserId>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenTrackUnpublishedAndLastScreenShare_ShouldNotifyStopped()
+    {
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Voice);
+        var participantUserId = UserId.New();
+        var occurredAtUtc = DateTime.UtcNow;
+        var trackSid = "TR_screen789";
+        var request = new HandleLiveKitWebhookRequest("{\"event\":\"track_unpublished\"}", "Bearer token");
+
+        _webhookReceiverMock
+            .Setup(x => x.Receive(request.RawBody, request.AuthorizationHeader!))
+            .Returns(LiveKitWebhookReceiveResult.Ok(
+                new LiveKitWebhookEvent(
+                    "track_unpublished",
+                    $"channel:{channel.Id}",
+                    participantUserId.ToString(),
+                    "alice",
+                    occurredAtUtc,
+                    new LiveKitTrackInfo(trackSid, "SCREEN_SHARE", "VIDEO", false, 1920, 1080))));
+
+        _guildChannelRepositoryMock
+            .Setup(x => x.GetWithParticipantAsync(channel.Id, participantUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ChannelWithParticipant(channel, null));
+
+        _voiceParticipantCacheMock
+            .Setup(x => x.TryRemoveScreenShareTrackAsync(
+                channel.Id, participantUserId, trackSid, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ScreenShareTrackRemoveResult(true));
+
+        var response = await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
+
+        response.Success.Should().BeTrue();
+        response.Data!.Processed.Should().BeTrue();
+        response.Data.EventType.Should().Be("track_unpublished");
+
+        _voicePresenceNotifierMock.Verify(
+            x => x.NotifyScreenShareStoppedAsync(
+                It.Is<VoiceScreenShareNotification>(n =>
+                    n.GuildId == channel.GuildId
+                    && n.ChannelId == channel.Id
+                    && n.UserId == participantUserId
+                    && n.TimestampUtc == occurredAtUtc),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenTrackUnpublishedButNotLastScreenShare_ShouldNotNotify()
+    {
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Voice);
+        var participantUserId = UserId.New();
+        var trackSid = "TR_screen_001";
+        var request = new HandleLiveKitWebhookRequest("{\"event\":\"track_unpublished\"}", "Bearer token");
+
+        _webhookReceiverMock
+            .Setup(x => x.Receive(request.RawBody, request.AuthorizationHeader!))
+            .Returns(LiveKitWebhookReceiveResult.Ok(
+                new LiveKitWebhookEvent(
+                    "track_unpublished",
+                    $"channel:{channel.Id}",
+                    participantUserId.ToString(),
+                    "alice",
+                    DateTime.UtcNow,
+                    new LiveKitTrackInfo(trackSid, "SCREEN_SHARE", "VIDEO", false, 1920, 1080))));
+
+        _guildChannelRepositoryMock
+            .Setup(x => x.GetWithParticipantAsync(channel.Id, participantUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ChannelWithParticipant(channel, null));
+
+        _voiceParticipantCacheMock
+            .Setup(x => x.TryRemoveScreenShareTrackAsync(
+                channel.Id, participantUserId, trackSid, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ScreenShareTrackRemoveResult(false));
+
+        await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
+
+        _voicePresenceNotifierMock.Verify(
+            x => x.NotifyScreenShareStoppedAsync(It.IsAny<VoiceScreenShareNotification>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenParticipantLeft_ShouldClearScreenShareTracks()
+    {
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Voice);
+        var participantUserId = UserId.New();
+        var request = new HandleLiveKitWebhookRequest("{\"event\":\"participant_left\"}", "Bearer token");
+
+        _voiceParticipantCacheMock
+            .Setup(x => x.ClearScreenShareTracksAsync(
+                channel.Id, participantUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        _webhookReceiverMock
+            .Setup(x => x.Receive(request.RawBody, request.AuthorizationHeader!))
+            .Returns(LiveKitWebhookReceiveResult.Ok(
+                new LiveKitWebhookEvent(
+                    "participant_left",
+                    $"channel:{channel.Id}",
+                    participantUserId.ToString(),
+                    "alice",
+                    DateTime.UtcNow)));
+
+        _guildChannelRepositoryMock
+            .Setup(x => x.GetWithParticipantAsync(channel.Id, participantUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ChannelWithParticipant(channel, null));
+
+        await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
+
+        _voiceParticipantCacheMock.Verify(
+            x => x.ClearScreenShareTracksAsync(channel.Id, participantUserId, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
     public async Task HandleAsync_WhenParticipantLeft_ShouldRemoveFromCache()
     {
         var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Voice);
@@ -309,6 +542,46 @@ public sealed class HandleLiveKitWebhookHandlerTests
         _voiceParticipantCacheMock.Verify(
             x => x.RemoveAsync(channel.Id, participantUserId, It.IsAny<CancellationToken>()),
             Times.Once);
+    }
+
+    [Theory]
+    [InlineData("track_published")]
+    [InlineData("track_unpublished")]
+    public async Task HandleAsync_WhenTrackEventHasNullTrack_ShouldProcessedWithoutCacheOperations(string eventType)
+    {
+        var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Voice);
+        var participantUserId = UserId.New();
+        var request = new HandleLiveKitWebhookRequest($"{{\"event\":\"{eventType}\"}}", "Bearer token");
+
+        _webhookReceiverMock
+            .Setup(x => x.Receive(request.RawBody, request.AuthorizationHeader!))
+            .Returns(LiveKitWebhookReceiveResult.Ok(
+                new LiveKitWebhookEvent(
+                    eventType,
+                    $"channel:{channel.Id}",
+                    participantUserId.ToString(),
+                    "alice",
+                    DateTime.UtcNow,
+                    Track: null)));
+
+        _guildChannelRepositoryMock
+            .Setup(x => x.GetWithParticipantAsync(channel.Id, participantUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ChannelWithParticipant(channel, null));
+
+        var response = await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
+
+        response.Success.Should().BeTrue();
+        response.Data!.Processed.Should().BeTrue();
+        response.Data.EventType.Should().Be(eventType);
+
+        _voiceParticipantCacheMock.Verify(
+            x => x.TryAddScreenShareTrackAsync(
+                It.IsAny<GuildChannelId>(), It.IsAny<UserId>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        _voiceParticipantCacheMock.Verify(
+            x => x.TryRemoveScreenShareTrackAsync(
+                It.IsAny<GuildChannelId>(), It.IsAny<UserId>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
 }

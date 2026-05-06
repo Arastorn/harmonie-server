@@ -4,6 +4,7 @@ using Harmonie.Domain.Enums;
 using Harmonie.Domain.ValueObjects.Channels;
 using Harmonie.Domain.ValueObjects.Guilds;
 using Harmonie.Domain.ValueObjects.Users;
+using Livekit.Server.Sdk.Dotnet;
 using Microsoft.Extensions.Logging;
 
 namespace Harmonie.Infrastructure.LiveKit;
@@ -71,7 +72,7 @@ public sealed class LiveKitRoomService : ILiveKitRoomService
             }
 
             var mappedParticipants = participants
-                .Select(participant => TryMapParticipant(participant.Identity, participant.Name))
+                .Select(TryMapParticipant)
                 .OfType<VoiceChannelParticipant>()
                 .ToArray();
 
@@ -91,8 +92,11 @@ public sealed class LiveKitRoomService : ILiveKitRoomService
         return channels;
     }
 
-    private VoiceChannelParticipant? TryMapParticipant(string? identity, string? name)
+    private VoiceChannelParticipant? TryMapParticipant(ParticipantInfo participant)
     {
+        var identity = participant.Identity;
+        var name = participant.Name;
+
         if (string.IsNullOrWhiteSpace(identity)
             || !UserId.TryParse(identity, out var userId)
             || userId is null)
@@ -104,7 +108,10 @@ public sealed class LiveKitRoomService : ILiveKitRoomService
         }
 
         var username = string.IsNullOrWhiteSpace(name) ? identity : name;
-        return new VoiceChannelParticipant(userId, username);
+        var isSharingScreen = participant.Tracks
+            .Any(t => t.Source == TrackSource.ScreenShare);
+
+        return new VoiceChannelParticipant(userId, username, isSharingScreen);
     }
 
     public async Task<IReadOnlyList<VoiceChannelParticipant>> ListChannelParticipantsAsync(
@@ -115,7 +122,7 @@ public sealed class LiveKitRoomService : ILiveKitRoomService
         var participants = await _roomApiClient.ListParticipantsAsync(roomName, ct);
 
         return participants
-            .Select(p => TryMapParticipant(p.Identity, p.Name))
+            .Select(TryMapParticipant)
             .OfType<VoiceChannelParticipant>()
             .ToArray();
     }

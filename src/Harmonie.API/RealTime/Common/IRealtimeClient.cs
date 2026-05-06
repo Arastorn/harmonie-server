@@ -32,6 +32,8 @@ public interface IRealtimeClient
     // Voice
     Task VoiceParticipantJoined(VoiceParticipantJoinedEvent payload, CancellationToken cancellationToken = default);
     Task VoiceParticipantLeft(VoiceParticipantLeftEvent payload, CancellationToken cancellationToken = default);
+    Task VoiceScreenShareStarted(VoiceScreenShareEvent payload, CancellationToken cancellationToken = default);
+    Task VoiceScreenShareStopped(VoiceScreenShareEvent payload, CancellationToken cancellationToken = default);
 
     // Guilds
     Task GuildDeleted(GuildDeletedEvent payload, CancellationToken cancellationToken = default);

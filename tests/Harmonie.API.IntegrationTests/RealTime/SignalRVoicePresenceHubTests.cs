@@ -191,6 +191,154 @@ public sealed class SignalRVoicePresenceHubTests : IClassFixture<HarmonieWebAppl
             }
             """;
 
+    // LiveKit proto enum values for TrackSource and TrackType
+    private const int LiveKitTrackSourceScreenShare = 3;
+    private const int LiveKitTrackTypeVideo = 1;
+
+    private static string CreateTrackWebhookBody(
+        string eventType,
+        string channelId,
+        string userId,
+        string participantName,
+        string trackSid,
+        int trackSource,
+        int trackType)
+        => $$"""
+            {
+              "event": "{{eventType}}",
+              "room": {
+                "name": "channel:{{channelId}}"
+              },
+              "participant": {
+                "identity": "{{userId}}",
+                "name": "{{participantName}}"
+              },
+              "track": {
+                "sid": "{{trackSid}}",
+                "source": {{trackSource}},
+                "type": {{trackType}},
+                "muted": false,
+                "width": 1920,
+                "height": 1080
+              },
+              "createdAt": "{{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}}"
+            }
+            """;
+
+    [Fact]
+    public async Task VoiceScreenShareStarted_WhenTrackPublished_ShouldReceiveEvent()
+    {
+        var owner = await AuthTestHelper.RegisterAsync(_client);
+        var member = await AuthTestHelper.RegisterAsync(_client);
+        var guildId = await CreateGuildAndInviteMemberAsync(owner, member);
+        var voiceChannelId = await GetVoiceChannelIdAsync(guildId, member.AccessToken);
+
+        await using var connection = CreateHubConnection(member.AccessToken);
+        var eventReceived = new TaskCompletionSource<SignalRVoiceScreenShareEvent>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        connection.On<SignalRVoiceScreenShareEvent>("VoiceScreenShareStarted", payload =>
+        {
+            eventReceived.TrySetResult(payload);
+        });
+
+        var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        connection.On("Ready", () => ready.TrySetResult());
+
+        await connection.StartAsync(TestContext.Current.CancellationToken);
+        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+
+        var webhookResponse = await SendLiveKitWebhookAsync(
+            CreateTrackWebhookBody(
+                "track_published",
+                voiceChannelId.ToString(),
+                member.UserId.ToString(),
+                member.Username,
+                "TR_screen001",
+                trackSource: LiveKitTrackSourceScreenShare,
+                trackType: LiveKitTrackTypeVideo));
+        webhookResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var completedTask = await Task.WhenAny(eventReceived.Task, Task.Delay(Timeout.InfiniteTimeSpan, timeout.Token));
+        completedTask.Should().Be(eventReceived.Task);
+
+        var eventPayload = await eventReceived.Task;
+        eventPayload.GuildId.Should().Be(guildId.ToString());
+        eventPayload.ChannelId.Should().Be(voiceChannelId.ToString());
+        eventPayload.UserId.Should().Be(member.UserId.ToString());
+        eventPayload.Username.Should().Be(member.Username);
+        eventPayload.TimestampUtc.Should().NotBe(default);
+    }
+
+    [Fact]
+    public async Task VoiceScreenShareStopped_WhenTrackUnpublished_ShouldReceiveEvent()
+    {
+        var owner = await AuthTestHelper.RegisterAsync(_client);
+        var member = await AuthTestHelper.RegisterAsync(_client);
+        var guildId = await CreateGuildAndInviteMemberAsync(owner, member);
+        var voiceChannelId = await GetVoiceChannelIdAsync(guildId, member.AccessToken);
+
+        await using var connection = CreateHubConnection(member.AccessToken);
+
+        // First publish a track — register Ready before starting to avoid missing the event
+        var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        connection.On("Ready", () => ready.TrySetResult());
+        await connection.StartAsync(TestContext.Current.CancellationToken);
+        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+
+        // HTTP handler processes the webhook synchronously; awaiting the response guarantees the SID is tracked.
+        await SendLiveKitWebhookAsync(
+            CreateTrackWebhookBody(
+                "track_published",
+                voiceChannelId.ToString(),
+                member.UserId.ToString(),
+                member.Username,
+                "TR_screen002",
+                trackSource: LiveKitTrackSourceScreenShare,
+                trackType: LiveKitTrackTypeVideo));
+
+        await connection.DisposeAsync();
+
+        // Reconnect to capture the Stopped event
+        await using var connection2 = CreateHubConnection(member.AccessToken);
+        var stoppedEvent = new TaskCompletionSource<SignalRVoiceScreenShareEvent>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        connection2.On<SignalRVoiceScreenShareEvent>("VoiceScreenShareStopped", payload =>
+        {
+            stoppedEvent.TrySetResult(payload);
+        });
+
+        var ready2 = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        connection2.On("Ready", () => ready2.TrySetResult());
+
+        await connection2.StartAsync(TestContext.Current.CancellationToken);
+        await ready2.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+
+        var webhookResponse = await SendLiveKitWebhookAsync(
+            CreateTrackWebhookBody(
+                "track_unpublished",
+                voiceChannelId.ToString(),
+                member.UserId.ToString(),
+                member.Username,
+                "TR_screen002",
+                trackSource: LiveKitTrackSourceScreenShare,
+                trackType: LiveKitTrackTypeVideo));
+        webhookResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var completedTask = await Task.WhenAny(stoppedEvent.Task, Task.Delay(Timeout.InfiniteTimeSpan, timeout.Token));
+        completedTask.Should().Be(stoppedEvent.Task);
+
+        var eventPayload = await stoppedEvent.Task;
+        eventPayload.GuildId.Should().Be(guildId.ToString());
+        eventPayload.ChannelId.Should().Be(voiceChannelId.ToString());
+        eventPayload.UserId.Should().Be(member.UserId.ToString());
+        eventPayload.Username.Should().Be(member.Username);
+        eventPayload.TimestampUtc.Should().NotBe(default);
+    }
+
     private static string CreateLiveKitWebhookToken(string rawBody)
     {
         var checksum = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(rawBody)));
@@ -217,4 +365,11 @@ public sealed class SignalRVoicePresenceHubTests : IClassFixture<HarmonieWebAppl
         string UserId,
         string? Username,
         DateTime LeftAtUtc);
+
+    private sealed record SignalRVoiceScreenShareEvent(
+        string GuildId,
+        string ChannelId,
+        string UserId,
+        string? Username,
+        DateTime TimestampUtc);
 }
