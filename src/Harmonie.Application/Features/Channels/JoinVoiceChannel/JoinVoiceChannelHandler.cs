@@ -108,9 +108,7 @@ public sealed class JoinVoiceChannelHandler : IAuthenticatedHandler<GuildChannel
 
             if (cachedById.TryGetValue(lkParticipant.UserId.Value, out var existing))
             {
-                cached = existing.IsSharingScreen != lkParticipant.IsSharingScreen
-                    ? existing with { IsSharingScreen = lkParticipant.IsSharingScreen }
-                    : existing;
+                cached = existing;
             }
             else if (fetchedById.TryGetValue(lkParticipant.UserId.Value, out var dbUser))
             {
@@ -121,8 +119,7 @@ public sealed class JoinVoiceChannelHandler : IAuthenticatedHandler<GuildChannel
                     AvatarFileId: dbUser.AvatarFileId,
                     AvatarColor: dbUser.AvatarColor,
                     AvatarIcon: dbUser.AvatarIcon,
-                    AvatarBg: dbUser.AvatarBg,
-                    IsSharingScreen: lkParticipant.IsSharingScreen);
+                    AvatarBg: dbUser.AvatarBg);
             }
             else
             {
@@ -133,12 +130,12 @@ public sealed class JoinVoiceChannelHandler : IAuthenticatedHandler<GuildChannel
                     AvatarFileId: null,
                     AvatarColor: null,
                     AvatarIcon: null,
-                    AvatarBg: null,
-                    IsSharingScreen: lkParticipant.IsSharingScreen);
+                    AvatarBg: null);
             }
 
             await _voiceParticipantCache.AddOrUpdateAsync(request, cached, cancellationToken);
-            reconciledParticipants.Add(cached);
+            // IsSharingScreen is derived from the SID set in cache; use LiveKit state for the immediate response.
+            reconciledParticipants.Add(cached with { IsSharingScreen = lkParticipant.IsSharingScreen });
         }
 
         foreach (var stale in cachedParticipants.Where(p => !liveKitIds.Contains(p.UserId.Value)))

@@ -42,13 +42,9 @@ public interface IVoiceParticipantCache
         CancellationToken cancellationToken = default);
 }
 
-public sealed record ScreenShareTrackAddResult(
-    bool IsFirst,
-    bool IsSharingScreen);
+public sealed record ScreenShareTrackAddResult(bool IsFirst);
 
-public sealed record ScreenShareTrackRemoveResult(
-    bool IsLast,
-    bool IsSharingScreen);
+public sealed record ScreenShareTrackRemoveResult(bool IsLast);
 
 public sealed record CachedVoiceParticipant(
     UserId UserId,

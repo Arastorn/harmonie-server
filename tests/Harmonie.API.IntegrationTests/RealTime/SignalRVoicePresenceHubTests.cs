@@ -191,6 +191,10 @@ public sealed class SignalRVoicePresenceHubTests : IClassFixture<HarmonieWebAppl
             }
             """;
 
+    // LiveKit proto enum values for TrackSource and TrackType
+    private const int LiveKitTrackSourceScreenShare = 3;
+    private const int LiveKitTrackTypeVideo = 1;
+
     private static string CreateTrackWebhookBody(
         string eventType,
         string channelId,
@@ -244,7 +248,6 @@ public sealed class SignalRVoicePresenceHubTests : IClassFixture<HarmonieWebAppl
         await connection.StartAsync(TestContext.Current.CancellationToken);
         await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
-        // ScreenShare source = 3 in LiveKit proto enum
         var webhookResponse = await SendLiveKitWebhookAsync(
             CreateTrackWebhookBody(
                 "track_published",
@@ -252,8 +255,8 @@ public sealed class SignalRVoicePresenceHubTests : IClassFixture<HarmonieWebAppl
                 member.UserId.ToString(),
                 member.Username,
                 "TR_screen001",
-                trackSource: 3,
-                trackType: 1));
+                trackSource: LiveKitTrackSourceScreenShare,
+                trackType: LiveKitTrackTypeVideo));
         webhookResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
@@ -278,12 +281,13 @@ public sealed class SignalRVoicePresenceHubTests : IClassFixture<HarmonieWebAppl
 
         await using var connection = CreateHubConnection(member.AccessToken);
 
-        // First publish a track
-        await connection.StartAsync(TestContext.Current.CancellationToken);
+        // First publish a track — register Ready before starting to avoid missing the event
         var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         connection.On("Ready", () => ready.TrySetResult());
+        await connection.StartAsync(TestContext.Current.CancellationToken);
         await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
+        // HTTP handler processes the webhook synchronously; awaiting the response guarantees the SID is tracked.
         await SendLiveKitWebhookAsync(
             CreateTrackWebhookBody(
                 "track_published",
@@ -291,11 +295,8 @@ public sealed class SignalRVoicePresenceHubTests : IClassFixture<HarmonieWebAppl
                 member.UserId.ToString(),
                 member.Username,
                 "TR_screen002",
-                trackSource: 3,
-                trackType: 1));
-
-        // Wait a moment for the track_published to be processed
-        await Task.Delay(500, TestContext.Current.CancellationToken);
+                trackSource: LiveKitTrackSourceScreenShare,
+                trackType: LiveKitTrackTypeVideo));
 
         await connection.DisposeAsync();
 
@@ -322,8 +323,8 @@ public sealed class SignalRVoicePresenceHubTests : IClassFixture<HarmonieWebAppl
                 member.UserId.ToString(),
                 member.Username,
                 "TR_screen002",
-                trackSource: 3,
-                trackType: 1));
+                trackSource: LiveKitTrackSourceScreenShare,
+                trackType: LiveKitTrackTypeVideo));
         webhookResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));

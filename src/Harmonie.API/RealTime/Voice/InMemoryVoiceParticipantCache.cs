@@ -55,12 +55,15 @@ public sealed class InMemoryVoiceParticipantCache : IVoiceParticipantCache
     {
         var key = (channelId.Value, userId.Value);
         var sids = _screenShareTrackSids.GetOrAdd(key, _ => new ConcurrentDictionary<string, byte>());
-        var wasEmpty = sids.IsEmpty;
-        sids[trackSid] = 0;
-        var isFirst = wasEmpty && sids.Count > 0;
-        var isSharingScreen = sids.Count > 0;
+        bool isFirst;
+        lock (sids)
+        {
+            var wasEmpty = sids.IsEmpty;
+            sids[trackSid] = 0;
+            isFirst = wasEmpty;
+        }
 
-        return Task.FromResult(new ScreenShareTrackAddResult(isFirst, isSharingScreen));
+        return Task.FromResult(new ScreenShareTrackAddResult(isFirst));
     }
 
     public Task<ScreenShareTrackRemoveResult> TryRemoveScreenShareTrackAsync(
@@ -75,14 +78,13 @@ public sealed class InMemoryVoiceParticipantCache : IVoiceParticipantCache
             sids.TryRemove(trackSid, out _);
         }
 
-        var isSharingScreen = sids is not null && !sids.IsEmpty;
         var wasPresentAndNowEmpty = sids is not null && sids.IsEmpty;
 
         // Clean up empty sets to prevent memory leaks
         if (wasPresentAndNowEmpty)
             _screenShareTrackSids.TryRemove(key, out _);
 
-        return Task.FromResult(new ScreenShareTrackRemoveResult(wasPresentAndNowEmpty, isSharingScreen));
+        return Task.FromResult(new ScreenShareTrackRemoveResult(wasPresentAndNowEmpty));
     }
 
     public Task<bool> ClearScreenShareTracksAsync(
