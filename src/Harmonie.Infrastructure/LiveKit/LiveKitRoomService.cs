@@ -2,6 +2,7 @@ using Harmonie.Application.Interfaces.Channels;
 using Harmonie.Application.Interfaces.Voice;
 using Harmonie.Domain.Enums;
 using Harmonie.Domain.ValueObjects.Channels;
+using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.ValueObjects.Guilds;
 using Harmonie.Domain.ValueObjects.Users;
 using Livekit.Server.Sdk.Dotnet;
@@ -49,7 +50,7 @@ public sealed class LiveKitRoomService : ILiveKitRoomService
 
         foreach (var voiceChannel in voiceChannels)
         {
-            var roomName = BuildRoomName(voiceChannel.Id);
+            var roomName = BuildChannelRoomName(voiceChannel.Id);
             if (!activeRoomNames.Contains(roomName))
             {
                 _logger.LogDebug(
@@ -118,7 +119,7 @@ public sealed class LiveKitRoomService : ILiveKitRoomService
         GuildChannelId channelId,
         CancellationToken ct)
     {
-        var roomName = BuildRoomName(channelId);
+        var roomName = BuildChannelRoomName(channelId);
         var participants = await _roomApiClient.ListParticipantsAsync(roomName, ct);
 
         return participants
@@ -127,6 +128,19 @@ public sealed class LiveKitRoomService : ILiveKitRoomService
             .ToArray();
     }
 
-    private static string BuildRoomName(GuildChannelId channelId)
+    public async Task<IReadOnlyList<VoiceChannelParticipant>> ListConversationParticipantsAsync(
+        ConversationId conversationId,
+        CancellationToken ct)
+    {
+        var roomName = $"conversation:{conversationId}";
+        var participants = await _roomApiClient.ListParticipantsAsync(roomName, ct);
+
+        return participants
+            .Select(TryMapParticipant)
+            .OfType<VoiceChannelParticipant>()
+            .ToArray();
+    }
+
+    private static string BuildChannelRoomName(GuildChannelId channelId)
         => $"{ChannelRoomPrefix}{channelId}";
 }

@@ -7,6 +7,7 @@ using Harmonie.Application.Features.Guilds.CreateGuild;
 using Harmonie.Application.Features.Guilds.GetGuildChannels;
 using Harmonie.Application.Features.Guilds.GetGuildVoiceParticipants;
 using Harmonie.Application.Interfaces.Voice;
+using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.ValueObjects.Guilds;
 using Harmonie.Domain.ValueObjects.Channels;
 using Harmonie.Domain.ValueObjects.Users;
@@ -134,6 +135,11 @@ public sealed class GuildVoiceParticipantsEndpointTests : IClassFixture<Harmonie
 
         public Task<IReadOnlyList<VoiceChannelParticipant>> ListChannelParticipantsAsync(
             GuildChannelId channelId,
+            CancellationToken ct)
+            => Task.FromResult<IReadOnlyList<VoiceChannelParticipant>>([]);
+
+        public Task<IReadOnlyList<VoiceChannelParticipant>> ListConversationParticipantsAsync(
+            ConversationId conversationId,
             CancellationToken ct)
             => Task.FromResult<IReadOnlyList<VoiceChannelParticipant>>([]);
     }

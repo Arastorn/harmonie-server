@@ -1,8 +1,10 @@
 using Harmonie.Application.Common;
 using Harmonie.Application.Interfaces.Channels;
+using Harmonie.Application.Interfaces.Conversations;
 using Harmonie.Application.Interfaces.Voice;
 using Harmonie.Domain.Enums;
 using Harmonie.Domain.ValueObjects.Channels;
+using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.ValueObjects.Users;
 
 namespace Harmonie.Application.Features.Voice.HandleLiveKitWebhook;
@@ -14,23 +16,33 @@ public sealed class HandleLiveKitWebhookHandler : IHandler<HandleLiveKitWebhookR
     private const string TrackPublishedEvent = "track_published";
     private const string TrackUnpublishedEvent = "track_unpublished";
     private const string ChannelRoomPrefix = "channel:";
+    private const string ConversationRoomPrefix = "conversation:";
     private const string ScreenShareSource = "SCREEN_SHARE";
 
     private readonly ILiveKitWebhookReceiver _webhookReceiver;
     private readonly IGuildChannelRepository _guildChannelRepository;
+    private readonly IConversationRepository _conversationRepository;
     private readonly IVoicePresenceNotifier _voicePresenceNotifier;
     private readonly IVoiceParticipantCache _voiceParticipantCache;
+    private readonly IConversationVoicePresenceNotifier _conversationVoicePresenceNotifier;
+    private readonly IConversationVoiceParticipantCache _conversationVoiceParticipantCache;
 
     public HandleLiveKitWebhookHandler(
         ILiveKitWebhookReceiver webhookReceiver,
         IGuildChannelRepository guildChannelRepository,
+        IConversationRepository conversationRepository,
         IVoicePresenceNotifier voicePresenceNotifier,
-        IVoiceParticipantCache voiceParticipantCache)
+        IVoiceParticipantCache voiceParticipantCache,
+        IConversationVoicePresenceNotifier conversationVoicePresenceNotifier,
+        IConversationVoiceParticipantCache conversationVoiceParticipantCache)
     {
         _webhookReceiver = webhookReceiver;
         _guildChannelRepository = guildChannelRepository;
+        _conversationRepository = conversationRepository;
         _voicePresenceNotifier = voicePresenceNotifier;
         _voiceParticipantCache = voiceParticipantCache;
+        _conversationVoicePresenceNotifier = conversationVoicePresenceNotifier;
+        _conversationVoiceParticipantCache = conversationVoiceParticipantCache;
     }
 
     public async Task<ApplicationResponse<HandleLiveKitWebhookResponse>> HandleAsync(
@@ -65,44 +77,44 @@ public sealed class HandleLiveKitWebhookHandler : IHandler<HandleLiveKitWebhookR
             return ApplicationResponse<HandleLiveKitWebhookResponse>.Ok(new(false, eventType));
         }
 
-        if (!TryParseChannelId(webhookEvent.RoomName, out var channelId) || channelId is null)
-        {
-            return ApplicationResponse<HandleLiveKitWebhookResponse>.Ok(new(false, eventType));
-        }
-
         if (!TryParseUserId(webhookEvent.ParticipantIdentity, out var participantUserId) || participantUserId is null)
         {
             return ApplicationResponse<HandleLiveKitWebhookResponse>.Ok(new(false, eventType));
         }
 
-        var result = await _guildChannelRepository.GetWithParticipantAsync(channelId, participantUserId, cancellationToken);
-        if (result is null)
+        if (TryParseChannelId(webhookEvent.RoomName, out var channelId) && channelId is not null)
         {
-            return ApplicationResponse<HandleLiveKitWebhookResponse>.Ok(new(false, eventType));
+            var result = await _guildChannelRepository.GetWithParticipantAsync(channelId, participantUserId, cancellationToken);
+            if (result is null || result.Channel.Type != GuildChannelType.Voice)
+                return ApplicationResponse<HandleLiveKitWebhookResponse>.Ok(new(false, eventType));
+
+            if (eventType == ParticipantJoinedEvent)
+                await HandleParticipantJoinedAsync(result, participantUserId, webhookEvent.OccurredAtUtc, cancellationToken);
+            else if (eventType == ParticipantLeftEvent)
+                await HandleParticipantLeftAsync(result, participantUserId, webhookEvent.OccurredAtUtc, cancellationToken);
+            else if (eventType is TrackPublishedEvent or TrackUnpublishedEvent)
+                await HandleTrackEventAsync(eventType, result, participantUserId, webhookEvent, cancellationToken);
+
+            return ApplicationResponse<HandleLiveKitWebhookResponse>.Ok(new(true, eventType));
         }
 
-        if (result.Channel.Type != GuildChannelType.Voice)
+        if (TryParseConversationId(webhookEvent.RoomName, out var conversationId) && conversationId is not null)
         {
-            return ApplicationResponse<HandleLiveKitWebhookResponse>.Ok(new(false, eventType));
+            var result = await _conversationRepository.GetWithParticipantAsync(conversationId, participantUserId, cancellationToken);
+            if (result is null)
+                return ApplicationResponse<HandleLiveKitWebhookResponse>.Ok(new(false, eventType));
+
+            if (eventType == ParticipantJoinedEvent)
+                await HandleConversationParticipantJoinedAsync(result, participantUserId, webhookEvent.OccurredAtUtc, cancellationToken);
+            else if (eventType == ParticipantLeftEvent)
+                await HandleConversationParticipantLeftAsync(result, participantUserId, webhookEvent.OccurredAtUtc, cancellationToken);
+            else if (eventType is TrackPublishedEvent or TrackUnpublishedEvent)
+                await HandleConversationTrackEventAsync(eventType, result, participantUserId, webhookEvent, cancellationToken);
+
+            return ApplicationResponse<HandleLiveKitWebhookResponse>.Ok(new(true, eventType));
         }
 
-        if (eventType == ParticipantJoinedEvent)
-        {
-            await HandleParticipantJoinedAsync(
-                result, participantUserId, webhookEvent.OccurredAtUtc, cancellationToken);
-        }
-        else if (eventType == ParticipantLeftEvent)
-        {
-            await HandleParticipantLeftAsync(
-                result, participantUserId, webhookEvent.OccurredAtUtc, cancellationToken);
-        }
-        else if (eventType is TrackPublishedEvent or TrackUnpublishedEvent)
-        {
-            await HandleTrackEventAsync(
-                eventType, result, participantUserId, webhookEvent, cancellationToken);
-        }
-
-        return ApplicationResponse<HandleLiveKitWebhookResponse>.Ok(new(true, eventType));
+        return ApplicationResponse<HandleLiveKitWebhookResponse>.Ok(new(false, eventType));
     }
 
     private static bool TryParseChannelId(string? roomName, out GuildChannelId? channelId)
@@ -232,6 +244,23 @@ public sealed class HandleLiveKitWebhookHandler : IHandler<HandleLiveKitWebhookR
         }
     }
 
+    private static bool TryParseConversationId(string? roomName, out ConversationId? conversationId)
+    {
+        conversationId = null;
+
+        if (string.IsNullOrWhiteSpace(roomName)
+            || !roomName.StartsWith(ConversationRoomPrefix, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        var rawConversationId = roomName[ConversationRoomPrefix.Length..];
+        if (!ConversationId.TryParse(rawConversationId, out conversationId) || conversationId is null)
+            return false;
+
+        return true;
+    }
+
     private static bool TryParseUserId(string? participantIdentity, out UserId? userId)
     {
         userId = null;
@@ -243,5 +272,106 @@ public sealed class HandleLiveKitWebhookHandler : IHandler<HandleLiveKitWebhookR
             return false;
 
         return true;
+    }
+
+    private async Task HandleConversationParticipantJoinedAsync(
+        ConversationWithParticipant result,
+        UserId participantUserId,
+        DateTime occurredAtUtc,
+        CancellationToken ct)
+    {
+        await _conversationVoiceParticipantCache.AddOrUpdateAsync(
+            result.Conversation.Id,
+            new CachedVoiceParticipant(
+                UserId: participantUserId,
+                Username: result.Participant?.Username.Value,
+                DisplayName: result.Participant?.DisplayName,
+                AvatarFileId: result.Participant?.AvatarFileId,
+                AvatarColor: result.Participant?.AvatarColor,
+                AvatarIcon: result.Participant?.AvatarIcon,
+                AvatarBg: result.Participant?.AvatarBg),
+            ct);
+
+        await _conversationVoicePresenceNotifier.NotifyParticipantJoinedAsync(
+            new ConversationVoiceParticipantJoinedNotification(
+                ConversationId: result.Conversation.Id,
+                UserId: participantUserId,
+                Username: result.Participant?.Username.Value,
+                DisplayName: result.Participant?.DisplayName,
+                AvatarFileId: result.Participant?.AvatarFileId,
+                AvatarColor: result.Participant?.AvatarColor,
+                AvatarIcon: result.Participant?.AvatarIcon,
+                AvatarBg: result.Participant?.AvatarBg,
+                JoinedAtUtc: occurredAtUtc),
+            ct);
+    }
+
+    private async Task HandleConversationParticipantLeftAsync(
+        ConversationWithParticipant result,
+        UserId participantUserId,
+        DateTime occurredAtUtc,
+        CancellationToken ct)
+    {
+        // Clear screen share tracks for safety (LiveKit sends track_unpublished before participant_left,
+        // but we clean up here as a safety net).
+        await _conversationVoiceParticipantCache.ClearScreenShareTracksAsync(
+            result.Conversation.Id, participantUserId, ct);
+
+        await _conversationVoiceParticipantCache.RemoveAsync(result.Conversation.Id, participantUserId, ct);
+
+        await _conversationVoicePresenceNotifier.NotifyParticipantLeftAsync(
+            new ConversationVoiceParticipantLeftNotification(
+                ConversationId: result.Conversation.Id,
+                UserId: participantUserId,
+                Username: result.Participant?.Username.Value,
+                LeftAtUtc: occurredAtUtc),
+            ct);
+    }
+
+    private async Task HandleConversationTrackEventAsync(
+        string eventType,
+        ConversationWithParticipant result,
+        UserId participantUserId,
+        LiveKitWebhookEvent webhookEvent,
+        CancellationToken ct)
+    {
+        if (webhookEvent.Track is null)
+            return;
+
+        var track = webhookEvent.Track;
+
+        // Only process ScreenShare tracks. Ignore SCREEN_SHARE_AUDIO, CAMERA, MICROPHONE.
+        if (track.Source != ScreenShareSource)
+            return;
+
+        var conversationId = result.Conversation.Id;
+        var username = result.Participant?.Username.Value;
+
+        if (eventType == TrackPublishedEvent)
+        {
+            var addResult = await _conversationVoiceParticipantCache.TryAddScreenShareTrackAsync(
+                conversationId, participantUserId, track.Sid, ct);
+
+            if (addResult.IsFirst)
+            {
+                await _conversationVoicePresenceNotifier.NotifyScreenShareStartedAsync(
+                    new ConversationVoiceScreenShareNotification(
+                        conversationId, participantUserId, username, webhookEvent.OccurredAtUtc),
+                    ct);
+            }
+        }
+        else if (eventType == TrackUnpublishedEvent)
+        {
+            var removeResult = await _conversationVoiceParticipantCache.TryRemoveScreenShareTrackAsync(
+                conversationId, participantUserId, track.Sid, ct);
+
+            if (removeResult.IsLast)
+            {
+                await _conversationVoicePresenceNotifier.NotifyScreenShareStoppedAsync(
+                    new ConversationVoiceScreenShareNotification(
+                        conversationId, participantUserId, username, webhookEvent.OccurredAtUtc),
+                    ct);
+            }
+        }
     }
 }

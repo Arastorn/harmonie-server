@@ -1,5 +1,8 @@
 using Harmonie.Application.Common;
 using Harmonie.Application.Features.Conversations.AcknowledgeRead;
+using Harmonie.Application.Features.Conversations.GetConversationVoiceParticipants;
+using Harmonie.Application.Features.Conversations.JoinConversationVoice;
+using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Application.Features.Conversations.AddReaction;
 using Harmonie.Application.Features.Conversations.CreateGroupConversation;
 using Harmonie.Application.Features.Conversations.DeleteConversation;
@@ -49,6 +52,10 @@ public static class ConversationRegistration
         services.AddAuthenticatedHandler<ConversationPinMessageInput, bool, PinMessageHandler>();
         services.AddAuthenticatedHandler<ConversationUnpinMessageInput, bool, UnpinMessageHandler>();
         services.AddAuthenticatedHandler<GetConversationPinnedMessagesInput, GetConversationPinnedMessagesResponse, GetPinnedMessagesHandler>();
+
+        // Voice
+        services.AddAuthenticatedHandler<ConversationId, JoinConversationVoiceResponse, JoinConversationVoiceHandler>();
+        services.AddAuthenticatedHandler<ConversationId, GetConversationVoiceParticipantsResponse, GetConversationVoiceParticipantsHandler>();
 
         return services;
     }

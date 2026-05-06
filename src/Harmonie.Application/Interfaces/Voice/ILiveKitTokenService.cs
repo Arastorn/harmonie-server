@@ -1,4 +1,5 @@
 using Harmonie.Domain.ValueObjects.Channels;
+using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.ValueObjects.Users;
 
 namespace Harmonie.Application.Interfaces.Voice;
@@ -12,6 +13,12 @@ public interface ILiveKitTokenService
 {
     Task<LiveKitRoomToken> GenerateRoomTokenAsync(
         GuildChannelId channelId,
+        UserId userId,
+        string username,
+        CancellationToken ct);
+
+    Task<LiveKitRoomToken> GenerateConversationRoomTokenAsync(
+        ConversationId conversationId,
         UserId userId,
         string username,
         CancellationToken ct);

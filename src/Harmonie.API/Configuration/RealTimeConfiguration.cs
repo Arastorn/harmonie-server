@@ -5,6 +5,7 @@ using Harmonie.API.RealTime.Guilds;
 using Harmonie.API.RealTime.Messages;
 using Harmonie.API.RealTime.Users;
 using Harmonie.API.RealTime.Voice;
+using Harmonie.API.RealTime.Voice.Conversations;
 using Harmonie.API.SignalRDoc.Extensions;
 using Harmonie.Application.Interfaces.Channels;
 using Harmonie.Application.Interfaces.Common;
@@ -26,6 +27,8 @@ public static class RealTimeConfiguration
         services.AddScoped<IGuildNotifier, SignalRGuildNotifier>();
         services.AddScoped<IVoicePresenceNotifier, SignalRVoicePresenceNotifier>();
         services.AddSingleton<IVoiceParticipantCache, InMemoryVoiceParticipantCache>();
+        services.AddScoped<IConversationVoicePresenceNotifier, SignalRConversationVoicePresenceNotifier>();
+        services.AddSingleton<IConversationVoiceParticipantCache, InMemoryConversationVoiceParticipantCache>();
         services.AddScoped<IConversationMessageNotifier, SignalRConversationMessageNotifier>();
         services.AddScoped<IConversationNotifier, SignalRConversationNotifier>();
         services.AddScoped<IUserPresenceNotifier, SignalRUserPresenceNotifier>();

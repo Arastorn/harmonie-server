@@ -3,10 +3,12 @@ using Harmonie.Application.Common;
 using Harmonie.Application.Features.Voice.HandleLiveKitWebhook;
 using Harmonie.Application.Tests.Common;
 using Harmonie.Application.Interfaces.Channels;
+using Harmonie.Application.Interfaces.Conversations;
 using Harmonie.Application.Interfaces.Voice;
 using Harmonie.Domain.Entities.Guilds;
 using Harmonie.Domain.Enums;
 using Harmonie.Domain.ValueObjects.Channels;
+using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.ValueObjects.Uploads;
 using Harmonie.Domain.ValueObjects.Users;
 using Moq;
@@ -18,22 +20,31 @@ public sealed class HandleLiveKitWebhookHandlerTests
 {
     private readonly Mock<ILiveKitWebhookReceiver> _webhookReceiverMock;
     private readonly Mock<IGuildChannelRepository> _guildChannelRepositoryMock;
+    private readonly Mock<IConversationRepository> _conversationRepositoryMock;
     private readonly Mock<IVoicePresenceNotifier> _voicePresenceNotifierMock;
     private readonly Mock<IVoiceParticipantCache> _voiceParticipantCacheMock;
+    private readonly Mock<IConversationVoicePresenceNotifier> _conversationVoicePresenceNotifierMock;
+    private readonly Mock<IConversationVoiceParticipantCache> _conversationVoiceParticipantCacheMock;
     private readonly HandleLiveKitWebhookHandler _handler;
 
     public HandleLiveKitWebhookHandlerTests()
     {
         _webhookReceiverMock = new Mock<ILiveKitWebhookReceiver>();
         _guildChannelRepositoryMock = new Mock<IGuildChannelRepository>();
+        _conversationRepositoryMock = new Mock<IConversationRepository>();
         _voicePresenceNotifierMock = new Mock<IVoicePresenceNotifier>();
         _voiceParticipantCacheMock = new Mock<IVoiceParticipantCache>();
+        _conversationVoicePresenceNotifierMock = new Mock<IConversationVoicePresenceNotifier>();
+        _conversationVoiceParticipantCacheMock = new Mock<IConversationVoiceParticipantCache>();
 
         _handler = new HandleLiveKitWebhookHandler(
             _webhookReceiverMock.Object,
             _guildChannelRepositoryMock.Object,
+            _conversationRepositoryMock.Object,
             _voicePresenceNotifierMock.Object,
-            _voiceParticipantCacheMock.Object);
+            _voiceParticipantCacheMock.Object,
+            _conversationVoicePresenceNotifierMock.Object,
+            _conversationVoiceParticipantCacheMock.Object);
     }
 
     [Fact]
@@ -592,6 +603,224 @@ public sealed class HandleLiveKitWebhookHandlerTests
             x => x.TryRemoveScreenShareTrackAsync(
                 It.IsAny<GuildChannelId>(), It.IsAny<UserId>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
+    }
+
+    // ─── Conversation voice webhook tests ─────────────────────────────────────
+
+    [Fact]
+    public async Task HandleAsync_WhenConversationParticipantJoined_ShouldAddToCacheAndNotify()
+    {
+        var conversationId = ConversationId.New();
+        var participantUserId = UserId.New();
+        var request = new HandleLiveKitWebhookRequest("{}", "Bearer token");
+        var occurredAt = DateTime.UtcNow;
+        var conversation = Harmonie.Domain.Entities.Conversations.Conversation.Rehydrate(
+            conversationId,
+            Harmonie.Domain.Entities.Conversations.ConversationType.Direct,
+            null,
+            DateTime.UtcNow);
+
+        _webhookReceiverMock
+            .Setup(x => x.Receive(request.RawBody, request.AuthorizationHeader!))
+            .Returns(LiveKitWebhookReceiveResult.Ok(
+                new LiveKitWebhookEvent(
+                    "participant_joined",
+                    $"conversation:{conversationId}",
+                    participantUserId.ToString(),
+                    "alice",
+                    occurredAt)));
+
+        _conversationRepositoryMock
+            .Setup(x => x.GetWithParticipantAsync(conversationId, participantUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConversationWithParticipant(conversation, null));
+
+        _conversationVoiceParticipantCacheMock
+            .Setup(x => x.AddOrUpdateAsync(conversationId, It.IsAny<CachedVoiceParticipant>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var response = await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
+
+        response.Success.Should().BeTrue();
+        response.Data!.Processed.Should().BeTrue();
+
+        _conversationVoiceParticipantCacheMock.Verify(
+            x => x.AddOrUpdateAsync(conversationId, It.IsAny<CachedVoiceParticipant>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+
+        _conversationVoicePresenceNotifierMock.Verify(
+            x => x.NotifyParticipantJoinedAsync(
+                It.Is<ConversationVoiceParticipantJoinedNotification>(n =>
+                    n.ConversationId == conversationId
+                    && n.UserId == participantUserId
+                    && n.JoinedAtUtc == occurredAt),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenConversationParticipantLeft_ShouldClearTracksRemoveAndNotify()
+    {
+        var conversationId = ConversationId.New();
+        var participantUserId = UserId.New();
+        var request = new HandleLiveKitWebhookRequest("{}", "Bearer token");
+        var occurredAt = DateTime.UtcNow;
+        var conversation = Harmonie.Domain.Entities.Conversations.Conversation.Rehydrate(
+            conversationId,
+            Harmonie.Domain.Entities.Conversations.ConversationType.Direct,
+            null,
+            DateTime.UtcNow);
+
+        _webhookReceiverMock
+            .Setup(x => x.Receive(request.RawBody, request.AuthorizationHeader!))
+            .Returns(LiveKitWebhookReceiveResult.Ok(
+                new LiveKitWebhookEvent(
+                    "participant_left",
+                    $"conversation:{conversationId}",
+                    participantUserId.ToString(),
+                    "alice",
+                    occurredAt)));
+
+        _conversationRepositoryMock
+            .Setup(x => x.GetWithParticipantAsync(conversationId, participantUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConversationWithParticipant(conversation, null));
+
+        _conversationVoiceParticipantCacheMock
+            .Setup(x => x.ClearScreenShareTracksAsync(conversationId, participantUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var response = await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
+
+        response.Success.Should().BeTrue();
+        response.Data!.Processed.Should().BeTrue();
+
+        _conversationVoiceParticipantCacheMock.Verify(
+            x => x.ClearScreenShareTracksAsync(conversationId, participantUserId, It.IsAny<CancellationToken>()),
+            Times.Once);
+
+        _conversationVoiceParticipantCacheMock.Verify(
+            x => x.RemoveAsync(conversationId, participantUserId, It.IsAny<CancellationToken>()),
+            Times.Once);
+
+        _conversationVoicePresenceNotifierMock.Verify(
+            x => x.NotifyParticipantLeftAsync(
+                It.Is<ConversationVoiceParticipantLeftNotification>(n =>
+                    n.ConversationId == conversationId
+                    && n.UserId == participantUserId),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenConversationScreenShareStarted_ShouldNotifyScreenShareStarted()
+    {
+        var conversationId = ConversationId.New();
+        var participantUserId = UserId.New();
+        var trackSid = "TR_screen_conv_001";
+        var request = new HandleLiveKitWebhookRequest("{}", "Bearer token");
+        var conversation = Harmonie.Domain.Entities.Conversations.Conversation.Rehydrate(
+            conversationId,
+            Harmonie.Domain.Entities.Conversations.ConversationType.Direct,
+            null,
+            DateTime.UtcNow);
+
+        _webhookReceiverMock
+            .Setup(x => x.Receive(request.RawBody, request.AuthorizationHeader!))
+            .Returns(LiveKitWebhookReceiveResult.Ok(
+                new LiveKitWebhookEvent(
+                    "track_published",
+                    $"conversation:{conversationId}",
+                    participantUserId.ToString(),
+                    "alice",
+                    DateTime.UtcNow,
+                    new LiveKitTrackInfo(trackSid, "SCREEN_SHARE", "VIDEO", false, 1920, 1080))));
+
+        _conversationRepositoryMock
+            .Setup(x => x.GetWithParticipantAsync(conversationId, participantUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConversationWithParticipant(conversation, null));
+
+        _conversationVoiceParticipantCacheMock
+            .Setup(x => x.TryAddScreenShareTrackAsync(conversationId, participantUserId, trackSid, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ScreenShareTrackAddResult(true));
+
+        await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
+
+        _conversationVoicePresenceNotifierMock.Verify(
+            x => x.NotifyScreenShareStartedAsync(
+                It.Is<ConversationVoiceScreenShareNotification>(n =>
+                    n.ConversationId == conversationId
+                    && n.UserId == participantUserId),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenConversationScreenShareStopped_ShouldNotifyScreenShareStopped()
+    {
+        var conversationId = ConversationId.New();
+        var participantUserId = UserId.New();
+        var trackSid = "TR_screen_conv_001";
+        var request = new HandleLiveKitWebhookRequest("{}", "Bearer token");
+        var conversation = Harmonie.Domain.Entities.Conversations.Conversation.Rehydrate(
+            conversationId,
+            Harmonie.Domain.Entities.Conversations.ConversationType.Direct,
+            null,
+            DateTime.UtcNow);
+
+        _webhookReceiverMock
+            .Setup(x => x.Receive(request.RawBody, request.AuthorizationHeader!))
+            .Returns(LiveKitWebhookReceiveResult.Ok(
+                new LiveKitWebhookEvent(
+                    "track_unpublished",
+                    $"conversation:{conversationId}",
+                    participantUserId.ToString(),
+                    "alice",
+                    DateTime.UtcNow,
+                    new LiveKitTrackInfo(trackSid, "SCREEN_SHARE", "VIDEO", false, 1920, 1080))));
+
+        _conversationRepositoryMock
+            .Setup(x => x.GetWithParticipantAsync(conversationId, participantUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConversationWithParticipant(conversation, null));
+
+        _conversationVoiceParticipantCacheMock
+            .Setup(x => x.TryRemoveScreenShareTrackAsync(conversationId, participantUserId, trackSid, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ScreenShareTrackRemoveResult(true));
+
+        await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
+
+        _conversationVoicePresenceNotifierMock.Verify(
+            x => x.NotifyScreenShareStoppedAsync(
+                It.Is<ConversationVoiceScreenShareNotification>(n =>
+                    n.ConversationId == conversationId
+                    && n.UserId == participantUserId),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenConversationNotFound_ShouldNotProcess()
+    {
+        var conversationId = ConversationId.New();
+        var participantUserId = UserId.New();
+        var request = new HandleLiveKitWebhookRequest("{}", "Bearer token");
+
+        _webhookReceiverMock
+            .Setup(x => x.Receive(request.RawBody, request.AuthorizationHeader!))
+            .Returns(LiveKitWebhookReceiveResult.Ok(
+                new LiveKitWebhookEvent(
+                    "participant_joined",
+                    $"conversation:{conversationId}",
+                    participantUserId.ToString(),
+                    "alice",
+                    DateTime.UtcNow)));
+
+        _conversationRepositoryMock
+            .Setup(x => x.GetWithParticipantAsync(conversationId, participantUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ConversationWithParticipant?)null);
+
+        var response = await _handler.HandleAsync(request, TestContext.Current.CancellationToken);
+
+        response.Success.Should().BeTrue();
+        response.Data!.Processed.Should().BeFalse();
     }
 
 }

@@ -4,6 +4,7 @@ using Harmonie.API.RealTime.Guilds;
 using Harmonie.API.RealTime.Messages;
 using Harmonie.API.RealTime.Users;
 using Harmonie.API.RealTime.Voice;
+using Harmonie.API.RealTime.Voice.Conversations;
 
 namespace Harmonie.API.RealTime.Common;
 
@@ -29,11 +30,17 @@ public interface IRealtimeClient
     Task ConversationMessageUpdated(ConversationMessageUpdatedEvent payload, CancellationToken cancellationToken = default);
     Task ConversationMessageDeleted(ConversationMessageDeletedEvent payload, CancellationToken cancellationToken = default);
 
-    // Voice
+    // Voice (guild channels)
     Task VoiceParticipantJoined(VoiceParticipantJoinedEvent payload, CancellationToken cancellationToken = default);
     Task VoiceParticipantLeft(VoiceParticipantLeftEvent payload, CancellationToken cancellationToken = default);
     Task VoiceScreenShareStarted(VoiceScreenShareEvent payload, CancellationToken cancellationToken = default);
     Task VoiceScreenShareStopped(VoiceScreenShareEvent payload, CancellationToken cancellationToken = default);
+
+    // Voice (conversations)
+    Task ConversationVoiceParticipantJoined(ConversationVoiceParticipantJoinedEvent payload, CancellationToken cancellationToken = default);
+    Task ConversationVoiceParticipantLeft(ConversationVoiceParticipantLeftEvent payload, CancellationToken cancellationToken = default);
+    Task ConversationVoiceScreenShareStarted(ConversationVoiceScreenShareEvent payload, CancellationToken cancellationToken = default);
+    Task ConversationVoiceScreenShareStopped(ConversationVoiceScreenShareEvent payload, CancellationToken cancellationToken = default);
 
     // Guilds
     Task GuildDeleted(GuildDeletedEvent payload, CancellationToken cancellationToken = default);

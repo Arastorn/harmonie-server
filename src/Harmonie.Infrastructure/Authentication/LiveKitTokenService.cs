@@ -1,5 +1,6 @@
 using Harmonie.Application.Interfaces.Voice;
 using Harmonie.Domain.ValueObjects.Channels;
+using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.ValueObjects.Users;
 using Harmonie.Infrastructure.Configuration;
 using Livekit.Server.Sdk.Dotnet;
@@ -19,13 +20,26 @@ public sealed class LiveKitTokenService : ILiveKitTokenService
         string username,
         CancellationToken ct)
     {
-        var roomName = $"channel:{channelId}";
+        return Task.FromResult(BuildToken($"channel:{channelId}", userId, username));
+    }
+
+    public Task<LiveKitRoomToken> GenerateConversationRoomTokenAsync(
+        ConversationId conversationId,
+        UserId userId,
+        string username,
+        CancellationToken ct)
+    {
+        return Task.FromResult(BuildToken($"conversation:{conversationId}", userId, username));
+    }
+
+    private LiveKitRoomToken BuildToken(string roomName, UserId userId, string username)
+    {
         var jwt = new AccessToken(_settings.ApiKey, _settings.ApiSecret)
             .WithIdentity(userId.ToString())
             .WithName(username)
             .WithGrants(new VideoGrants { RoomJoin = true, Room = roomName })
             .ToJwt();
 
-        return Task.FromResult(new LiveKitRoomToken(jwt, _settings.PublicUrl, roomName));
+        return new LiveKitRoomToken(jwt, _settings.PublicUrl, roomName);
     }
 }

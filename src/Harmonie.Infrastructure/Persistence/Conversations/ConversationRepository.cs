@@ -2,6 +2,7 @@ using Dapper;
 using Harmonie.Application.Interfaces.Conversations;
 using Harmonie.Domain.Entities.Conversations;
 using Harmonie.Domain.ValueObjects.Conversations;
+using Harmonie.Domain.ValueObjects.Uploads;
 using Harmonie.Domain.ValueObjects.Users;
 using Harmonie.Infrastructure.Persistence.Common;
 using Harmonie.Infrastructure.Rows.Conversations;
@@ -272,6 +273,63 @@ public sealed class ConversationRepository : IConversationRepository
         return new ConversationAccess(conversation, participant, row.Username, row.DisplayName);
     }
 
+    public async Task<ConversationWithParticipant?> GetWithParticipantAsync(
+        ConversationId conversationId,
+        UserId userId,
+        CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+                           SELECT c.id              AS "Id",
+                                  c.type            AS "Type",
+                                  c.name            AS "Name",
+                                  c.created_at_utc  AS "CreatedAtUtc",
+                                  cp.user_id        AS "ParticipantUserId",
+                                  u.username        AS "Username",
+                                  u.display_name    AS "DisplayName",
+                                  u.avatar_file_id  AS "AvatarFileId",
+                                  u.avatar_color    AS "AvatarColor",
+                                  u.avatar_icon     AS "AvatarIcon",
+                                  u.avatar_bg       AS "AvatarBg"
+                           FROM conversations c
+                           LEFT JOIN conversation_participants cp
+                             ON cp.conversation_id = c.id AND cp.user_id = @UserId
+                           LEFT JOIN users u
+                             ON u.id = @UserId
+                            AND u.deleted_at IS NULL
+                           WHERE c.id = @ConversationId
+                           """;
+
+        var connection = await _dbSession.GetOpenConnectionAsync(cancellationToken);
+        var command = new CommandDefinition(
+            sql,
+            new { ConversationId = conversationId.Value, UserId = userId.Value },
+            transaction: _dbSession.Transaction,
+            cancellationToken: cancellationToken);
+
+        var row = await connection.QueryFirstOrDefaultAsync<ConversationWithParticipantProfileRow>(command);
+        if (row is null)
+            return null;
+
+        var conversation = MapToConversation(row);
+
+        if (row.ParticipantUserId is null || row.Username is null)
+            return new ConversationWithParticipant(conversation, null);
+
+        var usernameResult = Username.Create(row.Username);
+        if (usernameResult.IsFailure || usernameResult.Value is null)
+            throw new InvalidOperationException("Stored username is invalid.");
+
+        var profile = new ConversationParticipantProfile(
+            usernameResult.Value,
+            row.DisplayName,
+            row.AvatarFileId.HasValue ? UploadedFileId.From(row.AvatarFileId.Value) : null,
+            row.AvatarColor,
+            row.AvatarIcon,
+            row.AvatarBg);
+
+        return new ConversationWithParticipant(conversation, profile);
+    }
+
     public async Task DeleteAsync(
         ConversationId conversationId,
         CancellationToken cancellationToken = default)
@@ -359,5 +417,37 @@ public sealed class ConversationRepository : IConversationRepository
 
         public string? DisplayName { get; init; }
     }
+
+    private sealed class ConversationWithParticipantProfileRow
+    {
+        public Guid Id { get; init; }
+
+        public string Type { get; init; } = string.Empty;
+
+        public string? Name { get; init; }
+
+        public DateTime CreatedAtUtc { get; init; }
+
+        public Guid? ParticipantUserId { get; init; }
+
+        public string? Username { get; init; }
+
+        public string? DisplayName { get; init; }
+
+        public Guid? AvatarFileId { get; init; }
+
+        public string? AvatarColor { get; init; }
+
+        public string? AvatarIcon { get; init; }
+
+        public string? AvatarBg { get; init; }
+    }
+
+    private static Conversation MapToConversation(ConversationWithParticipantProfileRow row)
+        => Conversation.Rehydrate(
+            ConversationId.From(row.Id),
+            ParseConversationType(row.Type),
+            row.Name,
+            row.CreatedAtUtc);
 
 }
