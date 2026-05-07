@@ -1,5 +1,6 @@
 using Harmonie.Domain.Entities.Conversations;
 using Harmonie.Domain.ValueObjects.Conversations;
+using Harmonie.Domain.ValueObjects.Uploads;
 using Harmonie.Domain.ValueObjects.Users;
 
 namespace Harmonie.Application.Interfaces.Conversations;
@@ -12,6 +13,18 @@ public sealed record ConversationParticipantSummary(
     string? AvatarColor,
     string? AvatarIcon,
     string? AvatarBg);
+
+public sealed record ConversationParticipantProfile(
+    Username Username,
+    string? DisplayName,
+    UploadedFileId? AvatarFileId,
+    string? AvatarColor,
+    string? AvatarIcon,
+    string? AvatarBg);
+
+public sealed record ConversationWithParticipant(
+    Conversation Conversation,
+    ConversationParticipantProfile? Participant);
 
 public sealed record ConversationGetOrCreateResult(Conversation Conversation, bool WasCreated);
 
@@ -49,6 +62,11 @@ public interface IConversationRepository
         CancellationToken cancellationToken = default);
 
     Task<ConversationAccess?> GetByIdWithParticipantCheckAsync(
+        ConversationId conversationId,
+        UserId userId,
+        CancellationToken cancellationToken = default);
+
+    Task<ConversationWithParticipant?> GetWithParticipantAsync(
         ConversationId conversationId,
         UserId userId,
         CancellationToken cancellationToken = default);

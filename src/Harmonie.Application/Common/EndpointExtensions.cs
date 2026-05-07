@@ -335,6 +335,7 @@ public static class EndpointExtensions
             ApplicationErrorCodes.Conversation.CannotOpenSelf => HttpStatusCode.BadRequest,
             ApplicationErrorCodes.Conversation.AccessDenied => HttpStatusCode.Forbidden,
             ApplicationErrorCodes.Conversation.InvalidConversationType => HttpStatusCode.BadRequest,
+            ApplicationErrorCodes.Conversation.VoiceAccessDenied => HttpStatusCode.Forbidden,
             ApplicationErrorCodes.Reaction.MessageNotFound => HttpStatusCode.NotFound,
             ApplicationErrorCodes.Pin.MessageNotFound => HttpStatusCode.NotFound,
             ApplicationErrorCodes.Pin.AlreadyPinned => HttpStatusCode.Conflict,

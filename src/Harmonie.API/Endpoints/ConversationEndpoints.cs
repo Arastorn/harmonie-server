@@ -1,5 +1,7 @@
 using Harmonie.Application.Features.Conversations.CreateGroupConversation;
 using Harmonie.Application.Features.Conversations.DeleteConversation;
+using Harmonie.Application.Features.Conversations.GetConversationVoiceParticipants;
+using Harmonie.Application.Features.Conversations.JoinConversationVoice;
 using Harmonie.Application.Features.Conversations.ListConversations;
 using Harmonie.Application.Features.Conversations.OpenConversation;
 using Harmonie.Application.Features.Conversations.SearchConversationMessages;
@@ -47,5 +49,9 @@ public static class ConversationEndpoints
         ConversationPinMessage.Map(app);
         ConversationUnpinMessage.Map(app);
         ConversationGetPinnedMessages.Map(app);
+
+        // Voice
+        JoinConversationVoiceEndpoint.Map(app);
+        GetConversationVoiceParticipantsEndpoint.Map(app);
     }
 }

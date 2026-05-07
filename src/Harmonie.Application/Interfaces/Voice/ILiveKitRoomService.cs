@@ -1,5 +1,6 @@
 using Harmonie.Domain.ValueObjects.Guilds;
 using Harmonie.Domain.ValueObjects.Channels;
+using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.ValueObjects.Users;
 
 namespace Harmonie.Application.Interfaces.Voice;
@@ -12,6 +13,10 @@ public interface ILiveKitRoomService
 
     Task<IReadOnlyList<VoiceChannelParticipant>> ListChannelParticipantsAsync(
         GuildChannelId channelId,
+        CancellationToken ct);
+
+    Task<IReadOnlyList<VoiceChannelParticipant>> ListConversationParticipantsAsync(
+        ConversationId conversationId,
         CancellationToken ct);
 }
 
