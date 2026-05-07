@@ -137,59 +137,53 @@ public sealed class GuildMemberRepository : IGuildMemberRepository
         UserId userId,
         CancellationToken cancellationToken = default)
     {
-        const string sql = """
-                           WITH last_read AS (
-                               SELECT crs.channel_id,
-                                      m.created_at_utc AS boundary_at,
-                                      m.id             AS boundary_id
-                               FROM channel_read_states crs
-                               JOIN messages m ON m.id = crs.last_read_message_id
-                               WHERE crs.user_id = @UserId
-                           )
-                           SELECT g.id             AS "GuildId",
-                                  g.name           AS "GuildName",
-                                  g.owner_user_id  AS "OwnerUserId",
-                                  g.icon_file_id   AS "IconFileId",
-                                  g.icon_color     AS "IconColor",
-                                  g.icon_name      AS "IconName",
-                                  g.icon_bg        AS "IconBg",
-                                  g.created_at_utc AS "GuildCreatedAtUtc",
-                                  g.updated_at_utc AS "GuildUpdatedAtUtc",
-                                  gm.role          AS "Role",
-                                  gm.joined_at_utc AS "JoinedAtUtc",
-                                  EXISTS (
-                                      SELECT 1
-                                      FROM guild_channels gc
-                                      LEFT JOIN last_read lr ON lr.channel_id = gc.id
-                                      WHERE gc.guild_id = g.id
-                                        AND gc.type = 1
-                                        AND EXISTS (
-                                            SELECT 1
-                                            FROM messages m
-                                            WHERE m.channel_id = gc.id
-                                              AND m.deleted_at_utc IS NULL
-                                              AND m.author_user_id != @UserId
-                                              AND (
-                                                  lr.boundary_id IS NULL
-                                                  OR (m.created_at_utc, m.id) > (lr.boundary_at, lr.boundary_id)
-                                              )
-                                        )
-                                  ) AS "HasUnread"
-                           FROM guild_members gm
-                           INNER JOIN guilds g ON g.id = gm.guild_id
-                           WHERE gm.user_id = @UserId
-                           ORDER BY gm.joined_at_utc DESC, gm.guild_id ASC
-                           """;
+        const string membershipsSql = """
+                                     SELECT g.id             AS "GuildId",
+                                            g.name           AS "GuildName",
+                                            g.owner_user_id  AS "OwnerUserId",
+                                            g.icon_file_id   AS "IconFileId",
+                                            g.icon_color     AS "IconColor",
+                                            g.icon_name      AS "IconName",
+                                            g.icon_bg        AS "IconBg",
+                                            g.created_at_utc AS "GuildCreatedAtUtc",
+                                            g.updated_at_utc AS "GuildUpdatedAtUtc",
+                                            gm.role          AS "Role",
+                                            gm.joined_at_utc AS "JoinedAtUtc"
+                                     FROM guild_members gm
+                                     INNER JOIN guilds g ON g.id = gm.guild_id
+                                     WHERE gm.user_id = @UserId
+                                     ORDER BY gm.joined_at_utc DESC, gm.guild_id ASC;
+
+                                     SELECT DISTINCT gc.guild_id AS "GuildId"
+                                     FROM guild_channels gc
+                                     JOIN messages m ON m.channel_id = gc.id
+                                     LEFT JOIN channel_read_states crs
+                                            ON crs.channel_id = gc.id AND crs.user_id = @UserId
+                                     LEFT JOIN messages lrm ON lrm.id = crs.last_read_message_id
+                                     WHERE gc.type = 1
+                                       AND m.deleted_at_utc IS NULL
+                                       AND m.author_user_id != @UserId
+                                       AND (
+                                           crs.last_read_message_id IS NULL
+                                           OR (m.created_at_utc, m.id) > (lrm.created_at_utc, lrm.id)
+                                       )
+                                       AND gc.guild_id IN (
+                                           SELECT guild_id FROM guild_members WHERE user_id = @UserId
+                                       )
+                                     """;
 
         var connection = await _dbSession.GetOpenConnectionAsync(cancellationToken);
         var command = new CommandDefinition(
-            sql,
+            membershipsSql,
             new { UserId = userId.Value },
             transaction: _dbSession.Transaction,
             cancellationToken: cancellationToken);
 
-        var rows = await connection.QueryAsync<UserGuildMembershipRow>(command);
-        return rows.Select(MapToUserGuildMembership).ToArray();
+        using var multi = await connection.QueryMultipleAsync(command);
+        var rows = await multi.ReadAsync<UserGuildMembershipRow>();
+        var unreadGuildIds = (await multi.ReadAsync<Guid>()).ToHashSet();
+
+        return rows.Select(row => MapToUserGuildMembership(row, unreadGuildIds)).ToArray();
     }
 
     public async Task<IReadOnlyList<GuildMemberUser>> GetGuildMembersAsync(
@@ -279,7 +273,7 @@ public sealed class GuildMemberRepository : IGuildMemberRepository
         return await connection.ExecuteAsync(command);
     }
 
-    private static UserGuildMembership MapToUserGuildMembership(UserGuildMembershipRow row)
+    private static UserGuildMembership MapToUserGuildMembership(UserGuildMembershipRow row, HashSet<Guid> unreadGuildIds)
     {
         if (!Enum.IsDefined(typeof(GuildRole), row.Role))
             throw new InvalidOperationException("Stored guild role is invalid.");
@@ -303,7 +297,7 @@ public sealed class GuildMemberRepository : IGuildMemberRepository
             guild,
             (GuildRole)row.Role,
             row.JoinedAtUtc,
-            row.HasUnread);
+            HasUnread: unreadGuildIds.Contains(row.GuildId));
     }
 
     private static GuildMemberUser MapToGuildMemberUser(GuildMemberUserRow row)
