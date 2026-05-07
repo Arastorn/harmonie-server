@@ -292,6 +292,65 @@ public sealed class ConversationRepository : IConversationRepository
         return new ConversationAccess(conversation, participant, row.Username, row.DisplayName);
     }
 
+    public async Task<ConversationAccessWithAllParticipants?> GetByIdWithAllParticipantsAsync(
+        ConversationId conversationId,
+        UserId callerId,
+        CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+                           SELECT c.id               AS "Id",
+                                  c.type             AS "Type",
+                                  c.name             AS "Name",
+                                  c.created_at_utc   AS "CreatedAtUtc",
+                                  u.username         AS "CallerUsername",
+                                  u.display_name     AS "CallerDisplayName"
+                           FROM conversations c
+                           LEFT JOIN users u ON u.id = @CallerId AND u.deleted_at IS NULL
+                           WHERE c.id = @ConversationId;
+
+                           SELECT cp.user_id       AS "UserId",
+                                  cp.joined_at_utc AS "JoinedAtUtc",
+                                  cp.hidden_at_utc AS "HiddenAtUtc"
+                           FROM conversation_participants cp
+                           WHERE cp.conversation_id = @ConversationId
+                           """;
+
+        var connection = await _dbSession.GetOpenConnectionAsync(cancellationToken);
+        var command = new CommandDefinition(
+            sql,
+            new { ConversationId = conversationId.Value, CallerId = callerId.Value },
+            transaction: _dbSession.Transaction,
+            cancellationToken: cancellationToken);
+
+        using var multi = await connection.QueryMultipleAsync(command);
+        var convRow = await multi.ReadFirstOrDefaultAsync<ConversationWithCallerRow>();
+        if (convRow is null)
+            return null;
+
+        var participantRows = await multi.ReadAsync<ConversationParticipantRow>();
+
+        var conversation = Conversation.Rehydrate(
+            conversationId,
+            ParseConversationType(convRow.Type),
+            convRow.Name,
+            convRow.CreatedAtUtc);
+
+        var allParticipants = participantRows.Select(r => ConversationParticipant.Rehydrate(
+            conversationId,
+            UserId.From(r.UserId),
+            r.JoinedAtUtc,
+            r.HiddenAtUtc)).ToArray();
+
+        var callerParticipant = allParticipants.FirstOrDefault(p => p.UserId == callerId);
+
+        return new ConversationAccessWithAllParticipants(
+            conversation,
+            callerParticipant,
+            allParticipants,
+            convRow.CallerUsername,
+            convRow.CallerDisplayName);
+    }
+
     public async Task<ConversationWithParticipant?> GetWithParticipantAsync(
         ConversationId conversationId,
         UserId userId,
@@ -435,6 +494,28 @@ public sealed class ConversationRepository : IConversationRepository
         public string? Username { get; init; }
 
         public string? DisplayName { get; init; }
+    }
+
+    private sealed class ConversationWithCallerRow
+    {
+        public string Type { get; init; } = string.Empty;
+
+        public string? Name { get; init; }
+
+        public DateTime CreatedAtUtc { get; init; }
+
+        public string? CallerUsername { get; init; }
+
+        public string? CallerDisplayName { get; init; }
+    }
+
+    private sealed class ConversationParticipantRow
+    {
+        public Guid UserId { get; init; }
+
+        public DateTime JoinedAtUtc { get; init; }
+
+        public DateTime? HiddenAtUtc { get; init; }
     }
 
     private sealed class ConversationWithParticipantProfileRow

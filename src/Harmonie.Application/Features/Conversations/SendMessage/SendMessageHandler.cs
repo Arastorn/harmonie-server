@@ -4,6 +4,7 @@ using Harmonie.Application.Services;
 using Harmonie.Application.Interfaces.Common;
 using Harmonie.Application.Interfaces.Conversations;
 using Harmonie.Application.Interfaces.Messages;
+using Harmonie.Domain.Entities.Conversations;
 using Harmonie.Domain.Entities.Messages;
 using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.ValueObjects.Messages;
@@ -19,6 +20,7 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendConversationM
     private static readonly TimeSpan NotificationTimeout = TimeSpan.FromSeconds(5);
 
     private readonly IConversationRepository _conversationRepository;
+    private readonly IConversationParticipantRepository _participantRepository;
     private readonly IMessageRepository _conversationMessageRepository;
     private readonly MessageAttachmentResolver _messageAttachmentResolver;
     private readonly IUnitOfWork _unitOfWork;
@@ -29,6 +31,7 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendConversationM
 
     public SendMessageHandler(
         IConversationRepository conversationRepository,
+        IConversationParticipantRepository participantRepository,
         IMessageRepository conversationMessageRepository,
         MessageAttachmentResolver messageAttachmentResolver,
         IUnitOfWork unitOfWork,
@@ -38,6 +41,7 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendConversationM
         ILogger<SendMessageHandler> logger)
     {
         _conversationRepository = conversationRepository;
+        _participantRepository = participantRepository;
         _conversationMessageRepository = conversationMessageRepository;
         _messageAttachmentResolver = messageAttachmentResolver;
         _unitOfWork = unitOfWork;
@@ -66,14 +70,14 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendConversationM
             content = contentResult.Value;
         }
 
-        var access = await _conversationRepository.GetByIdWithParticipantCheckAsync(request.ConversationId, currentUserId, cancellationToken);
+        var access = await _conversationRepository.GetByIdWithAllParticipantsAsync(request.ConversationId, currentUserId, cancellationToken);
         if (access is null)
         {
             return ApplicationResponse<SendMessageResponse>.Fail(
                 ApplicationErrorCodes.Conversation.NotFound,
                 "Conversation was not found");
         }
-        if (access.Participant is null)
+        if (access.CallerParticipant is null)
         {
             return ApplicationResponse<SendMessageResponse>.Fail(
                 ApplicationErrorCodes.Conversation.AccessDenied,
@@ -127,8 +131,20 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendConversationM
                 messageResult.Error ?? "Unable to create conversation message");
         }
 
+        ConversationParticipant[] hiddenParticipants = [];
+        if (access.Conversation.Type == ConversationType.Direct)
+        {
+            hiddenParticipants = access.AllParticipants
+                .Where(p => p.HiddenAtUtc is not null)
+                .ToArray();
+            foreach (var p in hiddenParticipants)
+                p.Unhide();
+        }
+
         await using var transaction = await _unitOfWork.BeginAsync(cancellationToken);
         await _conversationMessageRepository.AddAsync(messageResult.Value, cancellationToken);
+        if (hiddenParticipants.Length > 0)
+            await _participantRepository.UpdateRangeAsync(hiddenParticipants, cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
         var messageConversationId = messageResult.Value.ConversationId;

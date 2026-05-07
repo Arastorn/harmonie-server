@@ -4,6 +4,7 @@ using FluentAssertions;
 using Harmonie.API.IntegrationTests.Common;
 using Harmonie.Application.Common;
 using Harmonie.Application.Features.Conversations.GetMessages;
+using Harmonie.Application.Features.Conversations.ListConversations;
 using Harmonie.Application.Features.Conversations.SendMessage;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
@@ -117,6 +118,30 @@ public sealed class SendConversationMessageTests : IClassFixture<HarmonieWebAppl
             TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task SendConversationMessage_WhenReceiverHidConversation_ShouldUnhideItForReceiver()
+    {
+        var sender = await AuthTestHelper.RegisterAsync(_client);
+        var receiver = await AuthTestHelper.RegisterAsync(_client);
+
+        var conversationId = await ConversationTestHelper.OpenConversationAsync(_client, sender.AccessToken, receiver.UserId);
+
+        var deleteResponse = await _client.SendAuthorizedDeleteAsync(
+            $"/api/conversations/{conversationId}",
+            receiver.AccessToken);
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var listBefore = await _client.SendAuthorizedGetAsync("/api/conversations", receiver.AccessToken);
+        var beforePayload = await listBefore.Content.ReadFromJsonAsync<ListConversationsResponse>(TestContext.Current.CancellationToken);
+        beforePayload!.Conversations.Should().NotContain(c => c.ConversationId == conversationId);
+
+        await ConversationTestHelper.SendConversationMessageAsync(_client, conversationId, "hey, you back?", sender.AccessToken);
+
+        var listAfter = await _client.SendAuthorizedGetAsync("/api/conversations", receiver.AccessToken);
+        var afterPayload = await listAfter.Content.ReadFromJsonAsync<ListConversationsResponse>(TestContext.Current.CancellationToken);
+        afterPayload!.Conversations.Should().Contain(c => c.ConversationId == conversationId);
     }
 
 }

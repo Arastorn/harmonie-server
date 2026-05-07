@@ -8,6 +8,7 @@ using Harmonie.Application.Interfaces.Conversations;
 using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Application.Interfaces.Uploads;
 using Harmonie.Application.Tests.Common;
+using Harmonie.Domain.Entities.Conversations;
 using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.Entities.Messages;
 using Harmonie.Domain.ValueObjects.Messages;
@@ -24,6 +25,7 @@ namespace Harmonie.Application.Tests.Messages;
 public sealed class SendConversationMessageHandlerTests
 {
     private readonly Mock<IConversationRepository> _conversationRepositoryMock;
+    private readonly Mock<IConversationParticipantRepository> _participantRepositoryMock;
     private readonly Mock<IMessageRepository> _directMessageRepositoryMock;
     private readonly Mock<IUploadedFileRepository> _uploadedFileRepositoryMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
@@ -37,6 +39,7 @@ public sealed class SendConversationMessageHandlerTests
     public SendConversationMessageHandlerTests()
     {
         _conversationRepositoryMock = new Mock<IConversationRepository>();
+        _participantRepositoryMock = new Mock<IConversationParticipantRepository>();
         _directMessageRepositoryMock = new Mock<IMessageRepository>();
         _uploadedFileRepositoryMock = new Mock<IUploadedFileRepository>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
@@ -69,6 +72,7 @@ public sealed class SendConversationMessageHandlerTests
 
         _handler = new SendMessageHandler(
             _conversationRepositoryMock.Object,
+            _participantRepositoryMock.Object,
             _directMessageRepositoryMock.Object,
             new MessageAttachmentResolver(_uploadedFileRepositoryMock.Object),
             _unitOfWorkMock.Object,
@@ -87,8 +91,8 @@ public sealed class SendConversationMessageHandlerTests
         var userId = UserId.New();
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversationId, It.IsAny<UserId>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((ConversationAccess?)null);
+            .Setup(x => x.GetByIdWithAllParticipantsAsync(conversationId, It.IsAny<UserId>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ConversationAccessWithAllParticipants?)null);
 
         var response = await _handler.HandleAsync(
             new SendConversationMessageInput(conversationId, "hello"),
@@ -110,8 +114,8 @@ public sealed class SendConversationMessageHandlerTests
         var conversation = ApplicationTestBuilders.CreateConversation(participantOne, participantTwo);
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, outsider, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ConversationAccess(conversation, Participant: null));
+            .Setup(x => x.GetByIdWithAllParticipantsAsync(conversation.Id, outsider, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConversationAccessWithAllParticipants(conversation, CallerParticipant: null, AllParticipants: [], null, null));
 
         var response = await _handler.HandleAsync(
             new SendConversationMessageInput(conversation.Id, "hello"),
@@ -133,8 +137,8 @@ public sealed class SendConversationMessageHandlerTests
         var conversation = ApplicationTestBuilders.CreateConversation(currentUserId, UserId.New());
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, currentUserId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ConversationAccess(conversation, Participant: ApplicationTestBuilders.CreateConversationParticipant(conversation.Id, currentUserId)));
+            .Setup(x => x.GetByIdWithAllParticipantsAsync(conversation.Id, currentUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(BuildAccess(conversation, currentUserId));
 
         var response = await _handler.HandleAsync(
             new SendConversationMessageInput(conversation.Id, rawContent),
@@ -155,8 +159,8 @@ public sealed class SendConversationMessageHandlerTests
         Message? persistedMessage = null;
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, currentUserId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ConversationAccess(conversation, Participant: ApplicationTestBuilders.CreateConversationParticipant(conversation.Id, currentUserId), CallerUsername: "sender", CallerDisplayName: "Sender Display"));
+            .Setup(x => x.GetByIdWithAllParticipantsAsync(conversation.Id, currentUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(BuildAccess(conversation, currentUserId, callerUsername: "sender", callerDisplayName: "Sender Display"));
 
         _directMessageRepositoryMock
             .Setup(x => x.AddAsync(It.IsAny<Message>(), It.IsAny<CancellationToken>()))
@@ -198,8 +202,8 @@ public sealed class SendConversationMessageHandlerTests
         var attachment = ApplicationTestBuilders.CreateUploadedFile(uploaderUserId: currentUserId, fileName: "report.pdf", contentType: "application/pdf");
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, currentUserId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ConversationAccess(conversation, Participant: ApplicationTestBuilders.CreateConversationParticipant(conversation.Id, currentUserId)));
+            .Setup(x => x.GetByIdWithAllParticipantsAsync(conversation.Id, currentUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(BuildAccess(conversation, currentUserId));
 
         _uploadedFileRepositoryMock
             .Setup(x => x.GetByIdsAsync(It.IsAny<IReadOnlyCollection<UploadedFileId>>(), It.IsAny<CancellationToken>()))
@@ -232,8 +236,8 @@ public sealed class SendConversationMessageHandlerTests
         var conversation = ApplicationTestBuilders.CreateConversation(currentUserId, UserId.New());
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, currentUserId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ConversationAccess(conversation, Participant: ApplicationTestBuilders.CreateConversationParticipant(conversation.Id, currentUserId)));
+            .Setup(x => x.GetByIdWithAllParticipantsAsync(conversation.Id, currentUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(BuildAccess(conversation, currentUserId));
 
         _directMessageRepositoryMock
             .Setup(x => x.AddAsync(It.IsAny<Message>(), It.IsAny<CancellationToken>()))
@@ -262,8 +266,8 @@ public sealed class SendConversationMessageHandlerTests
         var conversation = ApplicationTestBuilders.CreateConversation(currentUserId, UserId.New());
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, currentUserId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ConversationAccess(conversation, Participant: ApplicationTestBuilders.CreateConversationParticipant(conversation.Id, currentUserId)));
+            .Setup(x => x.GetByIdWithAllParticipantsAsync(conversation.Id, currentUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(BuildAccess(conversation, currentUserId));
 
         _directMessageRepositoryMock
             .Setup(x => x.AddAsync(It.IsAny<Message>(), It.IsAny<CancellationToken>()))
@@ -292,8 +296,8 @@ public sealed class SendConversationMessageHandlerTests
         var conversation = ApplicationTestBuilders.CreateConversation(currentUserId, UserId.New());
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, currentUserId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ConversationAccess(conversation, Participant: ApplicationTestBuilders.CreateConversationParticipant(conversation.Id, currentUserId)));
+            .Setup(x => x.GetByIdWithAllParticipantsAsync(conversation.Id, currentUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(BuildAccess(conversation, currentUserId));
 
         _directMessageRepositoryMock
             .Setup(x => x.AddAsync(It.IsAny<Message>(), It.IsAny<CancellationToken>()))
@@ -317,8 +321,8 @@ public sealed class SendConversationMessageHandlerTests
         var targetMessageId = MessageId.New();
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, currentUserId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ConversationAccess(conversation, Participant: ApplicationTestBuilders.CreateConversationParticipant(conversation.Id, currentUserId), CallerUsername: "sender", CallerDisplayName: "Sender Display"));
+            .Setup(x => x.GetByIdWithAllParticipantsAsync(conversation.Id, currentUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(BuildAccess(conversation, currentUserId, callerUsername: "sender", callerDisplayName: "Sender Display"));
 
         _directMessageRepositoryMock
             .Setup(x => x.GetReplyTargetSummaryAsync(targetMessageId, It.IsAny<CancellationToken>()))
@@ -378,8 +382,8 @@ public sealed class SendConversationMessageHandlerTests
         var targetMessageId = MessageId.New();
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, currentUserId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ConversationAccess(conversation, Participant: ApplicationTestBuilders.CreateConversationParticipant(conversation.Id, currentUserId)));
+            .Setup(x => x.GetByIdWithAllParticipantsAsync(conversation.Id, currentUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(BuildAccess(conversation, currentUserId));
 
         _directMessageRepositoryMock
             .Setup(x => x.GetReplyTargetSummaryAsync(targetMessageId, It.IsAny<CancellationToken>()))
@@ -414,8 +418,8 @@ public sealed class SendConversationMessageHandlerTests
         var targetMessageId = MessageId.New();
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, currentUserId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ConversationAccess(conversation, Participant: ApplicationTestBuilders.CreateConversationParticipant(conversation.Id, currentUserId)));
+            .Setup(x => x.GetByIdWithAllParticipantsAsync(conversation.Id, currentUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(BuildAccess(conversation, currentUserId));
 
         _directMessageRepositoryMock
             .Setup(x => x.GetReplyTargetSummaryAsync(targetMessageId, It.IsAny<CancellationToken>()))
@@ -441,8 +445,8 @@ public sealed class SendConversationMessageHandlerTests
         var deletedAt = DateTime.UtcNow.AddHours(-1);
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, currentUserId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ConversationAccess(conversation, Participant: ApplicationTestBuilders.CreateConversationParticipant(conversation.Id, currentUserId)));
+            .Setup(x => x.GetByIdWithAllParticipantsAsync(conversation.Id, currentUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(BuildAccess(conversation, currentUserId));
 
         _directMessageRepositoryMock
             .Setup(x => x.GetReplyTargetSummaryAsync(targetMessageId, It.IsAny<CancellationToken>()))
@@ -482,8 +486,8 @@ public sealed class SendConversationMessageHandlerTests
         var conversation = ApplicationTestBuilders.CreateConversation(currentUserId, UserId.New());
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, currentUserId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ConversationAccess(conversation, Participant: ApplicationTestBuilders.CreateConversationParticipant(conversation.Id, currentUserId)));
+            .Setup(x => x.GetByIdWithAllParticipantsAsync(conversation.Id, currentUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(BuildAccess(conversation, currentUserId));
 
         _directMessageRepositoryMock
             .Setup(x => x.AddAsync(It.IsAny<Message>(), It.IsAny<CancellationToken>()))
@@ -497,5 +501,58 @@ public sealed class SendConversationMessageHandlerTests
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();
         response.Data!.ReplyTo.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenDirectConversationHasHiddenParticipant_ShouldUnhideAndPersist()
+    {
+        var sender = UserId.New();
+        var receiver = UserId.New();
+        var conversation = ApplicationTestBuilders.CreateConversation(sender, receiver);
+
+        var senderParticipant = ApplicationTestBuilders.CreateConversationParticipant(conversation.Id, sender);
+        var hiddenParticipant = ConversationParticipant.Rehydrate(
+            conversation.Id, receiver, DateTime.UtcNow.AddDays(-1), hiddenAtUtc: DateTime.UtcNow.AddHours(-1));
+
+        _conversationRepositoryMock
+            .Setup(x => x.GetByIdWithAllParticipantsAsync(conversation.Id, sender, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConversationAccessWithAllParticipants(
+                conversation,
+                CallerParticipant: senderParticipant,
+                AllParticipants: [senderParticipant, hiddenParticipant],
+                CallerUsername: "sender",
+                CallerDisplayName: null));
+
+        _directMessageRepositoryMock
+            .Setup(x => x.AddAsync(It.IsAny<Message>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var response = await _handler.HandleAsync(
+            new SendConversationMessageInput(conversation.Id, "hey"),
+            sender,
+            TestContext.Current.CancellationToken);
+
+        response.Success.Should().BeTrue();
+        hiddenParticipant.HiddenAtUtc.Should().BeNull();
+        _participantRepositoryMock.Verify(
+            x => x.UpdateRangeAsync(
+                It.Is<IReadOnlyList<ConversationParticipant>>(list => list.Count == 1),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    private static ConversationAccessWithAllParticipants BuildAccess(
+        Conversation conversation,
+        UserId callerId,
+        string? callerUsername = null,
+        string? callerDisplayName = null)
+    {
+        var callerParticipant = ApplicationTestBuilders.CreateConversationParticipant(conversation.Id, callerId);
+        return new ConversationAccessWithAllParticipants(
+            conversation,
+            CallerParticipant: callerParticipant,
+            AllParticipants: [callerParticipant],
+            callerUsername,
+            callerDisplayName);
     }
 }
