@@ -70,14 +70,14 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendConversationM
             content = contentResult.Value;
         }
 
-        var access = await _conversationRepository.GetByIdWithParticipantCheckAsync(request.ConversationId, currentUserId, cancellationToken);
+        var access = await _conversationRepository.GetByIdWithAllParticipantsAsync(request.ConversationId, currentUserId, cancellationToken);
         if (access is null)
         {
             return ApplicationResponse<SendMessageResponse>.Fail(
                 ApplicationErrorCodes.Conversation.NotFound,
                 "Conversation was not found");
         }
-        if (access.Participant is null)
+        if (access.CallerParticipant is null)
         {
             return ApplicationResponse<SendMessageResponse>.Fail(
                 ApplicationErrorCodes.Conversation.AccessDenied,
@@ -134,9 +134,9 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendConversationM
         ConversationParticipant[] hiddenParticipants = [];
         if (access.Conversation.Type == ConversationType.Direct)
         {
-            var participants = await _participantRepository.GetByConversationIdAsync(
-                request.ConversationId, cancellationToken);
-            hiddenParticipants = participants.Where(p => p.HiddenAtUtc is not null).ToArray();
+            hiddenParticipants = access.AllParticipants
+                .Where(p => p.HiddenAtUtc is not null)
+                .ToArray();
             foreach (var p in hiddenParticipants)
                 p.Unhide();
         }

@@ -34,6 +34,13 @@ public sealed record ConversationAccess(
     string? CallerUsername = null,
     string? CallerDisplayName = null);
 
+public sealed record ConversationAccessWithAllParticipants(
+    Conversation Conversation,
+    ConversationParticipant? CallerParticipant,
+    IReadOnlyList<ConversationParticipant> AllParticipants,
+    string? CallerUsername,
+    string? CallerDisplayName);
+
 public sealed record UserConversationSummary(
     ConversationId ConversationId,
     ConversationType Type,
@@ -65,6 +72,11 @@ public interface IConversationRepository
     Task<ConversationAccess?> GetByIdWithParticipantCheckAsync(
         ConversationId conversationId,
         UserId userId,
+        CancellationToken cancellationToken = default);
+
+    Task<ConversationAccessWithAllParticipants?> GetByIdWithAllParticipantsAsync(
+        ConversationId conversationId,
+        UserId callerId,
         CancellationToken cancellationToken = default);
 
     Task<ConversationWithParticipant?> GetWithParticipantAsync(

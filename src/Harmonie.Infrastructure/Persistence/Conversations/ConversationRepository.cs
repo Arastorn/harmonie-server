@@ -292,6 +292,63 @@ public sealed class ConversationRepository : IConversationRepository
         return new ConversationAccess(conversation, participant, row.Username, row.DisplayName);
     }
 
+    public async Task<ConversationAccessWithAllParticipants?> GetByIdWithAllParticipantsAsync(
+        ConversationId conversationId,
+        UserId callerId,
+        CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+                           SELECT c.id                AS "ConversationId",
+                                  c.type              AS "Type",
+                                  c.name              AS "Name",
+                                  c.created_at_utc    AS "CreatedAtUtc",
+                                  u_caller.username   AS "CallerUsername",
+                                  u_caller.display_name AS "CallerDisplayName",
+                                  cp.user_id          AS "ParticipantUserId",
+                                  cp.joined_at_utc    AS "JoinedAtUtc",
+                                  cp.hidden_at_utc    AS "HiddenAtUtc"
+                           FROM conversations c
+                           JOIN conversation_participants cp ON cp.conversation_id = c.id
+                           LEFT JOIN users u_caller
+                                  ON u_caller.id = @CallerId
+                                 AND u_caller.deleted_at IS NULL
+                           WHERE c.id = @ConversationId
+                           """;
+
+        var connection = await _dbSession.GetOpenConnectionAsync(cancellationToken);
+        var command = new CommandDefinition(
+            sql,
+            new { ConversationId = conversationId.Value, CallerId = callerId.Value },
+            transaction: _dbSession.Transaction,
+            cancellationToken: cancellationToken);
+
+        var rows = (await connection.QueryAsync<ConversationWithAllParticipantsRow>(command)).ToArray();
+        if (rows.Length == 0)
+            return null;
+
+        var first = rows[0];
+        var conversation = Conversation.Rehydrate(
+            ConversationId.From(first.ConversationId),
+            ParseConversationType(first.Type),
+            first.Name,
+            first.CreatedAtUtc);
+
+        var allParticipants = rows.Select(r => ConversationParticipant.Rehydrate(
+            conversationId,
+            UserId.From(r.ParticipantUserId),
+            r.JoinedAtUtc,
+            r.HiddenAtUtc)).ToArray();
+
+        var callerParticipant = allParticipants.FirstOrDefault(p => p.UserId == callerId);
+
+        return new ConversationAccessWithAllParticipants(
+            conversation,
+            callerParticipant,
+            allParticipants,
+            first.CallerUsername,
+            first.CallerDisplayName);
+    }
+
     public async Task<ConversationWithParticipant?> GetWithParticipantAsync(
         ConversationId conversationId,
         UserId userId,
@@ -435,6 +492,27 @@ public sealed class ConversationRepository : IConversationRepository
         public string? Username { get; init; }
 
         public string? DisplayName { get; init; }
+    }
+
+    private sealed class ConversationWithAllParticipantsRow
+    {
+        public Guid ConversationId { get; init; }
+
+        public string Type { get; init; } = string.Empty;
+
+        public string? Name { get; init; }
+
+        public DateTime CreatedAtUtc { get; init; }
+
+        public string? CallerUsername { get; init; }
+
+        public string? CallerDisplayName { get; init; }
+
+        public Guid ParticipantUserId { get; init; }
+
+        public DateTime JoinedAtUtc { get; init; }
+
+        public DateTime? HiddenAtUtc { get; init; }
     }
 
     private sealed class ConversationWithParticipantProfileRow
