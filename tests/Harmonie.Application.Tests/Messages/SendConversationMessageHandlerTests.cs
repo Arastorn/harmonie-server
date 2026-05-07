@@ -8,6 +8,7 @@ using Harmonie.Application.Interfaces.Conversations;
 using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Application.Interfaces.Uploads;
 using Harmonie.Application.Tests.Common;
+using Harmonie.Domain.Entities.Conversations;
 using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.Entities.Messages;
 using Harmonie.Domain.ValueObjects.Messages;
@@ -24,6 +25,7 @@ namespace Harmonie.Application.Tests.Messages;
 public sealed class SendConversationMessageHandlerTests
 {
     private readonly Mock<IConversationRepository> _conversationRepositoryMock;
+    private readonly Mock<IConversationParticipantRepository> _participantRepositoryMock;
     private readonly Mock<IMessageRepository> _directMessageRepositoryMock;
     private readonly Mock<IUploadedFileRepository> _uploadedFileRepositoryMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
@@ -37,6 +39,10 @@ public sealed class SendConversationMessageHandlerTests
     public SendConversationMessageHandlerTests()
     {
         _conversationRepositoryMock = new Mock<IConversationRepository>();
+        _participantRepositoryMock = new Mock<IConversationParticipantRepository>();
+        _participantRepositoryMock
+            .Setup(x => x.GetByConversationIdAsync(It.IsAny<ConversationId>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
         _directMessageRepositoryMock = new Mock<IMessageRepository>();
         _uploadedFileRepositoryMock = new Mock<IUploadedFileRepository>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
@@ -69,6 +75,7 @@ public sealed class SendConversationMessageHandlerTests
 
         _handler = new SendMessageHandler(
             _conversationRepositoryMock.Object,
+            _participantRepositoryMock.Object,
             _directMessageRepositoryMock.Object,
             new MessageAttachmentResolver(_uploadedFileRepositoryMock.Object),
             _unitOfWorkMock.Object,
@@ -497,5 +504,43 @@ public sealed class SendConversationMessageHandlerTests
         response.Success.Should().BeTrue();
         response.Data.Should().NotBeNull();
         response.Data!.ReplyTo.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenDirectConversationHasHiddenParticipant_ShouldUnhideAndPersist()
+    {
+        var sender = UserId.New();
+        var receiver = UserId.New();
+        var conversation = ApplicationTestBuilders.CreateConversation(sender, receiver);
+
+        var hiddenParticipant = ConversationParticipant.Rehydrate(
+            conversation.Id, receiver, DateTime.UtcNow.AddDays(-1), hiddenAtUtc: DateTime.UtcNow.AddHours(-1));
+
+        _conversationRepositoryMock
+            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, sender, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConversationAccess(conversation,
+                Participant: ApplicationTestBuilders.CreateConversationParticipant(conversation.Id, sender),
+                CallerUsername: "sender"));
+
+        _participantRepositoryMock
+            .Setup(x => x.GetByConversationIdAsync(conversation.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([hiddenParticipant]);
+
+        _directMessageRepositoryMock
+            .Setup(x => x.AddAsync(It.IsAny<Message>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var response = await _handler.HandleAsync(
+            new SendConversationMessageInput(conversation.Id, "hey"),
+            sender,
+            TestContext.Current.CancellationToken);
+
+        response.Success.Should().BeTrue();
+        hiddenParticipant.HiddenAtUtc.Should().BeNull();
+        _participantRepositoryMock.Verify(
+            x => x.UpdateRangeAsync(
+                It.Is<IReadOnlyList<ConversationParticipant>>(list => list.Count == 1),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 }
