@@ -298,21 +298,21 @@ public sealed class ConversationRepository : IConversationRepository
         CancellationToken cancellationToken = default)
     {
         const string sql = """
-                           SELECT c.id                AS "ConversationId",
-                                  c.type              AS "Type",
-                                  c.name              AS "Name",
-                                  c.created_at_utc    AS "CreatedAtUtc",
-                                  u_caller.username   AS "CallerUsername",
-                                  u_caller.display_name AS "CallerDisplayName",
-                                  cp.user_id          AS "ParticipantUserId",
-                                  cp.joined_at_utc    AS "JoinedAtUtc",
-                                  cp.hidden_at_utc    AS "HiddenAtUtc"
+                           SELECT c.id               AS "Id",
+                                  c.type             AS "Type",
+                                  c.name             AS "Name",
+                                  c.created_at_utc   AS "CreatedAtUtc",
+                                  u.username         AS "CallerUsername",
+                                  u.display_name     AS "CallerDisplayName"
                            FROM conversations c
-                           JOIN conversation_participants cp ON cp.conversation_id = c.id
-                           LEFT JOIN users u_caller
-                                  ON u_caller.id = @CallerId
-                                 AND u_caller.deleted_at IS NULL
-                           WHERE c.id = @ConversationId
+                           LEFT JOIN users u ON u.id = @CallerId AND u.deleted_at IS NULL
+                           WHERE c.id = @ConversationId;
+
+                           SELECT cp.user_id       AS "UserId",
+                                  cp.joined_at_utc AS "JoinedAtUtc",
+                                  cp.hidden_at_utc AS "HiddenAtUtc"
+                           FROM conversation_participants cp
+                           WHERE cp.conversation_id = @ConversationId
                            """;
 
         var connection = await _dbSession.GetOpenConnectionAsync(cancellationToken);
@@ -322,20 +322,22 @@ public sealed class ConversationRepository : IConversationRepository
             transaction: _dbSession.Transaction,
             cancellationToken: cancellationToken);
 
-        var rows = (await connection.QueryAsync<ConversationWithAllParticipantsRow>(command)).ToArray();
-        if (rows.Length == 0)
+        using var multi = await connection.QueryMultipleAsync(command);
+        var convRow = await multi.ReadFirstOrDefaultAsync<ConversationWithCallerRow>();
+        if (convRow is null)
             return null;
 
-        var first = rows[0];
-        var conversation = Conversation.Rehydrate(
-            ConversationId.From(first.ConversationId),
-            ParseConversationType(first.Type),
-            first.Name,
-            first.CreatedAtUtc);
+        var participantRows = await multi.ReadAsync<ConversationParticipantRow>();
 
-        var allParticipants = rows.Select(r => ConversationParticipant.Rehydrate(
+        var conversation = Conversation.Rehydrate(
             conversationId,
-            UserId.From(r.ParticipantUserId),
+            ParseConversationType(convRow.Type),
+            convRow.Name,
+            convRow.CreatedAtUtc);
+
+        var allParticipants = participantRows.Select(r => ConversationParticipant.Rehydrate(
+            conversationId,
+            UserId.From(r.UserId),
             r.JoinedAtUtc,
             r.HiddenAtUtc)).ToArray();
 
@@ -345,8 +347,8 @@ public sealed class ConversationRepository : IConversationRepository
             conversation,
             callerParticipant,
             allParticipants,
-            first.CallerUsername,
-            first.CallerDisplayName);
+            convRow.CallerUsername,
+            convRow.CallerDisplayName);
     }
 
     public async Task<ConversationWithParticipant?> GetWithParticipantAsync(
@@ -494,10 +496,8 @@ public sealed class ConversationRepository : IConversationRepository
         public string? DisplayName { get; init; }
     }
 
-    private sealed class ConversationWithAllParticipantsRow
+    private sealed class ConversationWithCallerRow
     {
-        public Guid ConversationId { get; init; }
-
         public string Type { get; init; } = string.Empty;
 
         public string? Name { get; init; }
@@ -507,8 +507,11 @@ public sealed class ConversationRepository : IConversationRepository
         public string? CallerUsername { get; init; }
 
         public string? CallerDisplayName { get; init; }
+    }
 
-        public Guid ParticipantUserId { get; init; }
+    private sealed class ConversationParticipantRow
+    {
+        public Guid UserId { get; init; }
 
         public DateTime JoinedAtUtc { get; init; }
 
