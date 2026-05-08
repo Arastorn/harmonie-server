@@ -33,14 +33,15 @@ public sealed class MessageSendOrchestrator
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<ApplicationResponse<MessageSendResult>> SendAsync(
-        ISendMessageScope scope,
+    public async Task<ApplicationResponse<MessageSendResult>> SendAsync<TContext>(
+        ISendMessageScope<TContext> scope,
         MessageScope messageScope,
         string? rawContent,
         IReadOnlyList<Guid>? attachmentFileIds,
         Guid? replyToMessageId,
         UserId callerId,
         CancellationToken ct)
+        where TContext : SendScopeContext
     {
         // ── Content validation ──────────────────────────────────────────
         MessageContent? content = null;
@@ -59,11 +60,12 @@ public sealed class MessageSendOrchestrator
 
         // ── Authorization ───────────────────────────────────────────────
         var authResult = await scope.AuthorizeAsync(callerId, ct);
-        if (!authResult.IsAuthorized)
+        if (authResult is AuthorizationResult<TContext>.Denied denied)
         {
-            return ApplicationResponse<MessageSendResult>.Fail(
-                authResult.Error!);
+            return ApplicationResponse<MessageSendResult>.Fail(denied.Error);
         }
+
+        var context = ((AuthorizationResult<TContext>.Authorized)authResult).Context;
 
         // ── Reply target resolution ─────────────────────────────────────
         MessageId? replyToTargetId = null;
@@ -144,7 +146,7 @@ public sealed class MessageSendOrchestrator
         await _messageRepository.AddAsync(messageResult.Value, ct);
         if (attachments.Count > 0)
             await _messageAttachmentRepository.AddRangeAsync(attachments, ct);
-        await scope.ApplyInTransactionSideEffectsAsync(authResult.Context!, ct);
+        await scope.ApplyInTransactionSideEffectsAsync(context, ct);
         await transaction.CommitAsync(ct);
 
         // ── Reply preview DTO ───────────────────────────────────────────
@@ -167,7 +169,7 @@ public sealed class MessageSendOrchestrator
 
         // ── Notify ──────────────────────────────────────────────────────
         await scope.NotifyMessageCreatedAsync(
-            authResult.Context!,
+            context,
             messageResult.Value,
             attachmentDtos,
             replyTo,
@@ -177,7 +179,7 @@ public sealed class MessageSendOrchestrator
         var urls = LinkPreviewResolutionService.ParseUrls(messageResult.Value.Content?.Value);
         if (urls.Count > 0)
         {
-            scope.ScheduleLinkPreviewResolution(authResult.Context!, messageResult.Value, urls, ct);
+            scope.ScheduleLinkPreviewResolution(context, messageResult.Value, urls, ct);
         }
 
         // ── Result ──────────────────────────────────────────────────────

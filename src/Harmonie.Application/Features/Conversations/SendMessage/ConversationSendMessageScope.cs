@@ -11,18 +11,17 @@ using Microsoft.Extensions.Logging;
 namespace Harmonie.Application.Features.Conversations.SendMessage;
 
 /// <summary>
-/// Conversation-specific implementation of <see cref="ISendMessageScope"/>.
+/// Conversation-specific implementation of <see cref="ISendMessageScope{TContext}"/>.
 /// </summary>
-public sealed class ConversationSendMessageScope : ISendMessageScope
+public sealed class ConversationSendMessageScope : ISendMessageScope<ConversationSendMessageScope.Context>
 {
     private static readonly TimeSpan NotificationTimeout = TimeSpan.FromSeconds(5);
 
-    private sealed record ConversationSendContext(
+    public sealed record Context(
         ConversationId ConversationId,
         string? ConversationName,
-        string ConversationType,
+        ConversationType ConversationType,
         IReadOnlyList<ConversationParticipant> AllParticipants,
-        ConversationType DomainType,
         string CallerUsername,
         string CallerDisplayName) : SendScopeContext;
 
@@ -49,42 +48,37 @@ public sealed class ConversationSendMessageScope : ISendMessageScope
         _logger = logger;
     }
 
-    public async Task<AuthorizationResult> AuthorizeAsync(UserId caller, CancellationToken ct)
+    public async Task<AuthorizationResult<Context>> AuthorizeAsync(UserId caller, CancellationToken ct)
     {
         var access = await _conversationRepository.GetByIdWithAllParticipantsAsync(_conversationId, caller, ct);
         if (access is null)
         {
-            return new AuthorizationResult(null, new ApplicationError(
+            return new AuthorizationResult<Context>.Denied(new ApplicationError(
                 ApplicationErrorCodes.Conversation.NotFound,
                 "Conversation was not found"));
         }
         if (access.CallerParticipant is null)
         {
-            return new AuthorizationResult(null, new ApplicationError(
+            return new AuthorizationResult<Context>.Denied(new ApplicationError(
                 ApplicationErrorCodes.Conversation.AccessDenied,
                 "You do not have access to this conversation"));
         }
 
-        var context = new ConversationSendContext(
+        return new AuthorizationResult<Context>.Authorized(new Context(
             _conversationId,
             access.Conversation.Name,
-            access.Conversation.Type.ToString(),
-            access.AllParticipants,
             access.Conversation.Type,
+            access.AllParticipants,
             access.CallerUsername ?? string.Empty,
-            access.CallerDisplayName ?? string.Empty);
-
-        return new AuthorizationResult(context, null);
+            access.CallerDisplayName ?? string.Empty));
     }
 
-    public async Task ApplyInTransactionSideEffectsAsync(SendScopeContext context, CancellationToken ct)
+    public async Task ApplyInTransactionSideEffectsAsync(Context context, CancellationToken ct)
     {
-        var ctx = (ConversationSendContext)context;
-
-        if (ctx.DomainType != ConversationType.Direct)
+        if (context.ConversationType != ConversationType.Direct)
             return;
 
-        var hidden = ctx.AllParticipants
+        var hidden = context.AllParticipants
             .Where(p => p.HiddenAtUtc is not null)
             .ToArray();
 
@@ -98,22 +92,20 @@ public sealed class ConversationSendMessageScope : ISendMessageScope
     }
 
     public async Task NotifyMessageCreatedAsync(
-        SendScopeContext context,
+        Context context,
         Message message,
         IReadOnlyList<MessageAttachmentDto> attachments,
         ReplyPreviewDto? replyTo,
         CancellationToken ct)
     {
-        var ctx = (ConversationSendContext)context;
-
         var notification = new ConversationMessageCreatedNotification(
             message.Id,
-            ctx.ConversationId,
-            ctx.ConversationName,
-            ctx.ConversationType,
+            context.ConversationId,
+            context.ConversationName,
+            context.ConversationType.ToString(),
             message.AuthorUserId,
-            ctx.CallerUsername,
-            ctx.CallerDisplayName,
+            context.CallerUsername,
+            context.CallerDisplayName,
             message.Content?.Value,
             attachments,
             replyTo,
@@ -129,19 +121,17 @@ public sealed class ConversationSendMessageScope : ISendMessageScope
     }
 
     public void ScheduleLinkPreviewResolution(
-        SendScopeContext context,
+        Context context,
         Message message,
         IReadOnlyList<Uri> urls,
         CancellationToken ct)
     {
-        var ctx = (ConversationSendContext)context;
-
         // TODO: Replace fire-and-forget with a domain event + dedicated background worker
         _ = _linkPreviewService.ResolveAndNotifyForConversationAsync(
             message.Id,
-            ctx.ConversationId,
-            ctx.ConversationName,
-            ctx.ConversationType,
+            context.ConversationId,
+            context.ConversationName,
+            context.ConversationType.ToString(),
             urls,
             ct);
     }
