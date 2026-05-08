@@ -88,6 +88,38 @@ public sealed class MessageSendOrchestratorTests
         result.Error!.Code.Should().Be(ApplicationErrorCodes.Message.NotFound);
     }
 
+    // ── 2a. Reply target matches scope → included in result ───────────
+
+    [Fact]
+    public async Task SendAsync_WhenReplyTargetMatchesScope_ShouldIncludeReplyPreview()
+    {
+        var scope = CreateAuthorizedScope();
+        var messageScope = AnyScope();
+        var replyTargetId = MessageId.New();
+        var authorId = UserId.New();
+
+        _messageRepositoryMock
+            .Setup(x => x.GetReplyTargetSummaryAsync(replyTargetId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ReplyTargetSummary(
+                replyTargetId, messageScope, authorId, "targetuser", "Target Display",
+                "target content", true, false, null));
+
+        _messageRepositoryMock
+            .Setup(x => x.AddAsync(It.IsAny<Message>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var result = await _orchestrator.SendAsync(
+            scope.Object, messageScope, "hello", null, replyTargetId.Value, AnyUser(),
+            TestContext.Current.CancellationToken);
+
+        result.Success.Should().BeTrue();
+        result.Data!.ReplyTo.Should().NotBeNull();
+        result.Data.ReplyTo!.MessageId.Should().Be(replyTargetId.Value);
+        result.Data.ReplyTo.AuthorUsername.Should().Be("targetuser");
+        result.Data.ReplyTo.Content.Should().Be("target content");
+        result.Data.ReplyTo.HasAttachments.Should().BeTrue();
+    }
+
     // ── 3. Attachments invalid → ValidationFailed ───────────────────────
 
     [Fact]
@@ -156,6 +188,11 @@ public sealed class MessageSendOrchestratorTests
             .Setup(x => x.AddAsync(It.IsAny<Message>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
+        _transactionMock
+            .Setup(x => x.CommitAsync(It.IsAny<CancellationToken>()))
+            .Callback(() => callOrder.Add("commit"))
+            .Returns(Task.CompletedTask);
+
         var result = await _orchestrator.SendAsync(
             scopeMock.Object, AnyScope(), "https://example.com", null, null, AnyUser(), TestContext.Current.CancellationToken);
 
@@ -163,7 +200,12 @@ public sealed class MessageSendOrchestratorTests
         result.Data.Should().NotBeNull();
         result.Data!.Content.Should().Be("https://example.com");
 
-        callOrder.Should().Equal("sideEffects", "notify", "linkPreviews");
+        _messageRepositoryMock.Verify(
+            x => x.AddAsync(It.IsAny<Message>(), It.IsAny<CancellationToken>()), Times.Once);
+        _transactionMock.Verify(
+            x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+
+        callOrder.Should().Equal("sideEffects", "commit", "notify", "linkPreviews");
     }
 
     // ── 6. Link previews only triggered when URLs present ────────────────
