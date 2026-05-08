@@ -3,7 +3,6 @@ using Harmonie.Application.Common;
 using Harmonie.Application.Common.Messages;
 using Harmonie.Application.Features.Channels.Reactions;
 using Harmonie.Application.Features.Channels.RemoveReaction;
-using Harmonie.Application.Features.Channels.Reactions;
 using Harmonie.Application.Interfaces.Channels;
 using Harmonie.Application.Interfaces.Common;
 using Harmonie.Application.Interfaces.Messages;
