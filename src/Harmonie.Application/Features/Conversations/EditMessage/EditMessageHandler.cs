@@ -82,7 +82,7 @@ public sealed class EditMessageHandler : IAuthenticatedHandler<EditConversationM
                 "You can only edit your own messages");
         }
 
-        var messageConversationId = ((MessageScope.Conversation)message.Scope).ConversationId;
+        var messageConversationId = request.ConversationId;
 
         var updateResult = message.UpdateContent(contentResult.Value);
         if (updateResult.IsFailure)

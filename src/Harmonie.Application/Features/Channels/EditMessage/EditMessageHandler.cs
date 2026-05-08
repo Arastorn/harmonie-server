@@ -91,7 +91,7 @@ public sealed class EditMessageHandler : IAuthenticatedHandler<EditChannelMessag
                 "You can only edit your own messages");
         }
 
-        var messageChannelId = ((MessageScope.Channel)message.Scope).ChannelId;
+        var messageChannelId = request.ChannelId;
 
         var updateResult = message.UpdateContent(contentResult.Value);
         if (updateResult.IsFailure)
