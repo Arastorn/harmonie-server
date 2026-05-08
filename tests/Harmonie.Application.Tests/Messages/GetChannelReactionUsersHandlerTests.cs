@@ -1,7 +1,11 @@
 using FluentAssertions;
 using Harmonie.Application.Common;
+using Harmonie.Application.Common.Messages;
 using Harmonie.Application.Features.Channels.GetReactionUsers;
+using Harmonie.Application.Common.Messages;
+using Harmonie.Application.Features.Channels.AddReaction;
 using Harmonie.Application.Interfaces.Channels;
+using Harmonie.Application.Interfaces.Common;
 using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Application.Tests.Common;
 using Harmonie.Domain.Enums;
@@ -9,6 +13,7 @@ using Harmonie.Domain.ValueObjects.Channels;
 using Harmonie.Domain.ValueObjects.Messages;
 using Harmonie.Domain.ValueObjects.Users;
 using Moq;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace Harmonie.Application.Tests.Messages;
@@ -18,6 +23,9 @@ public sealed class GetChannelReactionUsersHandlerTests
     private readonly Mock<IGuildChannelRepository> _guildChannelRepositoryMock;
     private readonly Mock<IMessageRepository> _messageRepositoryMock;
     private readonly Mock<IMessageReactionRepository> _reactionRepositoryMock;
+    private readonly Mock<IUnitOfWork> _unitOfWorkMock;
+    private readonly Mock<IReactionNotifier> _reactionNotifierMock;
+    private readonly ReactionOrchestrator _orchestrator;
     private readonly GetReactionUsersHandler _handler;
 
     public GetChannelReactionUsersHandlerTests()
@@ -25,11 +33,19 @@ public sealed class GetChannelReactionUsersHandlerTests
         _guildChannelRepositoryMock = new Mock<IGuildChannelRepository>();
         _messageRepositoryMock = new Mock<IMessageRepository>();
         _reactionRepositoryMock = new Mock<IMessageReactionRepository>();
+        _unitOfWorkMock = new Mock<IUnitOfWork>();
+        _reactionNotifierMock = new Mock<IReactionNotifier>();
+
+        _orchestrator = new ReactionOrchestrator(
+            _messageRepositoryMock.Object,
+            _reactionRepositoryMock.Object,
+            _unitOfWorkMock.Object);
 
         _handler = new GetReactionUsersHandler(
             _guildChannelRepositoryMock.Object,
-            _messageRepositoryMock.Object,
-            _reactionRepositoryMock.Object);
+            _reactionNotifierMock.Object,
+            NullLogger<ChannelReactionScope>.Instance,
+            _orchestrator);
     }
 
     [Fact]

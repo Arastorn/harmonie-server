@@ -1,10 +1,12 @@
 using Harmonie.Application.Common;
 using Harmonie.Application.Common.Messages;
+using Harmonie.Application.Features.Conversations.AddReaction;
 using Harmonie.Application.Interfaces.Conversations;
 using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.ValueObjects.Messages;
 using Harmonie.Domain.ValueObjects.Users;
+using Microsoft.Extensions.Logging;
 
 namespace Harmonie.Application.Features.Conversations.GetReactionUsers;
 
@@ -17,21 +19,21 @@ public sealed record GetConversationReactionUsersInput(
 
 public sealed class GetReactionUsersHandler : IAuthenticatedHandler<GetConversationReactionUsersInput, GetReactionUsersResponse>
 {
-    private const int DefaultLimit = 50;
-    private const int MaxLimit = 100;
-
     private readonly IConversationRepository _conversationRepository;
-    private readonly IMessageRepository _messageRepository;
-    private readonly IMessageReactionRepository _reactionRepository;
+    private readonly IReactionNotifier _reactionNotifier;
+    private readonly ILogger<ConversationReactionScope> _scopeLogger;
+    private readonly ReactionOrchestrator _orchestrator;
 
     public GetReactionUsersHandler(
         IConversationRepository conversationRepository,
-        IMessageRepository messageRepository,
-        IMessageReactionRepository reactionRepository)
+        IReactionNotifier reactionNotifier,
+        ILogger<ConversationReactionScope> scopeLogger,
+        ReactionOrchestrator orchestrator)
     {
         _conversationRepository = conversationRepository;
-        _messageRepository = messageRepository;
-        _reactionRepository = reactionRepository;
+        _reactionNotifier = reactionNotifier;
+        _scopeLogger = scopeLogger;
+        _orchestrator = orchestrator;
     }
 
     public async Task<ApplicationResponse<GetReactionUsersResponse>> HandleAsync(
@@ -39,65 +41,27 @@ public sealed class GetReactionUsersHandler : IAuthenticatedHandler<GetConversat
         UserId currentUserId,
         CancellationToken cancellationToken = default)
     {
-        ReactionUsersCursor? cursor = null;
-        if (request.Cursor is not null)
-        {
-            if (!ReactionUsersCursorCodec.TryParse(request.Cursor, out var parsedCursor) || parsedCursor is null)
-            {
-                return ApplicationResponse<GetReactionUsersResponse>.Fail(
-                    ApplicationErrorCodes.Common.ValidationFailed,
-                    "Request validation failed",
-                    EndpointExtensions.SingleValidationError(
-                        nameof(request.Cursor),
-                        ApplicationErrorCodes.Validation.InvalidFormat,
-                        "Cursor is invalid"));
-            }
+        var scope = new ConversationReactionScope(
+            request.ConversationId, _conversationRepository, _reactionNotifier, _scopeLogger);
 
-            cursor = parsedCursor;
-        }
-
-        var limit = Math.Clamp(request.Limit ?? DefaultLimit, 1, MaxLimit);
-
-        var access = await _conversationRepository.GetByIdWithParticipantCheckAsync(request.ConversationId, currentUserId, cancellationToken);
-        if (access is null)
-        {
-            return ApplicationResponse<GetReactionUsersResponse>.Fail(
-                ApplicationErrorCodes.Conversation.NotFound,
-                "Conversation was not found");
-        }
-        if (access.Participant is null)
-        {
-            return ApplicationResponse<GetReactionUsersResponse>.Fail(
-                ApplicationErrorCodes.Conversation.AccessDenied,
-                "You do not have access to this conversation");
-        }
-
-        var message = await _messageRepository.GetByIdAsync(request.MessageId, cancellationToken);
-        if (message is null || !message.Scope.Matches(request.ConversationId))
-        {
-            return ApplicationResponse<GetReactionUsersResponse>.Fail(
-                ApplicationErrorCodes.Reaction.MessageNotFound,
-                "Message was not found");
-        }
-
-        var page = await _reactionRepository.GetReactionUsersAsync(
+        var result = await _orchestrator.GetUsersAsync(
+            scope,
+            new MessageScope.Conversation(request.ConversationId),
             request.MessageId,
             request.Emoji,
-            limit,
-            cursor,
+            request.Cursor,
+            request.Limit,
+            currentUserId,
             cancellationToken);
 
-        var users = page.Users
-            .Select(u => new ReactionUserDto(u.UserId, u.Username, u.DisplayName))
-            .ToArray();
+        if (!result.Success)
+            return ApplicationResponse<GetReactionUsersResponse>.Fail(result.Error!);
 
-        var payload = new GetReactionUsersResponse(
-            MessageId: request.MessageId.Value,
-            Emoji: request.Emoji,
-            TotalCount: page.TotalCount,
-            Users: users,
-            NextCursor: page.NextCursor is null ? null : ReactionUsersCursorCodec.Encode(page.NextCursor));
-
-        return ApplicationResponse<GetReactionUsersResponse>.Ok(payload);
+        return ApplicationResponse<GetReactionUsersResponse>.Ok(new GetReactionUsersResponse(
+            result.Data!.MessageId,
+            result.Data.Emoji,
+            result.Data.TotalCount,
+            result.Data.Users,
+            result.Data.NextCursor));
     }
 }

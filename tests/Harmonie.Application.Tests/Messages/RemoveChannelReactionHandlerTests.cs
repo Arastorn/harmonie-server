@@ -1,6 +1,9 @@
 using FluentAssertions;
 using Harmonie.Application.Common;
+using Harmonie.Application.Common.Messages;
 using Harmonie.Application.Features.Channels.RemoveReaction;
+using Harmonie.Application.Common.Messages;
+using Harmonie.Application.Features.Channels.AddReaction;
 using Harmonie.Application.Interfaces.Channels;
 using Harmonie.Application.Interfaces.Common;
 using Harmonie.Application.Interfaces.Messages;
@@ -30,6 +33,7 @@ public sealed class RemoveChannelReactionHandlerTests
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly Mock<IUnitOfWorkTransaction> _transactionMock;
     private readonly Mock<IReactionNotifier> _reactionNotifierMock;
+    private readonly ReactionOrchestrator _orchestrator;
     private readonly RemoveReactionHandler _handler;
 
     public RemoveChannelReactionHandlerTests()
@@ -47,13 +51,16 @@ public sealed class RemoveChannelReactionHandlerTests
             .Setup(x => x.NotifyReactionRemovedFromChannelAsync(It.IsAny<ChannelReactionRemovedNotification>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        _handler = new RemoveReactionHandler(
-            _guildChannelRepositoryMock.Object,
+        _orchestrator = new ReactionOrchestrator(
             _messageRepositoryMock.Object,
             _reactionRepositoryMock.Object,
-            _unitOfWorkMock.Object,
+            _unitOfWorkMock.Object);
+
+        _handler = new RemoveReactionHandler(
+            _guildChannelRepositoryMock.Object,
             _reactionNotifierMock.Object,
-            NullLogger<RemoveReactionHandler>.Instance);
+            NullLogger<ChannelReactionScope>.Instance,
+            _orchestrator);
     }
 
     [Fact]

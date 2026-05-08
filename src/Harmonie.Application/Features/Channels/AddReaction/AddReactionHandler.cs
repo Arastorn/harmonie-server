@@ -1,9 +1,7 @@
 using Harmonie.Application.Common;
+using Harmonie.Application.Common.Messages;
 using Harmonie.Application.Interfaces.Channels;
-using Harmonie.Application.Interfaces.Common;
 using Harmonie.Application.Interfaces.Messages;
-using Harmonie.Domain.Entities.Messages;
-using Harmonie.Domain.Enums;
 using Harmonie.Domain.ValueObjects.Channels;
 using Harmonie.Domain.ValueObjects.Messages;
 using Harmonie.Domain.ValueObjects.Users;
@@ -15,29 +13,21 @@ public sealed record ChannelAddReactionInput(GuildChannelId ChannelId, MessageId
 
 public sealed class AddReactionHandler : IAuthenticatedHandler<ChannelAddReactionInput, bool>
 {
-    private static readonly TimeSpan NotificationTimeout = TimeSpan.FromSeconds(5);
-
     private readonly IGuildChannelRepository _guildChannelRepository;
-    private readonly IMessageRepository _messageRepository;
-    private readonly IMessageReactionRepository _reactionRepository;
-    private readonly IUnitOfWork _unitOfWork;
     private readonly IReactionNotifier _reactionNotifier;
-    private readonly ILogger<AddReactionHandler> _logger;
+    private readonly ILogger<ChannelReactionScope> _scopeLogger;
+    private readonly ReactionOrchestrator _orchestrator;
 
     public AddReactionHandler(
         IGuildChannelRepository guildChannelRepository,
-        IMessageRepository messageRepository,
-        IMessageReactionRepository reactionRepository,
-        IUnitOfWork unitOfWork,
         IReactionNotifier reactionNotifier,
-        ILogger<AddReactionHandler> logger)
+        ILogger<ChannelReactionScope> scopeLogger,
+        ReactionOrchestrator orchestrator)
     {
         _guildChannelRepository = guildChannelRepository;
-        _messageRepository = messageRepository;
-        _reactionRepository = reactionRepository;
-        _unitOfWork = unitOfWork;
         _reactionNotifier = reactionNotifier;
-        _logger = logger;
+        _scopeLogger = scopeLogger;
+        _orchestrator = orchestrator;
     }
 
     public async Task<ApplicationResponse<bool>> HandleAsync(
@@ -45,72 +35,15 @@ public sealed class AddReactionHandler : IAuthenticatedHandler<ChannelAddReactio
         UserId currentUserId,
         CancellationToken cancellationToken = default)
     {
-        var ctx = await _guildChannelRepository.GetWithCallerRoleAsync(request.ChannelId, currentUserId, cancellationToken);
-        if (ctx is null)
-        {
-            return ApplicationResponse<bool>.Fail(
-                ApplicationErrorCodes.Channel.NotFound,
-                "Channel was not found");
-        }
+        var scope = new ChannelReactionScope(
+            request.ChannelId, _guildChannelRepository, _reactionNotifier, _scopeLogger);
 
-        if (ctx.Channel.Type != GuildChannelType.Text)
-        {
-            return ApplicationResponse<bool>.Fail(
-                ApplicationErrorCodes.Channel.NotText,
-                "Reactions can only be added in text channels");
-        }
-
-        if (ctx.CallerRole is null)
-        {
-            return ApplicationResponse<bool>.Fail(
-                ApplicationErrorCodes.Channel.AccessDenied,
-                "You do not have access to this channel");
-        }
-
-        var message = await _messageRepository.GetByIdAsync(request.MessageId, cancellationToken);
-        if (message is null || !message.Scope.Matches(request.ChannelId))
-        {
-            return ApplicationResponse<bool>.Fail(
-                ApplicationErrorCodes.Reaction.MessageNotFound,
-                "Message was not found");
-        }
-
-        await using var transaction = await _unitOfWork.BeginAsync(cancellationToken);
-        var reaction = MessageReaction.Create(request.MessageId, currentUserId, request.Emoji);
-        if (reaction.IsFailure || reaction.Value is null)
-        {
-            return ApplicationResponse<bool>.Fail(
-                ApplicationErrorCodes.Common.DomainRuleViolation,
-                reaction.Error ?? "Invalid reaction");
-        }
-
-        await _reactionRepository.AddAsync(reaction.Value, cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
-
-        await NotifyReactionAddedSafelyAsync(
-            new ChannelReactionAddedNotification(
-                request.MessageId,
-                request.ChannelId,
-                ctx.Channel.Name,
-                ctx.Channel.GuildId,
-                ctx.GuildName ?? string.Empty,
-                currentUserId,
-                ctx.CallerUsername ?? string.Empty,
-                ctx.CallerDisplayName,
-                request.Emoji));
-
-        return ApplicationResponse<bool>.Ok(true);
-    }
-
-    private async Task NotifyReactionAddedSafelyAsync(
-        ChannelReactionAddedNotification notification)
-    {
-        await BestEffortNotificationHelper.TryNotifyAsync(
-            token => _reactionNotifier.NotifyReactionAddedToChannelAsync(notification, token),
-            NotificationTimeout,
-            _logger,
-            "AddChannelReaction notification failed (best-effort). MessageId={MessageId}, ChannelId={ChannelId}",
-            notification.MessageId,
-            notification.ChannelId);
+        return await _orchestrator.AddAsync(
+            scope,
+            new MessageScope.Channel(request.ChannelId),
+            request.MessageId,
+            request.Emoji,
+            currentUserId,
+            cancellationToken);
     }
 }

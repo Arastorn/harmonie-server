@@ -1,8 +1,8 @@
 using Harmonie.Application.Common;
+using Harmonie.Application.Common.Messages;
+using Harmonie.Application.Features.Channels.AddReaction;
 using Harmonie.Application.Interfaces.Channels;
-using Harmonie.Application.Interfaces.Common;
 using Harmonie.Application.Interfaces.Messages;
-using Harmonie.Domain.Enums;
 using Harmonie.Domain.ValueObjects.Channels;
 using Harmonie.Domain.ValueObjects.Messages;
 using Harmonie.Domain.ValueObjects.Users;
@@ -14,29 +14,21 @@ public sealed record ChannelRemoveReactionInput(GuildChannelId ChannelId, Messag
 
 public sealed class RemoveReactionHandler : IAuthenticatedHandler<ChannelRemoveReactionInput, bool>
 {
-    private static readonly TimeSpan NotificationTimeout = TimeSpan.FromSeconds(5);
-
     private readonly IGuildChannelRepository _guildChannelRepository;
-    private readonly IMessageRepository _messageRepository;
-    private readonly IMessageReactionRepository _reactionRepository;
-    private readonly IUnitOfWork _unitOfWork;
     private readonly IReactionNotifier _reactionNotifier;
-    private readonly ILogger<RemoveReactionHandler> _logger;
+    private readonly ILogger<ChannelReactionScope> _scopeLogger;
+    private readonly ReactionOrchestrator _orchestrator;
 
     public RemoveReactionHandler(
         IGuildChannelRepository guildChannelRepository,
-        IMessageRepository messageRepository,
-        IMessageReactionRepository reactionRepository,
-        IUnitOfWork unitOfWork,
         IReactionNotifier reactionNotifier,
-        ILogger<RemoveReactionHandler> logger)
+        ILogger<ChannelReactionScope> scopeLogger,
+        ReactionOrchestrator orchestrator)
     {
         _guildChannelRepository = guildChannelRepository;
-        _messageRepository = messageRepository;
-        _reactionRepository = reactionRepository;
-        _unitOfWork = unitOfWork;
         _reactionNotifier = reactionNotifier;
-        _logger = logger;
+        _scopeLogger = scopeLogger;
+        _orchestrator = orchestrator;
     }
 
     public async Task<ApplicationResponse<bool>> HandleAsync(
@@ -44,64 +36,15 @@ public sealed class RemoveReactionHandler : IAuthenticatedHandler<ChannelRemoveR
         UserId currentUserId,
         CancellationToken cancellationToken = default)
     {
-        var ctx = await _guildChannelRepository.GetWithCallerRoleAsync(request.ChannelId, currentUserId, cancellationToken);
-        if (ctx is null)
-        {
-            return ApplicationResponse<bool>.Fail(
-                ApplicationErrorCodes.Channel.NotFound,
-                "Channel was not found");
-        }
+        var scope = new ChannelReactionScope(
+            request.ChannelId, _guildChannelRepository, _reactionNotifier, _scopeLogger);
 
-        if (ctx.Channel.Type != GuildChannelType.Text)
-        {
-            return ApplicationResponse<bool>.Fail(
-                ApplicationErrorCodes.Channel.NotText,
-                "Reactions can only be removed from text channels");
-        }
-
-        if (ctx.CallerRole is null)
-        {
-            return ApplicationResponse<bool>.Fail(
-                ApplicationErrorCodes.Channel.AccessDenied,
-                "You do not have access to this channel");
-        }
-
-        var message = await _messageRepository.GetByIdAsync(request.MessageId, cancellationToken);
-        if (message is null || !message.Scope.Matches(request.ChannelId))
-        {
-            return ApplicationResponse<bool>.Fail(
-                ApplicationErrorCodes.Reaction.MessageNotFound,
-                "Message was not found");
-        }
-
-        await using var transaction = await _unitOfWork.BeginAsync(cancellationToken);
-        await _reactionRepository.RemoveAsync(request.MessageId, currentUserId, request.Emoji, cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
-
-        await NotifyReactionRemovedSafelyAsync(
-            new ChannelReactionRemovedNotification(
-                request.MessageId,
-                request.ChannelId,
-                ctx.Channel.Name,
-                ctx.Channel.GuildId,
-                ctx.GuildName ?? string.Empty,
-                currentUserId,
-                ctx.CallerUsername ?? string.Empty,
-                ctx.CallerDisplayName,
-                request.Emoji));
-
-        return ApplicationResponse<bool>.Ok(true);
-    }
-
-    private async Task NotifyReactionRemovedSafelyAsync(
-        ChannelReactionRemovedNotification notification)
-    {
-        await BestEffortNotificationHelper.TryNotifyAsync(
-            token => _reactionNotifier.NotifyReactionRemovedFromChannelAsync(notification, token),
-            NotificationTimeout,
-            _logger,
-            "RemoveChannelReaction notification failed (best-effort). MessageId={MessageId}, ChannelId={ChannelId}",
-            notification.MessageId,
-            notification.ChannelId);
+        return await _orchestrator.RemoveAsync(
+            scope,
+            new MessageScope.Channel(request.ChannelId),
+            request.MessageId,
+            request.Emoji,
+            currentUserId,
+            cancellationToken);
     }
 }

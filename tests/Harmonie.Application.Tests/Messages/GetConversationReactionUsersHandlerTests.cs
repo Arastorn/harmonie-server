@@ -1,13 +1,18 @@
 using FluentAssertions;
 using Harmonie.Application.Common;
+using Harmonie.Application.Common.Messages;
 using Harmonie.Application.Features.Conversations.GetReactionUsers;
+using Harmonie.Application.Common.Messages;
+using Harmonie.Application.Features.Conversations.AddReaction;
 using Harmonie.Application.Interfaces.Conversations;
+using Harmonie.Application.Interfaces.Common;
 using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Application.Tests.Common;
 using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.ValueObjects.Messages;
 using Harmonie.Domain.ValueObjects.Users;
 using Moq;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace Harmonie.Application.Tests.Messages;
@@ -17,6 +22,9 @@ public sealed class GetConversationReactionUsersHandlerTests
     private readonly Mock<IConversationRepository> _conversationRepositoryMock;
     private readonly Mock<IMessageRepository> _messageRepositoryMock;
     private readonly Mock<IMessageReactionRepository> _reactionRepositoryMock;
+    private readonly Mock<IUnitOfWork> _unitOfWorkMock;
+    private readonly Mock<IReactionNotifier> _reactionNotifierMock;
+    private readonly ReactionOrchestrator _orchestrator;
     private readonly GetReactionUsersHandler _handler;
 
     public GetConversationReactionUsersHandlerTests()
@@ -24,11 +32,19 @@ public sealed class GetConversationReactionUsersHandlerTests
         _conversationRepositoryMock = new Mock<IConversationRepository>();
         _messageRepositoryMock = new Mock<IMessageRepository>();
         _reactionRepositoryMock = new Mock<IMessageReactionRepository>();
+        _unitOfWorkMock = new Mock<IUnitOfWork>();
+        _reactionNotifierMock = new Mock<IReactionNotifier>();
+
+        _orchestrator = new ReactionOrchestrator(
+            _messageRepositoryMock.Object,
+            _reactionRepositoryMock.Object,
+            _unitOfWorkMock.Object);
 
         _handler = new GetReactionUsersHandler(
             _conversationRepositoryMock.Object,
-            _messageRepositoryMock.Object,
-            _reactionRepositoryMock.Object);
+            _reactionNotifierMock.Object,
+            NullLogger<ConversationReactionScope>.Instance,
+            _orchestrator);
     }
 
     [Fact]
