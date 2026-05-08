@@ -11,7 +11,7 @@ namespace Harmonie.Application.Common.Messages;
 /// </summary>
 public abstract record SendScopeContext
 {
-    private protected SendScopeContext() { }
+    protected SendScopeContext() { }
 }
 
 /// <summary>
