@@ -20,6 +20,7 @@ public sealed class EditConversationMessageHandlerTests
 {
     private readonly Mock<IConversationRepository> _conversationRepositoryMock;
     private readonly Mock<IMessageRepository> _directMessageRepositoryMock;
+    private readonly Mock<IMessageAttachmentRepository> _messageAttachmentRepositoryMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly Mock<IUnitOfWorkTransaction> _transactionMock;
     private readonly Mock<IConversationMessageNotifier> _directMessageNotifierMock;
@@ -29,6 +30,7 @@ public sealed class EditConversationMessageHandlerTests
     {
         _conversationRepositoryMock = new Mock<IConversationRepository>();
         _directMessageRepositoryMock = new Mock<IMessageRepository>();
+        _messageAttachmentRepositoryMock = new Mock<IMessageAttachmentRepository>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _transactionMock = new Mock<IUnitOfWorkTransaction>();
         _directMessageNotifierMock = new Mock<IConversationMessageNotifier>();
@@ -39,9 +41,14 @@ public sealed class EditConversationMessageHandlerTests
             .Setup(x => x.NotifyMessageUpdatedAsync(It.IsAny<ConversationMessageUpdatedNotification>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
+        _messageAttachmentRepositoryMock
+            .Setup(x => x.GetByMessageIdAsync(It.IsAny<MessageId>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<MessageAttachment>());
+
         _handler = new EditMessageHandler(
             _conversationRepositoryMock.Object,
             _directMessageRepositoryMock.Object,
+            _messageAttachmentRepositoryMock.Object,
             _unitOfWorkMock.Object,
             _directMessageNotifierMock.Object,
             NullLogger<EditMessageHandler>.Instance);

@@ -22,6 +22,7 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendConversationM
     private readonly IConversationRepository _conversationRepository;
     private readonly IConversationParticipantRepository _participantRepository;
     private readonly IMessageRepository _conversationMessageRepository;
+    private readonly IMessageAttachmentRepository _messageAttachmentRepository;
     private readonly MessageAttachmentResolver _messageAttachmentResolver;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IConversationMessageNotifier _conversationMessageNotifier;
@@ -33,6 +34,7 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendConversationM
         IConversationRepository conversationRepository,
         IConversationParticipantRepository participantRepository,
         IMessageRepository conversationMessageRepository,
+        IMessageAttachmentRepository messageAttachmentRepository,
         MessageAttachmentResolver messageAttachmentResolver,
         IUnitOfWork unitOfWork,
         IConversationMessageNotifier conversationMessageNotifier,
@@ -43,6 +45,7 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendConversationM
         _conversationRepository = conversationRepository;
         _participantRepository = participantRepository;
         _conversationMessageRepository = conversationMessageRepository;
+        _messageAttachmentRepository = messageAttachmentRepository;
         _messageAttachmentResolver = messageAttachmentResolver;
         _unitOfWork = unitOfWork;
         _conversationMessageNotifier = conversationMessageNotifier;
@@ -115,20 +118,43 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendConversationM
                     attachmentResolution.Error ?? "Attachments are invalid"));
         }
 
+        if (content is null && attachmentResolution.Attachments.Count == 0)
+        {
+            return ApplicationResponse<SendMessageResponse>.Fail(
+                ApplicationErrorCodes.Message.ContentEmpty,
+                "Message must have content or at least one attachment");
+        }
+
         var messageResult = Message.CreateForConversation(
             request.ConversationId,
             currentUserId,
             content,
-            attachmentResolution.Attachments,
             replyToMessageId);
         if (messageResult.IsFailure || messageResult.Value is null)
         {
-            var errorCode = content is null && attachmentResolution.Attachments.Count == 0
-                ? ApplicationErrorCodes.Message.ContentEmpty
-                : ApplicationErrorCodes.Common.DomainRuleViolation;
             return ApplicationResponse<SendMessageResponse>.Fail(
-                errorCode,
+                ApplicationErrorCodes.Common.DomainRuleViolation,
                 messageResult.Error ?? "Unable to create conversation message");
+        }
+
+        var attachments = new List<MessageAttachment>(attachmentResolution.Attachments.Count);
+        for (var i = 0; i < attachmentResolution.Attachments.Count; i++)
+        {
+            var resolved = attachmentResolution.Attachments[i];
+            var attachmentResult = MessageAttachment.Create(
+                messageResult.Value.Id,
+                resolved.FileId,
+                resolved.FileName,
+                resolved.ContentType,
+                resolved.SizeBytes,
+                position: i);
+            if (attachmentResult.IsFailure || attachmentResult.Value is null)
+            {
+                return ApplicationResponse<SendMessageResponse>.Fail(
+                    ApplicationErrorCodes.Common.DomainRuleViolation,
+                    attachmentResult.Error ?? "Unable to create message attachment");
+            }
+            attachments.Add(attachmentResult.Value);
         }
 
         ConversationParticipant[] hiddenParticipants = [];
@@ -143,6 +169,8 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendConversationM
 
         await using var transaction = await _unitOfWork.BeginAsync(cancellationToken);
         await _conversationMessageRepository.AddAsync(messageResult.Value, cancellationToken);
+        if (attachments.Count > 0)
+            await _messageAttachmentRepository.AddRangeAsync(attachments, cancellationToken);
         if (hiddenParticipants.Length > 0)
             await _participantRepository.UpdateRangeAsync(hiddenParticipants, cancellationToken);
         await transaction.CommitAsync(cancellationToken);
@@ -179,7 +207,7 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendConversationM
                 access.CallerUsername ?? string.Empty,
                 access.CallerDisplayName,
                 messageResult.Value.Content?.Value,
-                messageResult.Value.Attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
+                attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
                 replyTo,
                 messageResult.Value.CreatedAtUtc));
 
@@ -203,7 +231,7 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendConversationM
             ConversationId: messageConversationId.Value,
             AuthorUserId: messageResult.Value.AuthorUserId.Value,
             Content: messageResult.Value.Content?.Value,
-            Attachments: messageResult.Value.Attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
+            Attachments: attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
             ReplyTo: replyTo,
             CreatedAtUtc: messageResult.Value.CreatedAtUtc));
     }

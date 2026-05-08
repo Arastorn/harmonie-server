@@ -18,4 +18,15 @@ public sealed record MessageAttachmentDto(
             attachment.ContentType,
             attachment.SizeBytes);
     }
+
+    public static MessageAttachmentDto FromResolved(ResolvedAttachment resolved)
+    {
+        ArgumentNullException.ThrowIfNull(resolved);
+
+        return new MessageAttachmentDto(
+            resolved.FileId.Value,
+            resolved.FileName,
+            resolved.ContentType,
+            resolved.SizeBytes);
+    }
 }

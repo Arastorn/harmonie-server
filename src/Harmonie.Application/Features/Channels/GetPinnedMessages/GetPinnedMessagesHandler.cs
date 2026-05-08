@@ -4,6 +4,7 @@ using Harmonie.Application.Interfaces.Channels;
 using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Domain.Enums;
 using Harmonie.Domain.ValueObjects.Channels;
+using Harmonie.Domain.ValueObjects.Messages;
 using Harmonie.Domain.ValueObjects.Users;
 
 namespace Harmonie.Application.Features.Channels.GetPinnedMessages;
@@ -79,17 +80,22 @@ public sealed class GetPinnedMessagesHandler : IAuthenticatedHandler<GetChannelP
             cancellationToken);
 
         var items = page.Items
-            .Select(x => new GetPinnedMessagesItemResponse(
-                MessageId: x.MessageId,
-                AuthorUserId: x.AuthorUserId,
-                AuthorUsername: x.AuthorUsername,
-                AuthorDisplayName: x.AuthorDisplayName,
-                Content: x.Content,
-                Attachments: x.Attachments,
-                CreatedAtUtc: x.CreatedAtUtc,
-                UpdatedAtUtc: x.UpdatedAtUtc,
-                PinnedByUserId: x.PinnedByUserId,
-                PinnedAtUtc: x.PinnedAtUtc))
+            .Select(x =>
+            {
+                page.AttachmentsByMessageId.TryGetValue(MessageId.From(x.MessageId), out var attachments);
+                return new GetPinnedMessagesItemResponse(
+                    MessageId: x.MessageId,
+                    AuthorUserId: x.AuthorUserId,
+                    AuthorUsername: x.AuthorUsername,
+                    AuthorDisplayName: x.AuthorDisplayName,
+                    Content: x.Content,
+                    Attachments: attachments?.Select(MessageAttachmentDto.FromDomain).ToArray()
+                                 ?? Array.Empty<MessageAttachmentDto>(),
+                    CreatedAtUtc: x.CreatedAtUtc,
+                    UpdatedAtUtc: x.UpdatedAtUtc,
+                    PinnedByUserId: x.PinnedByUserId,
+                    PinnedAtUtc: x.PinnedAtUtc);
+            })
             .ToArray();
 
         return ApplicationResponse<GetPinnedMessagesResponse>.Ok(

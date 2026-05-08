@@ -1,5 +1,4 @@
 using Dapper;
-using Harmonie.Application.Common.Messages;
 using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Domain.Entities.Messages;
 using Harmonie.Domain.ValueObjects.Channels;
@@ -137,6 +136,24 @@ public sealed class PinnedMessageRepository : IPinnedMessageRepository
                      AND {cursorCondition}
                    ORDER BY pm.pinned_at_utc DESC, pm.message_id DESC
                    LIMIT @Take;
+
+                   SELECT ma.message_id AS ""MessageId"",
+                          ma.position AS ""Position"",
+                          uf.id AS ""UploadedFileId"",
+                          uf.filename AS ""FileName"",
+                          uf.content_type AS ""ContentType"",
+                          uf.size_bytes AS ""SizeBytes""
+                   FROM message_attachments ma
+                   INNER JOIN uploaded_files uf ON uf.id = ma.uploaded_file_id
+                   WHERE ma.message_id IN (
+                       SELECT pm.message_id
+                       FROM pinned_messages pm
+                       INNER JOIN messages m ON m.id = pm.message_id
+                       WHERE m.{context.Filter}
+                         AND {cursorCondition}
+                       ORDER BY pm.pinned_at_utc DESC, pm.message_id DESC
+                       LIMIT @Take)
+                   ORDER BY ma.message_id, ma.position;
                    ";
 
         var command = new CommandDefinition(
@@ -145,36 +162,36 @@ public sealed class PinnedMessageRepository : IPinnedMessageRepository
             transaction: _dbSession.Transaction,
             cancellationToken: cancellationToken);
 
-        var rows = (await connection.QueryAsync<PinnedMessageWithContentRow>(command)).ToArray();
+        using var multi = await connection.QueryMultipleAsync(command);
+        var rows = (await multi.ReadAsync<PinnedMessageWithContentRow>()).ToArray();
+        var attachmentRows = (await multi.ReadAsync<MessageAttachmentRow>()).ToArray();
 
         if (rows.Length == 0)
-            return new PinnedMessagesPage(Array.Empty<PinnedMessageSummary>(), null);
+            return new PinnedMessagesPage(
+                Array.Empty<PinnedMessageSummary>(),
+                new Dictionary<MessageId, IReadOnlyList<MessageAttachment>>(),
+                null);
 
         var hasMore = rows.Length > limit;
         var pageRows = hasMore ? rows.Take(limit).ToArray() : rows;
+        var pageMessageIds = new HashSet<Guid>(pageRows.Select(r => r.Id));
 
-        var messageIds = pageRows.Select(r => r.Id).ToArray();
-        var attachmentsByMessageId = await MessageRepositoryHelpers.GetAttachmentsByMessageIdsAsync(
-            _dbSession, messageIds, cancellationToken);
+        var attachmentsByMessageIdGuid = MessageAttachmentRepository.BuildByMessageIdDictionary(
+            attachmentRows.Where(r => pageMessageIds.Contains(r.MessageId)));
+        var attachmentsByMessageId = attachmentsByMessageIdGuid
+            .ToDictionary(kvp => MessageId.From(kvp.Key), kvp => kvp.Value);
 
         var items = pageRows
-            .Select(row =>
-            {
-                attachmentsByMessageId.TryGetValue(row.Id, out var attachments);
-                return new PinnedMessageSummary(
-                    MessageId: row.Id,
-                    AuthorUserId: row.AuthorUserId,
-                    AuthorUsername: row.AuthorUsername ?? string.Empty,
-                    AuthorDisplayName: row.AuthorDisplayName,
-                    Content: row.DeletedAtUtc is null ? row.Content : null,
-                    Attachments: attachments?.Select(a => new MessageAttachmentDto(
-                        a.FileId.Value, a.FileName, a.ContentType, a.SizeBytes)).ToArray()
-                        ?? Array.Empty<MessageAttachmentDto>(),
-                    CreatedAtUtc: row.CreatedAtUtc,
-                    UpdatedAtUtc: row.UpdatedAtUtc,
-                    PinnedByUserId: row.PinnedByUserId,
-                    PinnedAtUtc: row.PinnedAtUtc);
-            })
+            .Select(row => new PinnedMessageSummary(
+                MessageId: row.Id,
+                AuthorUserId: row.AuthorUserId,
+                AuthorUsername: row.AuthorUsername ?? string.Empty,
+                AuthorDisplayName: row.AuthorDisplayName,
+                Content: row.DeletedAtUtc is null ? row.Content : null,
+                CreatedAtUtc: row.CreatedAtUtc,
+                UpdatedAtUtc: row.UpdatedAtUtc,
+                PinnedByUserId: row.PinnedByUserId,
+                PinnedAtUtc: row.PinnedAtUtc))
             .ToArray();
 
         PinnedMessagesCursor? nextCursor = null;
@@ -184,7 +201,7 @@ public sealed class PinnedMessageRepository : IPinnedMessageRepository
             nextCursor = new PinnedMessagesCursor(lastRow.PinnedAtUtc, lastRow.Id);
         }
 
-        return new PinnedMessagesPage(items, nextCursor);
+        return new PinnedMessagesPage(items, attachmentsByMessageId, nextCursor);
     }
 
 }

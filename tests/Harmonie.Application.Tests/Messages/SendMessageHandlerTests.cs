@@ -28,6 +28,7 @@ public sealed class SendMessageHandlerTests
 {
     private readonly Mock<IGuildChannelRepository> _guildChannelRepositoryMock;
     private readonly Mock<IMessageRepository> _channelMessageRepositoryMock;
+    private readonly Mock<IMessageAttachmentRepository> _messageAttachmentRepositoryMock;
     private readonly Mock<IUploadedFileRepository> _uploadedFileRepositoryMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly Mock<IUnitOfWorkTransaction> _transactionMock;
@@ -70,9 +71,12 @@ public sealed class SendMessageHandlerTests
         _serviceScopeFactoryMock.Setup(f => f.CreateScope())
             .Returns(scopeMock.Object);
 
+        _messageAttachmentRepositoryMock = new Mock<IMessageAttachmentRepository>();
+
         _handler = new SendMessageHandler(
             _guildChannelRepositoryMock.Object,
             _channelMessageRepositoryMock.Object,
+            _messageAttachmentRepositoryMock.Object,
             new MessageAttachmentResolver(_uploadedFileRepositoryMock.Object),
             _unitOfWorkMock.Object,
             _textChannelNotifierMock.Object,
@@ -184,6 +188,12 @@ public sealed class SendMessageHandlerTests
             .Callback<Message, CancellationToken>((message, _) => persistedMessage = message)
             .Returns(Task.CompletedTask);
 
+        IReadOnlyCollection<MessageAttachment>? persistedAttachments = null;
+        _messageAttachmentRepositoryMock
+            .Setup(x => x.AddRangeAsync(It.IsAny<IEnumerable<MessageAttachment>>(), It.IsAny<CancellationToken>()))
+            .Callback<IEnumerable<MessageAttachment>, CancellationToken>((items, _) => persistedAttachments = items.ToArray())
+            .Returns(Task.CompletedTask);
+
         var response = await _handler.HandleAsync(
             new SendChannelMessageInput(channel.Id, null, [attachment.Id]),
             userId,
@@ -196,7 +206,8 @@ public sealed class SendMessageHandlerTests
         response.Data.Attachments.Should().ContainSingle();
         persistedMessage.Should().NotBeNull();
         persistedMessage!.Content.Should().BeNull();
-        persistedMessage.Attachments.Should().ContainSingle();
+        persistedAttachments.Should().NotBeNull();
+        persistedAttachments!.Should().ContainSingle();
         _unitOfWorkMock.Verify(x => x.BeginAsync(It.IsAny<CancellationToken>()), Times.Once);
         _transactionMock.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -264,6 +275,12 @@ public sealed class SendMessageHandlerTests
             .Callback<Message, CancellationToken>((message, _) => persistedMessage = message)
             .Returns(Task.CompletedTask);
 
+        IReadOnlyCollection<MessageAttachment>? persistedAttachments = null;
+        _messageAttachmentRepositoryMock
+            .Setup(x => x.AddRangeAsync(It.IsAny<IEnumerable<MessageAttachment>>(), It.IsAny<CancellationToken>()))
+            .Callback<IEnumerable<MessageAttachment>, CancellationToken>((items, _) => persistedAttachments = items.ToArray())
+            .Returns(Task.CompletedTask);
+
         var response = await _handler.HandleAsync(
             new SendChannelMessageInput(channel.Id, "message with file", [attachment.Id]),
             userId,
@@ -274,8 +291,9 @@ public sealed class SendMessageHandlerTests
         response.Data!.Attachments.Should().ContainSingle();
         response.Data.Attachments[0].FileId.Should().Be(attachment.Id.Value);
         persistedMessage.Should().NotBeNull();
-        persistedMessage!.Attachments.Should().ContainSingle();
-        persistedMessage.Attachments[0].FileId.Should().Be(attachment.Id);
+        persistedAttachments.Should().NotBeNull();
+        persistedAttachments!.Should().ContainSingle();
+        persistedAttachments!.First().FileId.Should().Be(attachment.Id);
     }
 
     [Fact]

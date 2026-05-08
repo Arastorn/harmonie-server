@@ -18,6 +18,7 @@ public sealed class EditMessageHandler : IAuthenticatedHandler<EditConversationM
 
     private readonly IConversationRepository _conversationRepository;
     private readonly IMessageRepository _conversationMessageRepository;
+    private readonly IMessageAttachmentRepository _messageAttachmentRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IConversationMessageNotifier _conversationMessageNotifier;
     private readonly ILogger<EditMessageHandler> _logger;
@@ -25,12 +26,14 @@ public sealed class EditMessageHandler : IAuthenticatedHandler<EditConversationM
     public EditMessageHandler(
         IConversationRepository conversationRepository,
         IMessageRepository conversationMessageRepository,
+        IMessageAttachmentRepository messageAttachmentRepository,
         IUnitOfWork unitOfWork,
         IConversationMessageNotifier conversationMessageNotifier,
         ILogger<EditMessageHandler> logger)
     {
         _conversationRepository = conversationRepository;
         _conversationMessageRepository = conversationMessageRepository;
+        _messageAttachmentRepository = messageAttachmentRepository;
         _unitOfWork = unitOfWork;
         _conversationMessageNotifier = conversationMessageNotifier;
         _logger = logger;
@@ -109,12 +112,14 @@ public sealed class EditMessageHandler : IAuthenticatedHandler<EditConversationM
                 message.Content?.Value,
                 updatedAtUtc.Value));
 
+        var attachments = await _messageAttachmentRepository.GetByMessageIdAsync(message.Id, cancellationToken);
+
         return ApplicationResponse<EditMessageResponse>.Ok(new EditMessageResponse(
             MessageId: message.Id.Value,
             ConversationId: messageConversationId.Value,
             AuthorUserId: message.AuthorUserId.Value,
             Content: message.Content?.Value,
-            Attachments: message.Attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
+            Attachments: attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
             CreatedAtUtc: message.CreatedAtUtc,
             UpdatedAtUtc: updatedAtUtc));
     }

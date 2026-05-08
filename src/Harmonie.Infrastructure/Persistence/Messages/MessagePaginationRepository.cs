@@ -192,7 +192,7 @@ internal sealed class MessagePaginationRepository : IMessagePaginationRepository
         var pageRows = hasMore ? rows.Take(limit).ToArray() : rows;
         var pageMessageIds = new HashSet<Guid>(pageRows.Select(row => row.Id));
 
-        var attachmentsByMessageId = MessageRepositoryHelpers.BuildAttachmentsDictionary(
+        var attachmentsByMessageId = MessageAttachmentRepository.BuildByMessageIdDictionary(
             attachmentRows.Where(r => pageMessageIds.Contains(r.MessageId)));
         var reactionsByMessageId = MessageRepositoryHelpers.BuildReactionsDictionary(
             reactionRows.Where(r => pageMessageIds.Contains(r.MessageId)),
@@ -217,7 +217,7 @@ internal sealed class MessagePaginationRepository : IMessagePaginationRepository
                     r.DeletedAtUtc));
 
         var items = pageRows
-            .Select(row => MessageRepositoryHelpers.MapToMessage(row, attachmentsByMessageId))
+            .Select(row => MessageRepositoryHelpers.MapToMessage(row))
             .OrderBy(x => x.CreatedAtUtc)
             .ThenBy(x => x.Id.Value)
             .ToArray();
@@ -240,7 +240,7 @@ internal sealed class MessagePaginationRepository : IMessagePaginationRepository
                 readStateRow.ReadAtUtc);
         }
 
-        return new MessagePage(items, nextCursor, reactionsByMessageId, linkPreviewsByMessageId, pinnedMessageIds, replyPreviewsByTargetMessageId, lastReadState);
+        return new MessagePage(items, nextCursor, reactionsByMessageId, attachmentsByMessageId, linkPreviewsByMessageId, pinnedMessageIds, replyPreviewsByTargetMessageId, lastReadState);
     }
 
     public async Task<MessagePage> GetConversationPageAsync(
@@ -414,7 +414,7 @@ internal sealed class MessagePaginationRepository : IMessagePaginationRepository
         var pageRows = hasMore ? rows.Take(limit).ToArray() : rows;
         var pageMessageIds = new HashSet<Guid>(pageRows.Select(row => row.Id));
 
-        var attachmentsByMessageId = MessageRepositoryHelpers.BuildAttachmentsDictionary(
+        var attachmentsByMessageId = MessageAttachmentRepository.BuildByMessageIdDictionary(
             attachmentRows.Where(r => pageMessageIds.Contains(r.MessageId)));
         var reactionsByMessageId = MessageRepositoryHelpers.BuildReactionsDictionary(
             reactionRows.Where(r => pageMessageIds.Contains(r.MessageId)),
@@ -439,7 +439,7 @@ internal sealed class MessagePaginationRepository : IMessagePaginationRepository
                     r.DeletedAtUtc));
 
         var items = pageRows
-            .Select(row => MessageRepositoryHelpers.MapToMessage(row, attachmentsByMessageId))
+            .Select(row => MessageRepositoryHelpers.MapToMessage(row))
             .OrderBy(x => x.CreatedAtUtc)
             .ThenBy(x => x.Id.Value)
             .ToArray();
@@ -462,7 +462,7 @@ internal sealed class MessagePaginationRepository : IMessagePaginationRepository
                 readStateRow.ReadAtUtc);
         }
 
-        return new MessagePage(items, nextCursor, reactionsByMessageId, linkPreviewsByMessageId, pinnedMessageIds, replyPreviewsByTargetMessageId, lastReadState);
+        return new MessagePage(items, nextCursor, reactionsByMessageId, attachmentsByMessageId, linkPreviewsByMessageId, pinnedMessageIds, replyPreviewsByTargetMessageId, lastReadState);
     }
 
     private sealed class ReadStateRow

@@ -27,6 +27,7 @@ public sealed class SendConversationMessageHandlerTests
     private readonly Mock<IConversationRepository> _conversationRepositoryMock;
     private readonly Mock<IConversationParticipantRepository> _participantRepositoryMock;
     private readonly Mock<IMessageRepository> _directMessageRepositoryMock;
+    private readonly Mock<IMessageAttachmentRepository> _messageAttachmentRepositoryMock;
     private readonly Mock<IUploadedFileRepository> _uploadedFileRepositoryMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly Mock<IUnitOfWorkTransaction> _transactionMock;
@@ -70,10 +71,13 @@ public sealed class SendConversationMessageHandlerTests
         _serviceScopeFactoryMock.Setup(f => f.CreateScope())
             .Returns(scopeMock.Object);
 
+        _messageAttachmentRepositoryMock = new Mock<IMessageAttachmentRepository>();
+
         _handler = new SendMessageHandler(
             _conversationRepositoryMock.Object,
             _participantRepositoryMock.Object,
             _directMessageRepositoryMock.Object,
+            _messageAttachmentRepositoryMock.Object,
             new MessageAttachmentResolver(_uploadedFileRepositoryMock.Object),
             _unitOfWorkMock.Object,
             _directMessageNotifierMock.Object,
@@ -215,6 +219,12 @@ public sealed class SendConversationMessageHandlerTests
             .Callback<Message, CancellationToken>((message, _) => persistedMessage = message)
             .Returns(Task.CompletedTask);
 
+        IReadOnlyCollection<MessageAttachment>? persistedAttachments = null;
+        _messageAttachmentRepositoryMock
+            .Setup(x => x.AddRangeAsync(It.IsAny<IEnumerable<MessageAttachment>>(), It.IsAny<CancellationToken>()))
+            .Callback<IEnumerable<MessageAttachment>, CancellationToken>((items, _) => persistedAttachments = items.ToArray())
+            .Returns(Task.CompletedTask);
+
         var response = await _handler.HandleAsync(
             new SendConversationMessageInput(conversation.Id, "hello dm", [attachment.Id]),
             currentUserId,
@@ -225,8 +235,9 @@ public sealed class SendConversationMessageHandlerTests
         response.Data!.Attachments.Should().ContainSingle();
         response.Data.Attachments[0].FileId.Should().Be(attachment.Id.Value);
         persistedMessage.Should().NotBeNull();
-        persistedMessage!.Attachments.Should().ContainSingle();
-        persistedMessage.Attachments[0].FileId.Should().Be(attachment.Id);
+        persistedAttachments.Should().NotBeNull();
+        persistedAttachments!.Should().ContainSingle();
+        persistedAttachments!.First().FileId.Should().Be(attachment.Id);
     }
 
     [Fact]

@@ -5,7 +5,6 @@ using Harmonie.Domain.ValueObjects.Guilds;
 using Harmonie.Domain.ValueObjects.Channels;
 using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.ValueObjects.Messages;
-using Harmonie.Domain.ValueObjects.Uploads;
 using Harmonie.Domain.ValueObjects.Users;
 using Harmonie.Infrastructure.Persistence.Common;
 using Harmonie.Infrastructure.Rows.Messages;
@@ -81,33 +80,6 @@ internal sealed class MessageRepository : IMessageRepository
             cancellationToken: cancellationToken);
 
         await connection.ExecuteAsync(command);
-
-        if (message.Attachments.Count == 0)
-            return;
-
-        const string attachmentSql = """
-                                     INSERT INTO message_attachments (
-                                         message_id,
-                                         uploaded_file_id,
-                                         position)
-                                     VALUES (
-                                         @MessageId,
-                                         @UploadedFileId,
-                                         @Position)
-                                     """;
-
-        var attachmentCommand = new CommandDefinition(
-            attachmentSql,
-            message.Attachments.Select((attachment, index) => new
-            {
-                MessageId = message.Id.Value,
-                UploadedFileId = attachment.FileId.Value,
-                Position = index
-            }),
-            transaction: _dbSession.Transaction,
-            cancellationToken: cancellationToken);
-
-        await connection.ExecuteAsync(attachmentCommand);
     }
 
     public async Task<Message?> GetByIdAsync(
@@ -140,9 +112,7 @@ internal sealed class MessageRepository : IMessageRepository
         if (row is null)
             return null;
 
-        var attachmentsByMessageId = await MessageRepositoryHelpers.GetAttachmentsByMessageIdsAsync(
-            _dbSession, [row.Id], cancellationToken);
-        return MessageRepositoryHelpers.MapToMessage(row, attachmentsByMessageId);
+        return MessageRepositoryHelpers.MapToMessage(row);
     }
 
     public async Task UpdateAsync(
@@ -325,28 +295,4 @@ internal sealed class MessageRepository : IMessageRepository
         return await connection.ExecuteAsync(command);
     }
 
-    public async Task RemoveAttachmentAsync(
-        MessageId messageId,
-        UploadedFileId attachmentFileId,
-        CancellationToken cancellationToken = default)
-    {
-        const string sql = """
-                           DELETE FROM message_attachments
-                           WHERE message_id = @MessageId
-                             AND uploaded_file_id = @UploadedFileId
-                           """;
-
-        var connection = await _dbSession.GetOpenConnectionAsync(cancellationToken);
-        var command = new CommandDefinition(
-            sql,
-            new
-            {
-                MessageId = messageId.Value,
-                UploadedFileId = attachmentFileId.Value
-            },
-            transaction: _dbSession.Transaction,
-            cancellationToken: cancellationToken);
-
-        await connection.ExecuteAsync(command);
-    }
 }

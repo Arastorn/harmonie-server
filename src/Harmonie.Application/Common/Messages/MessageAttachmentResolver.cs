@@ -1,10 +1,15 @@
 using Harmonie.Application.Interfaces.Uploads;
-using Harmonie.Domain.Entities.Messages;
 using Harmonie.Domain.Enums;
 using Harmonie.Domain.ValueObjects.Uploads;
 using Harmonie.Domain.ValueObjects.Users;
 
 namespace Harmonie.Application.Common.Messages;
+
+public sealed record ResolvedAttachment(
+    UploadedFileId FileId,
+    string FileName,
+    string ContentType,
+    long SizeBytes);
 
 public sealed class MessageAttachmentResolver
 {
@@ -21,7 +26,7 @@ public sealed class MessageAttachmentResolver
         CancellationToken cancellationToken = default)
     {
         if (attachmentFileIds is null || attachmentFileIds.Count == 0)
-            return MessageAttachmentResolutionResult.Succeeded(Array.Empty<MessageAttachment>());
+            return MessageAttachmentResolutionResult.Succeeded(Array.Empty<ResolvedAttachment>());
 
         var parsedIds = new List<UploadedFileId>(attachmentFileIds.Count);
         var seenIds = new HashSet<Guid>();
@@ -45,7 +50,7 @@ public sealed class MessageAttachmentResolver
         }
 
         var uploadedFilesById = uploadedFiles.ToDictionary(file => file.Id.Value);
-        var attachments = new List<MessageAttachment>(parsedIds.Count);
+        var attachments = new List<ResolvedAttachment>(parsedIds.Count);
 
         foreach (var parsedId in parsedIds)
         {
@@ -67,7 +72,7 @@ public sealed class MessageAttachmentResolver
                     "Only files uploaded with attachment purpose can be attached to messages.");
             }
 
-            attachments.Add(new MessageAttachment(
+            attachments.Add(new ResolvedAttachment(
                 uploadedFile.Id,
                 uploadedFile.FileName,
                 uploadedFile.ContentType,
@@ -80,12 +85,12 @@ public sealed class MessageAttachmentResolver
 
 public sealed record MessageAttachmentResolutionResult(
     bool Success,
-    IReadOnlyList<MessageAttachment> Attachments,
+    IReadOnlyList<ResolvedAttachment> Attachments,
     string? Error)
 {
-    public static MessageAttachmentResolutionResult Succeeded(IReadOnlyList<MessageAttachment> attachments)
+    public static MessageAttachmentResolutionResult Succeeded(IReadOnlyList<ResolvedAttachment> attachments)
         => new(true, attachments, null);
 
     public static MessageAttachmentResolutionResult Failed(string error)
-        => new(false, Array.Empty<MessageAttachment>(), error);
+        => new(false, Array.Empty<ResolvedAttachment>(), error);
 }

@@ -22,6 +22,7 @@ public sealed class EditMessageHandlerTests
 {
     private readonly Mock<IGuildChannelRepository> _guildChannelRepositoryMock;
     private readonly Mock<IMessageRepository> _channelMessageRepositoryMock;
+    private readonly Mock<IMessageAttachmentRepository> _messageAttachmentRepositoryMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly Mock<IUnitOfWorkTransaction> _transactionMock;
     private readonly Mock<ITextChannelNotifier> _textChannelNotifierMock;
@@ -41,9 +42,15 @@ public sealed class EditMessageHandlerTests
             .Setup(x => x.NotifyMessageUpdatedAsync(It.IsAny<TextChannelMessageUpdatedNotification>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
+        _messageAttachmentRepositoryMock = new Mock<IMessageAttachmentRepository>();
+        _messageAttachmentRepositoryMock
+            .Setup(x => x.GetByMessageIdAsync(It.IsAny<MessageId>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<MessageAttachment>());
+
         _handler = new EditMessageHandler(
             _guildChannelRepositoryMock.Object,
             _channelMessageRepositoryMock.Object,
+            _messageAttachmentRepositoryMock.Object,
             _unitOfWorkMock.Object,
             _textChannelNotifierMock.Object,
             NullLogger<EditMessageHandler>.Instance);

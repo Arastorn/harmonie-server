@@ -17,17 +17,20 @@ public sealed class DeleteMessageAttachmentHandler : IAuthenticatedHandler<Delet
 {
     private readonly IGuildChannelRepository _guildChannelRepository;
     private readonly IMessageRepository _messageRepository;
+    private readonly IMessageAttachmentRepository _messageAttachmentRepository;
     private readonly UploadedFileCleanupService _uploadedFileCleanupService;
     private readonly IUnitOfWork _unitOfWork;
 
     public DeleteMessageAttachmentHandler(
         IGuildChannelRepository guildChannelRepository,
         IMessageRepository messageRepository,
+        IMessageAttachmentRepository messageAttachmentRepository,
         UploadedFileCleanupService uploadedFileCleanupService,
         IUnitOfWork unitOfWork)
     {
         _guildChannelRepository = guildChannelRepository;
         _messageRepository = messageRepository;
+        _messageAttachmentRepository = messageAttachmentRepository;
         _uploadedFileCleanupService = uploadedFileCleanupService;
         _unitOfWork = unitOfWork;
     }
@@ -75,19 +78,18 @@ public sealed class DeleteMessageAttachmentHandler : IAuthenticatedHandler<Delet
                 "You can only delete attachments from your own messages");
         }
 
-        var removeAttachmentResult = message.RemoveAttachment(request.AttachmentId);
-        if (removeAttachmentResult.IsFailure)
+        bool deleted;
+        await using (var transaction = await _unitOfWork.BeginAsync(cancellationToken))
+        {
+            deleted = await _messageAttachmentRepository.DeleteAsync(message.Id, request.AttachmentId, cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        }
+
+        if (!deleted)
         {
             return ApplicationResponse<bool>.Fail(
                 ApplicationErrorCodes.Message.AttachmentNotFound,
-                removeAttachmentResult.Error ?? "Attachment was not found on message");
-        }
-
-        await using (var transaction = await _unitOfWork.BeginAsync(cancellationToken))
-        {
-            await _messageRepository.UpdateAsync(message, cancellationToken);
-            await _messageRepository.RemoveAttachmentAsync(message.Id, request.AttachmentId, cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
+                "Attachment was not found on message");
         }
 
         await _uploadedFileCleanupService.DeleteIfExistsAsync(request.AttachmentId, cancellationToken);

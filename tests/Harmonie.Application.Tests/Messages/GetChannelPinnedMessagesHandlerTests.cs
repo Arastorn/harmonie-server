@@ -1,13 +1,14 @@
 using FluentAssertions;
 using Harmonie.Application.Common;
-using Harmonie.Application.Common.Messages;
 using Harmonie.Application.Features.Channels.GetPinnedMessages;
 using Harmonie.Application.Interfaces.Channels;
 using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Application.Tests.Common;
 using Harmonie.Domain.Entities.Guilds;
+using Harmonie.Domain.Entities.Messages;
 using Harmonie.Domain.Enums;
 using Harmonie.Domain.ValueObjects.Channels;
+using Harmonie.Domain.ValueObjects.Messages;
 using Harmonie.Domain.ValueObjects.Users;
 using Moq;
 using Xunit;
@@ -88,7 +89,10 @@ public sealed class GetChannelPinnedMessagesHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(channel.Id, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ChannelAccessContext(channel, GuildRole.Member));
 
-        var emptyPage = new PinnedMessagesPage(Array.Empty<PinnedMessageSummary>(), null);
+        var emptyPage = new PinnedMessagesPage(
+            Array.Empty<PinnedMessageSummary>(),
+            new Dictionary<MessageId, IReadOnlyList<MessageAttachment>>(),
+            null);
         _pinnedMessageRepositoryMock
             .Setup(x => x.GetPinnedMessagesAsync(channel.Id, callerId, null, It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(emptyPage);
@@ -113,14 +117,12 @@ public sealed class GetChannelPinnedMessagesHandlerTests
                 MessageId: Guid.NewGuid(), AuthorUserId: Guid.NewGuid(),
                 AuthorUsername: "second_user", AuthorDisplayName: "Second",
                 Content: "second",
-                Attachments: Array.Empty<MessageAttachmentDto>(),
                 CreatedAtUtc: now.AddMinutes(-2), UpdatedAtUtc: null,
                 PinnedByUserId: Guid.NewGuid(), PinnedAtUtc: now.AddMinutes(-1)),
             new PinnedMessageSummary(
                 MessageId: Guid.NewGuid(), AuthorUserId: Guid.NewGuid(),
                 AuthorUsername: "first_user", AuthorDisplayName: "First",
                 Content: "first",
-                Attachments: Array.Empty<MessageAttachmentDto>(),
                 CreatedAtUtc: now.AddMinutes(-10), UpdatedAtUtc: null,
                 PinnedByUserId: Guid.NewGuid(), PinnedAtUtc: now)
         };
@@ -129,7 +131,10 @@ public sealed class GetChannelPinnedMessagesHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(channel.Id, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ChannelAccessContext(channel, GuildRole.Member));
 
-        var page = new PinnedMessagesPage(summaries, null);
+        var page = new PinnedMessagesPage(
+            summaries,
+            new Dictionary<MessageId, IReadOnlyList<MessageAttachment>>(),
+            null);
         _pinnedMessageRepositoryMock
             .Setup(x => x.GetPinnedMessagesAsync(channel.Id, callerId, null, It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(page);

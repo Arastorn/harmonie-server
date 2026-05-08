@@ -1,12 +1,13 @@
 using FluentAssertions;
 using Harmonie.Application.Common;
-using Harmonie.Application.Common.Messages;
 using Harmonie.Application.Features.Conversations.GetPinnedMessages;
 using Harmonie.Application.Interfaces.Conversations;
 using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Application.Tests.Common;
 using Harmonie.Domain.Entities.Conversations;
+using Harmonie.Domain.Entities.Messages;
 using Harmonie.Domain.ValueObjects.Conversations;
+using Harmonie.Domain.ValueObjects.Messages;
 using Harmonie.Domain.ValueObjects.Users;
 using Moq;
 using Xunit;
@@ -72,7 +73,10 @@ public sealed class GetConversationPinnedMessagesHandlerTests
             .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, participant, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ConversationAccess(conversation, participantObj));
 
-        var emptyPage = new PinnedMessagesPage(Array.Empty<PinnedMessageSummary>(), null);
+        var emptyPage = new PinnedMessagesPage(
+            Array.Empty<PinnedMessageSummary>(),
+            new Dictionary<MessageId, IReadOnlyList<MessageAttachment>>(),
+            null);
         _pinnedMessageRepositoryMock
             .Setup(x => x.GetPinnedMessagesAsync(conversation.Id, participant, null, It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(emptyPage);
@@ -98,7 +102,6 @@ public sealed class GetConversationPinnedMessagesHandlerTests
                 MessageId: Guid.NewGuid(), AuthorUserId: participant.Value,
                 AuthorUsername: "dm_user", AuthorDisplayName: "DM User",
                 Content: "pinned dm",
-                Attachments: Array.Empty<MessageAttachmentDto>(),
                 CreatedAtUtc: now, UpdatedAtUtc: null,
                 PinnedByUserId: participant.Value, PinnedAtUtc: now)
         };
@@ -107,7 +110,10 @@ public sealed class GetConversationPinnedMessagesHandlerTests
             .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, participant, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ConversationAccess(conversation, participantObj));
 
-        var page = new PinnedMessagesPage(summaries, null);
+        var page = new PinnedMessagesPage(
+            summaries,
+            new Dictionary<MessageId, IReadOnlyList<MessageAttachment>>(),
+            null);
         _pinnedMessageRepositoryMock
             .Setup(x => x.GetPinnedMessagesAsync(conversation.Id, participant, null, It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(page);

@@ -7,6 +7,7 @@ using Harmonie.Domain.ValueObjects.Messages;
 using Harmonie.Domain.ValueObjects.Uploads;
 using Harmonie.Domain.ValueObjects.Users;
 
+
 namespace Harmonie.Application.Interfaces.Messages;
 
 public sealed record ReplyTargetSummary(
@@ -33,11 +34,6 @@ public interface IMessageRepository
 
     Task UpdateAsync(
         Message message,
-        CancellationToken cancellationToken = default);
-
-    Task RemoveAttachmentAsync(
-        MessageId messageId,
-        UploadedFileId attachmentFileId,
         CancellationToken cancellationToken = default);
 
     Task SoftDeleteAsync(
@@ -71,6 +67,7 @@ public sealed record MessagePage(
     IReadOnlyList<Message> Items,
     MessageCursor? NextCursor,
     IReadOnlyDictionary<Guid, IReadOnlyList<MessageReactionSummary>> ReactionsByMessageId,
+    IReadOnlyDictionary<Guid, IReadOnlyList<MessageAttachment>> AttachmentsByMessageId,
     IReadOnlyDictionary<Guid, IReadOnlyList<LinkPreviewDto>>? LinkPreviewsByMessageId = null,
     IReadOnlySet<Guid>? PinnedMessageIds = null,
     IReadOnlyDictionary<Guid, ReplyPreviewDto>? ReplyPreviewsByTargetMessageId = null,
