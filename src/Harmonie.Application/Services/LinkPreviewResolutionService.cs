@@ -36,7 +36,7 @@ public sealed class LinkPreviewResolutionService
         _logger = logger;
     }
 
-    public IReadOnlyList<Uri> ParseUrls(string? content)
+    public static IReadOnlyList<Uri> ParseUrls(string? content)
     {
         if (string.IsNullOrWhiteSpace(content))
             return Array.Empty<Uri>();

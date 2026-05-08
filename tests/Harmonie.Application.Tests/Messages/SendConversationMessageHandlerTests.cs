@@ -84,7 +84,6 @@ public sealed class SendConversationMessageHandlerTests
             new LinkPreviewResolutionService(
                 _serviceScopeFactoryMock.Object,
                 NullLogger<LinkPreviewResolutionService>.Instance),
-            _directMessageRepositoryMock.Object,
             NullLogger<SendMessageHandler>.Instance);
     }
 
