@@ -31,7 +31,7 @@ public sealed class ReactionOrchestrator
         string emoji,
         UserId callerId,
         CancellationToken ct)
-        where TContext : SendScopeContext
+        where TContext : ScopeContext
     {
         var authResult = await scope.AuthorizeAsync(callerId, ct);
         if (authResult is AuthorizationResult<TContext>.Denied denied)
@@ -47,7 +47,6 @@ public sealed class ReactionOrchestrator
                 "Message was not found");
         }
 
-        await using var transaction = await _unitOfWork.BeginAsync(ct);
         var reaction = MessageReaction.Create(messageId, callerId, emoji);
         if (reaction.IsFailure || reaction.Value is null)
         {
@@ -56,6 +55,7 @@ public sealed class ReactionOrchestrator
                 reaction.Error ?? "Invalid reaction");
         }
 
+        await using var transaction = await _unitOfWork.BeginAsync(ct);
         await _reactionRepository.AddAsync(reaction.Value, ct);
         await transaction.CommitAsync(ct);
 
@@ -71,7 +71,7 @@ public sealed class ReactionOrchestrator
         string emoji,
         UserId callerId,
         CancellationToken ct)
-        where TContext : SendScopeContext
+        where TContext : ScopeContext
     {
         var authResult = await scope.AuthorizeAsync(callerId, ct);
         if (authResult is AuthorizationResult<TContext>.Denied denied)
@@ -105,8 +105,12 @@ public sealed class ReactionOrchestrator
         int? rawLimit,
         UserId callerId,
         CancellationToken ct)
-        where TContext : SendScopeContext
+        where TContext : ScopeContext
     {
+        var authResult = await scope.AuthorizeAsync(callerId, ct);
+        if (authResult is AuthorizationResult<TContext>.Denied denied)
+            return ApplicationResponse<ReactionUsersResult>.Fail(denied.Error);
+
         ReactionUsersCursor? cursor = null;
         if (rawCursor is not null)
         {
@@ -124,10 +128,6 @@ public sealed class ReactionOrchestrator
         }
 
         var limit = Math.Clamp(rawLimit ?? 50, 1, 100);
-
-        var authResult = await scope.AuthorizeAsync(callerId, ct);
-        if (authResult is AuthorizationResult<TContext>.Denied denied)
-            return ApplicationResponse<ReactionUsersResult>.Fail(denied.Error);
 
         var message = await _messageRepository.GetByIdAsync(messageId, ct);
         if (message is null || message.Scope != messageScope)

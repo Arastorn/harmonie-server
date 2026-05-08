@@ -1,5 +1,7 @@
 using Harmonie.Application.Common;
 using Harmonie.Application.Common.Messages;
+using Harmonie.Application.Features.Conversations.Reactions;
+using Harmonie.Application.Features.Conversations.AddReaction;
 using Harmonie.Application.Interfaces.Conversations;
 using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Domain.ValueObjects.Conversations;

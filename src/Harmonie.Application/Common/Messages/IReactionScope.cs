@@ -7,7 +7,7 @@ namespace Harmonie.Application.Common.Messages;
 /// <summary>
 /// Scope-specific concerns for reaction operations (authorization and notification).
 /// </summary>
-public interface IReactionScope<TContext> where TContext : SendScopeContext
+public interface IReactionScope<TContext> where TContext : ScopeContext
 {
     Task<AuthorizationResult<TContext>> AuthorizeAsync(UserId caller, CancellationToken ct);
     Task NotifyReactionAddedAsync(TContext context, MessageId messageId, UserId userId, string emoji, CancellationToken ct);

@@ -8,7 +8,7 @@ using Harmonie.Domain.ValueObjects.Messages;
 using Harmonie.Domain.ValueObjects.Users;
 using Microsoft.Extensions.Logging;
 
-namespace Harmonie.Application.Features.Conversations.AddReaction;
+namespace Harmonie.Application.Features.Conversations.Reactions;
 
 public sealed class ConversationReactionScope : IReactionScope<ConversationReactionScope.Context>
 {
@@ -19,7 +19,7 @@ public sealed class ConversationReactionScope : IReactionScope<ConversationReact
         string? ConversationName,
         ConversationType ConversationType,
         string CallerUsername,
-        string CallerDisplayName) : SendScopeContext;
+        string CallerDisplayName) : ScopeContext;
 
     private readonly ConversationId _conversationId;
     private readonly IConversationRepository _conversationRepository;

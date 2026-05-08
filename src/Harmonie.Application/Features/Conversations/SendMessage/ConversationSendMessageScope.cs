@@ -23,7 +23,7 @@ public sealed class ConversationSendMessageScope : ISendMessageScope<Conversatio
         ConversationType ConversationType,
         IReadOnlyList<ConversationParticipant> AllParticipants,
         string CallerUsername,
-        string CallerDisplayName) : SendScopeContext;
+        string CallerDisplayName) : ScopeContext;
 
     private readonly ConversationId _conversationId;
     private readonly IConversationRepository _conversationRepository;

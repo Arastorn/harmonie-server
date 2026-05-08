@@ -9,7 +9,7 @@ using Harmonie.Domain.ValueObjects.Messages;
 using Harmonie.Domain.ValueObjects.Users;
 using Microsoft.Extensions.Logging;
 
-namespace Harmonie.Application.Features.Channels.AddReaction;
+namespace Harmonie.Application.Features.Channels.Reactions;
 
 public sealed class ChannelReactionScope : IReactionScope<ChannelReactionScope.Context>
 {
@@ -21,7 +21,7 @@ public sealed class ChannelReactionScope : IReactionScope<ChannelReactionScope.C
         GuildId GuildId,
         string GuildName,
         string CallerUsername,
-        string CallerDisplayName) : SendScopeContext;
+        string CallerDisplayName) : ScopeContext;
 
     private readonly GuildChannelId _channelId;
     private readonly IGuildChannelRepository _guildChannelRepository;

@@ -41,7 +41,7 @@ public sealed class MessageSendOrchestrator
         Guid? replyToMessageId,
         UserId callerId,
         CancellationToken ct)
-        where TContext : SendScopeContext
+        where TContext : ScopeContext
     {
         // ── Content validation ──────────────────────────────────────────
         MessageContent? content = null;

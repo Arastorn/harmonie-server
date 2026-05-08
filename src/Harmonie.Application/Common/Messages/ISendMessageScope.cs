@@ -9,16 +9,16 @@ namespace Harmonie.Application.Common.Messages;
 /// and consumed by downstream scope methods. Concrete subtypes are internal to
 /// each scope implementation.
 /// </summary>
-public abstract record SendScopeContext
+public abstract record ScopeContext
 {
-    protected SendScopeContext() { }
+    protected ScopeContext() { }
 }
 
 /// <summary>
 /// Abstraction over scope-specific concerns for message operations
 /// (authorization, notification, link previews, in-transaction side effects).
 /// </summary>
-public interface ISendMessageScope<TContext> where TContext : SendScopeContext
+public interface ISendMessageScope<TContext> where TContext : ScopeContext
 {
     /// <summary>
     /// Authorizes the caller for the scope.
@@ -57,7 +57,7 @@ public interface ISendMessageScope<TContext> where TContext : SendScopeContext
 /// <summary>
 /// Discriminated union for the result of scope authorization.
 /// </summary>
-public abstract record AuthorizationResult<TContext> where TContext : SendScopeContext
+public abstract record AuthorizationResult<TContext> where TContext : ScopeContext
 {
     private AuthorizationResult() { }
 
