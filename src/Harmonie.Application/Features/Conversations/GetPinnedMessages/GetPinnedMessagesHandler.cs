@@ -3,6 +3,7 @@ using Harmonie.Application.Common.Messages;
 using Harmonie.Application.Interfaces.Conversations;
 using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Domain.ValueObjects.Conversations;
+using Harmonie.Domain.ValueObjects.Messages;
 using Harmonie.Domain.ValueObjects.Users;
 
 namespace Harmonie.Application.Features.Conversations.GetPinnedMessages;
@@ -15,13 +16,16 @@ public sealed class GetPinnedMessagesHandler : IAuthenticatedHandler<GetConversa
 
     private readonly IConversationRepository _conversationRepository;
     private readonly IPinnedMessageRepository _pinnedMessageRepository;
+    private readonly IMessageAttachmentRepository _messageAttachmentRepository;
 
     public GetPinnedMessagesHandler(
         IConversationRepository conversationRepository,
-        IPinnedMessageRepository pinnedMessageRepository)
+        IPinnedMessageRepository pinnedMessageRepository,
+        IMessageAttachmentRepository messageAttachmentRepository)
     {
         _conversationRepository = conversationRepository;
         _pinnedMessageRepository = pinnedMessageRepository;
+        _messageAttachmentRepository = messageAttachmentRepository;
     }
 
     public async Task<ApplicationResponse<GetConversationPinnedMessagesResponse>> HandleAsync(
@@ -70,18 +74,27 @@ public sealed class GetPinnedMessagesHandler : IAuthenticatedHandler<GetConversa
             limit,
             cancellationToken);
 
+        var attachmentsByMessageId = await _messageAttachmentRepository.GetByMessageIdsAsync(
+            page.Items.Select(x => MessageId.From(x.MessageId)).ToArray(),
+            cancellationToken);
+
         var items = page.Items
-            .Select(x => new GetPinnedMessagesItemResponse(
-                MessageId: x.MessageId,
-                AuthorUserId: x.AuthorUserId,
-                AuthorUsername: x.AuthorUsername,
-                AuthorDisplayName: x.AuthorDisplayName,
-                Content: x.Content,
-                Attachments: x.Attachments,
-                CreatedAtUtc: x.CreatedAtUtc,
-                UpdatedAtUtc: x.UpdatedAtUtc,
-                PinnedByUserId: x.PinnedByUserId,
-                PinnedAtUtc: x.PinnedAtUtc))
+            .Select(x =>
+            {
+                attachmentsByMessageId.TryGetValue(MessageId.From(x.MessageId), out var attachments);
+                return new GetPinnedMessagesItemResponse(
+                    MessageId: x.MessageId,
+                    AuthorUserId: x.AuthorUserId,
+                    AuthorUsername: x.AuthorUsername,
+                    AuthorDisplayName: x.AuthorDisplayName,
+                    Content: x.Content,
+                    Attachments: attachments?.Select(MessageAttachmentDto.FromDomain).ToArray()
+                                 ?? Array.Empty<MessageAttachmentDto>(),
+                    CreatedAtUtc: x.CreatedAtUtc,
+                    UpdatedAtUtc: x.UpdatedAtUtc,
+                    PinnedByUserId: x.PinnedByUserId,
+                    PinnedAtUtc: x.PinnedAtUtc);
+            })
             .ToArray();
 
         return ApplicationResponse<GetConversationPinnedMessagesResponse>.Ok(

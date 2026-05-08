@@ -75,6 +75,7 @@ public sealed class GetMessagesHandler : IAuthenticatedHandler<GetConversationMe
             .Select(x =>
             {
                 page.ReactionsByMessageId.TryGetValue(x.Id.Value, out var reactions);
+                page.AttachmentsByMessageId.TryGetValue(x.Id.Value, out var attachments);
                 IReadOnlyList<LinkPreviewDto>? previews = null;
                 page.LinkPreviewsByMessageId?.TryGetValue(x.Id.Value, out previews);
                 var isPinned = page.PinnedMessageIds?.Contains(x.Id.Value) == true;
@@ -87,7 +88,8 @@ public sealed class GetMessagesHandler : IAuthenticatedHandler<GetConversationMe
                     MessageId: x.Id.Value,
                     AuthorUserId: x.AuthorUserId.Value,
                     Content: x.Content?.Value,
-                    Attachments: x.Attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
+                    Attachments: attachments?.Select(MessageAttachmentDto.FromDomain).ToArray()
+                                 ?? Array.Empty<MessageAttachmentDto>(),
                     Reactions: reactions?.Select(r => new MessageReactionDto(r.Emoji, r.Count, r.ReactedByCaller,
                         r.Users.Select(u => new ReactionUserDto(u.UserId, u.Username, u.DisplayName)).ToArray())).ToArray()
                               ?? Array.Empty<MessageReactionDto>(),

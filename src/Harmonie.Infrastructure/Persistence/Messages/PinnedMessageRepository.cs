@@ -153,28 +153,17 @@ public sealed class PinnedMessageRepository : IPinnedMessageRepository
         var hasMore = rows.Length > limit;
         var pageRows = hasMore ? rows.Take(limit).ToArray() : rows;
 
-        var messageIds = pageRows.Select(r => r.Id).ToArray();
-        var attachmentsByMessageId = await MessageRepositoryHelpers.GetAttachmentsByMessageIdsAsync(
-            _dbSession, messageIds, cancellationToken);
-
         var items = pageRows
-            .Select(row =>
-            {
-                attachmentsByMessageId.TryGetValue(row.Id, out var attachments);
-                return new PinnedMessageSummary(
-                    MessageId: row.Id,
-                    AuthorUserId: row.AuthorUserId,
-                    AuthorUsername: row.AuthorUsername ?? string.Empty,
-                    AuthorDisplayName: row.AuthorDisplayName,
-                    Content: row.DeletedAtUtc is null ? row.Content : null,
-                    Attachments: attachments?.Select(a => new MessageAttachmentDto(
-                        a.FileId.Value, a.FileName, a.ContentType, a.SizeBytes)).ToArray()
-                        ?? Array.Empty<MessageAttachmentDto>(),
-                    CreatedAtUtc: row.CreatedAtUtc,
-                    UpdatedAtUtc: row.UpdatedAtUtc,
-                    PinnedByUserId: row.PinnedByUserId,
-                    PinnedAtUtc: row.PinnedAtUtc);
-            })
+            .Select(row => new PinnedMessageSummary(
+                MessageId: row.Id,
+                AuthorUserId: row.AuthorUserId,
+                AuthorUsername: row.AuthorUsername ?? string.Empty,
+                AuthorDisplayName: row.AuthorDisplayName,
+                Content: row.DeletedAtUtc is null ? row.Content : null,
+                CreatedAtUtc: row.CreatedAtUtc,
+                UpdatedAtUtc: row.UpdatedAtUtc,
+                PinnedByUserId: row.PinnedByUserId,
+                PinnedAtUtc: row.PinnedAtUtc))
             .ToArray();
 
         PinnedMessagesCursor? nextCursor = null;

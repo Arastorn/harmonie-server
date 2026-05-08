@@ -19,6 +19,7 @@ public sealed class EditMessageHandler : IAuthenticatedHandler<EditChannelMessag
 
     private readonly IGuildChannelRepository _guildChannelRepository;
     private readonly IMessageRepository _channelMessageRepository;
+    private readonly IMessageAttachmentRepository _messageAttachmentRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ITextChannelNotifier _textChannelNotifier;
     private readonly ILogger<EditMessageHandler> _logger;
@@ -26,12 +27,14 @@ public sealed class EditMessageHandler : IAuthenticatedHandler<EditChannelMessag
     public EditMessageHandler(
         IGuildChannelRepository guildChannelRepository,
         IMessageRepository channelMessageRepository,
+        IMessageAttachmentRepository messageAttachmentRepository,
         IUnitOfWork unitOfWork,
         ITextChannelNotifier textChannelNotifier,
         ILogger<EditMessageHandler> logger)
     {
         _guildChannelRepository = guildChannelRepository;
         _channelMessageRepository = channelMessageRepository;
+        _messageAttachmentRepository = messageAttachmentRepository;
         _unitOfWork = unitOfWork;
         _textChannelNotifier = textChannelNotifier;
         _logger = logger;
@@ -119,12 +122,14 @@ public sealed class EditMessageHandler : IAuthenticatedHandler<EditChannelMessag
                 message.Content?.Value,
                 updatedAtUtc.Value));
 
+        var attachments = await _messageAttachmentRepository.GetByMessageIdAsync(message.Id, cancellationToken);
+
         return ApplicationResponse<EditMessageResponse>.Ok(new EditMessageResponse(
             MessageId: message.Id.Value,
             ChannelId: messageChannelId.Value,
             AuthorUserId: message.AuthorUserId.Value,
             Content: message.Content?.Value,
-            Attachments: message.Attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
+            Attachments: attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
             CreatedAtUtc: message.CreatedAtUtc,
             UpdatedAtUtc: message.UpdatedAtUtc));
     }

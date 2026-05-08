@@ -80,6 +80,7 @@ public static class DependencyInjection
         services.AddScoped<IConversationParticipantRepository, ConversationParticipantRepository>();
         services.AddScoped<IUploadedFileRepository, UploadedFileRepository>();
         services.AddScoped<IMessageReactionRepository, MessageReactionRepository>();
+        services.AddScoped<IMessageAttachmentRepository, MessageAttachmentRepository>();
         services.AddScoped<IPinnedMessageRepository, PinnedMessageRepository>();
         services.AddScoped<ILinkPreviewRepository, LinkPreviewRepository>();
         services.AddScoped<IChannelReadStateRepository, ChannelReadStateRepository>();

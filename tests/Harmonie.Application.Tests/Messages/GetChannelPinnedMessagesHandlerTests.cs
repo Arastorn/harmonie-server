@@ -1,13 +1,14 @@
 using FluentAssertions;
 using Harmonie.Application.Common;
-using Harmonie.Application.Common.Messages;
 using Harmonie.Application.Features.Channels.GetPinnedMessages;
 using Harmonie.Application.Interfaces.Channels;
 using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Application.Tests.Common;
 using Harmonie.Domain.Entities.Guilds;
+using Harmonie.Domain.Entities.Messages;
 using Harmonie.Domain.Enums;
 using Harmonie.Domain.ValueObjects.Channels;
+using Harmonie.Domain.ValueObjects.Messages;
 using Harmonie.Domain.ValueObjects.Users;
 using Moq;
 using Xunit;
@@ -18,16 +19,22 @@ public sealed class GetChannelPinnedMessagesHandlerTests
 {
     private readonly Mock<IGuildChannelRepository> _guildChannelRepositoryMock;
     private readonly Mock<IPinnedMessageRepository> _pinnedMessageRepositoryMock;
+    private readonly Mock<IMessageAttachmentRepository> _messageAttachmentRepositoryMock;
     private readonly GetPinnedMessagesHandler _handler;
 
     public GetChannelPinnedMessagesHandlerTests()
     {
         _guildChannelRepositoryMock = new Mock<IGuildChannelRepository>();
         _pinnedMessageRepositoryMock = new Mock<IPinnedMessageRepository>();
+        _messageAttachmentRepositoryMock = new Mock<IMessageAttachmentRepository>();
+        _messageAttachmentRepositoryMock
+            .Setup(x => x.GetByMessageIdsAsync(It.IsAny<IReadOnlyCollection<MessageId>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<MessageId, IReadOnlyList<MessageAttachment>>());
 
         _handler = new GetPinnedMessagesHandler(
             _guildChannelRepositoryMock.Object,
-            _pinnedMessageRepositoryMock.Object);
+            _pinnedMessageRepositoryMock.Object,
+            _messageAttachmentRepositoryMock.Object);
     }
 
     [Fact]
@@ -113,14 +120,12 @@ public sealed class GetChannelPinnedMessagesHandlerTests
                 MessageId: Guid.NewGuid(), AuthorUserId: Guid.NewGuid(),
                 AuthorUsername: "second_user", AuthorDisplayName: "Second",
                 Content: "second",
-                Attachments: Array.Empty<MessageAttachmentDto>(),
                 CreatedAtUtc: now.AddMinutes(-2), UpdatedAtUtc: null,
                 PinnedByUserId: Guid.NewGuid(), PinnedAtUtc: now.AddMinutes(-1)),
             new PinnedMessageSummary(
                 MessageId: Guid.NewGuid(), AuthorUserId: Guid.NewGuid(),
                 AuthorUsername: "first_user", AuthorDisplayName: "First",
                 Content: "first",
-                Attachments: Array.Empty<MessageAttachmentDto>(),
                 CreatedAtUtc: now.AddMinutes(-10), UpdatedAtUtc: null,
                 PinnedByUserId: Guid.NewGuid(), PinnedAtUtc: now)
         };

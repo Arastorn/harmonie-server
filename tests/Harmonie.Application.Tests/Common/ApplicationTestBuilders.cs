@@ -109,8 +109,7 @@ internal static class ApplicationTestBuilders
             content: contentResult.Value,
             createdAtUtc: createdAtUtc ?? DateTime.UtcNow,
             updatedAtUtc: null,
-            deletedAtUtc: null,
-            attachments: attachments);
+            deletedAtUtc: null);
     }
 
     public static Message CreateConversationMessage(
@@ -134,8 +133,7 @@ internal static class ApplicationTestBuilders
             content: contentResult.Value,
             createdAtUtc: createdAtUtc ?? DateTime.UtcNow.AddMinutes(-1),
             updatedAtUtc: null,
-            deletedAtUtc: null,
-            attachments: attachments);
+            deletedAtUtc: null);
     }
 
     public static Conversation CreateConversation(UserId user1Id, UserId user2Id)

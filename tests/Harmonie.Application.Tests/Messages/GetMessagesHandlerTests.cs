@@ -110,7 +110,8 @@ public sealed class GetMessagesHandlerTests
             .ReturnsAsync(new MessagePage(
                 [second, first],
                 nextCursor,
-                new Dictionary<Guid, IReadOnlyList<MessageReactionSummary>>()));
+                new Dictionary<Guid, IReadOnlyList<MessageReactionSummary>>(),
+                new Dictionary<Guid, IReadOnlyList<MessageAttachment>>()));
 
         var response = await _handler.HandleAsync(
             new GetChannelMessagesInput(channel.Id, Limit: 50),
@@ -157,6 +158,7 @@ public sealed class GetMessagesHandlerTests
                 [message],
                 null,
                 new Dictionary<Guid, IReadOnlyList<MessageReactionSummary>>(),
+                new Dictionary<Guid, IReadOnlyList<MessageAttachment>>(),
                 previews));
 
         var response = await _handler.HandleAsync(
@@ -198,7 +200,8 @@ public sealed class GetMessagesHandlerTests
             .ReturnsAsync(new MessagePage(
                 [message],
                 null,
-                new Dictionary<Guid, IReadOnlyList<MessageReactionSummary>>()));
+                new Dictionary<Guid, IReadOnlyList<MessageReactionSummary>>(),
+                new Dictionary<Guid, IReadOnlyList<MessageAttachment>>()));
 
         var response = await _handler.HandleAsync(
             new GetChannelMessagesInput(channel.Id, Limit: 50),
@@ -251,6 +254,7 @@ public sealed class GetMessagesHandlerTests
                 [message],
                 null,
                 new Dictionary<Guid, IReadOnlyList<MessageReactionSummary>>(),
+                new Dictionary<Guid, IReadOnlyList<MessageAttachment>>(),
                 ReplyPreviewsByTargetMessageId: replyPreviews));
 
         var response = await _handler.HandleAsync(

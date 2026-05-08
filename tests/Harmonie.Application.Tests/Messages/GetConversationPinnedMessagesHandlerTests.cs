@@ -1,12 +1,13 @@
 using FluentAssertions;
 using Harmonie.Application.Common;
-using Harmonie.Application.Common.Messages;
 using Harmonie.Application.Features.Conversations.GetPinnedMessages;
 using Harmonie.Application.Interfaces.Conversations;
 using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Application.Tests.Common;
 using Harmonie.Domain.Entities.Conversations;
+using Harmonie.Domain.Entities.Messages;
 using Harmonie.Domain.ValueObjects.Conversations;
+using Harmonie.Domain.ValueObjects.Messages;
 using Harmonie.Domain.ValueObjects.Users;
 using Moq;
 using Xunit;
@@ -17,16 +18,22 @@ public sealed class GetConversationPinnedMessagesHandlerTests
 {
     private readonly Mock<IConversationRepository> _conversationRepositoryMock;
     private readonly Mock<IPinnedMessageRepository> _pinnedMessageRepositoryMock;
+    private readonly Mock<IMessageAttachmentRepository> _messageAttachmentRepositoryMock;
     private readonly GetPinnedMessagesHandler _handler;
 
     public GetConversationPinnedMessagesHandlerTests()
     {
         _conversationRepositoryMock = new Mock<IConversationRepository>();
         _pinnedMessageRepositoryMock = new Mock<IPinnedMessageRepository>();
+        _messageAttachmentRepositoryMock = new Mock<IMessageAttachmentRepository>();
+        _messageAttachmentRepositoryMock
+            .Setup(x => x.GetByMessageIdsAsync(It.IsAny<IReadOnlyCollection<MessageId>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<MessageId, IReadOnlyList<MessageAttachment>>());
 
         _handler = new GetPinnedMessagesHandler(
             _conversationRepositoryMock.Object,
-            _pinnedMessageRepositoryMock.Object);
+            _pinnedMessageRepositoryMock.Object,
+            _messageAttachmentRepositoryMock.Object);
     }
 
     [Fact]
@@ -98,7 +105,6 @@ public sealed class GetConversationPinnedMessagesHandlerTests
                 MessageId: Guid.NewGuid(), AuthorUserId: participant.Value,
                 AuthorUsername: "dm_user", AuthorDisplayName: "DM User",
                 Content: "pinned dm",
-                Attachments: Array.Empty<MessageAttachmentDto>(),
                 CreatedAtUtc: now, UpdatedAtUtc: null,
                 PinnedByUserId: participant.Value, PinnedAtUtc: now)
         };

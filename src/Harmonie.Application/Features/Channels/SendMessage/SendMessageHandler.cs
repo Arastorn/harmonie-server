@@ -22,6 +22,7 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendChannelMessag
 
     private readonly IGuildChannelRepository _guildChannelRepository;
     private readonly IMessageRepository _channelMessageRepository;
+    private readonly IMessageAttachmentRepository _messageAttachmentRepository;
     private readonly MessageAttachmentResolver _messageAttachmentResolver;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ITextChannelNotifier _textChannelNotifier;
@@ -32,6 +33,7 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendChannelMessag
     public SendMessageHandler(
         IGuildChannelRepository guildChannelRepository,
         IMessageRepository channelMessageRepository,
+        IMessageAttachmentRepository messageAttachmentRepository,
         MessageAttachmentResolver messageAttachmentResolver,
         IUnitOfWork unitOfWork,
         ITextChannelNotifier textChannelNotifier,
@@ -41,6 +43,7 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendChannelMessag
     {
         _guildChannelRepository = guildChannelRepository;
         _channelMessageRepository = channelMessageRepository;
+        _messageAttachmentRepository = messageAttachmentRepository;
         _messageAttachmentResolver = messageAttachmentResolver;
         _unitOfWork = unitOfWork;
         _textChannelNotifier = textChannelNotifier;
@@ -121,24 +124,49 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendChannelMessag
                     attachmentResolution.Error ?? "Attachments are invalid"));
         }
 
+        if (content is null && attachmentResolution.Attachments.Count == 0)
+        {
+            return ApplicationResponse<SendMessageResponse>.Fail(
+                ApplicationErrorCodes.Message.ContentEmpty,
+                "Message must have content or at least one attachment");
+        }
+
         var messageResult = Message.CreateForChannel(
             request.ChannelId,
             currentUserId,
             content,
-            attachmentResolution.Attachments,
             replyToMessageId);
         if (messageResult.IsFailure || messageResult.Value is null)
         {
-            var errorCode = content is null && attachmentResolution.Attachments.Count == 0
-                ? ApplicationErrorCodes.Message.ContentEmpty
-                : ApplicationErrorCodes.Common.DomainRuleViolation;
             return ApplicationResponse<SendMessageResponse>.Fail(
-                errorCode,
+                ApplicationErrorCodes.Common.DomainRuleViolation,
                 messageResult.Error ?? "Unable to create channel message");
+        }
+
+        var attachments = new List<MessageAttachment>(attachmentResolution.Attachments.Count);
+        for (var i = 0; i < attachmentResolution.Attachments.Count; i++)
+        {
+            var resolved = attachmentResolution.Attachments[i];
+            var attachmentResult = MessageAttachment.Create(
+                messageResult.Value.Id,
+                resolved.FileId,
+                resolved.FileName,
+                resolved.ContentType,
+                resolved.SizeBytes,
+                position: i);
+            if (attachmentResult.IsFailure || attachmentResult.Value is null)
+            {
+                return ApplicationResponse<SendMessageResponse>.Fail(
+                    ApplicationErrorCodes.Common.DomainRuleViolation,
+                    attachmentResult.Error ?? "Unable to create message attachment");
+            }
+            attachments.Add(attachmentResult.Value);
         }
 
         await using var transaction = await _unitOfWork.BeginAsync(cancellationToken);
         await _channelMessageRepository.AddAsync(messageResult.Value, cancellationToken);
+        if (attachments.Count > 0)
+            await _messageAttachmentRepository.AddRangeAsync(attachments, cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
         var messageChannelId = messageResult.Value.ChannelId;
@@ -174,7 +202,7 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendChannelMessag
                 ctx.CallerUsername ?? string.Empty,
                 ctx.CallerDisplayName,
                 messageResult.Value.Content?.Value,
-                messageResult.Value.Attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
+                attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
                 replyTo,
                 messageResult.Value.CreatedAtUtc));
 
@@ -199,7 +227,7 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendChannelMessag
             ChannelId: messageChannelId.Value,
             AuthorUserId: messageResult.Value.AuthorUserId.Value,
             Content: messageResult.Value.Content?.Value,
-            Attachments: messageResult.Value.Attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
+            Attachments: attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
             ReplyTo: replyTo,
             CreatedAtUtc: messageResult.Value.CreatedAtUtc);
 

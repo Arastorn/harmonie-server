@@ -114,8 +114,7 @@ internal sealed class MessageSearchRepository : IMessageSearchRepository
         var rows = (await connection.QueryAsync<ChannelMessageSearchRow>(command)).ToArray();
         var hasMore = rows.Length > limit;
         var pageRows = hasMore ? rows.Take(limit).ToArray() : rows;
-        var attachmentsByMessageId = await MessageRepositoryHelpers.GetAttachmentsByMessageIdsAsync(
-            _dbSession,
+        var attachmentsByMessageId = await FetchAttachmentsAsync(
             pageRows.Select(row => row.MessageId).ToArray(),
             cancellationToken);
 
@@ -208,8 +207,7 @@ internal sealed class MessageSearchRepository : IMessageSearchRepository
         var rows = (await connection.QueryAsync<ConversationMessageSearchRow>(command)).ToArray();
         var hasMore = rows.Length > limit;
         var pageRows = hasMore ? rows.Take(limit).ToArray() : rows;
-        var attachmentsByMessageId = await MessageRepositoryHelpers.GetAttachmentsByMessageIdsAsync(
-            _dbSession,
+        var attachmentsByMessageId = await FetchAttachmentsAsync(
             pageRows.Select(row => row.MessageId).ToArray(),
             cancellationToken);
 
@@ -225,6 +223,37 @@ internal sealed class MessageSearchRepository : IMessageSearchRepository
         }
 
         return new SearchConversationMessagesPage(items, nextCursor);
+    }
+
+    private async Task<IReadOnlyDictionary<Guid, IReadOnlyList<MessageAttachment>>> FetchAttachmentsAsync(
+        IReadOnlyCollection<Guid> messageIds,
+        CancellationToken cancellationToken)
+    {
+        if (messageIds.Count == 0)
+            return new Dictionary<Guid, IReadOnlyList<MessageAttachment>>();
+
+        const string sql = """
+                           SELECT ma.message_id AS "MessageId",
+                                  ma.position AS "Position",
+                                  uf.id AS "UploadedFileId",
+                                  uf.filename AS "FileName",
+                                  uf.content_type AS "ContentType",
+                                  uf.size_bytes AS "SizeBytes"
+                           FROM message_attachments ma
+                           INNER JOIN uploaded_files uf ON uf.id = ma.uploaded_file_id
+                           WHERE ma.message_id = ANY(@MessageIds)
+                           ORDER BY ma.message_id, ma.position
+                           """;
+
+        var connection = await _dbSession.GetOpenConnectionAsync(cancellationToken);
+        var command = new CommandDefinition(
+            sql,
+            new { MessageIds = messageIds.ToArray() },
+            transaction: _dbSession.Transaction,
+            cancellationToken: cancellationToken);
+
+        var rows = await connection.QueryAsync<Harmonie.Infrastructure.Rows.Messages.MessageAttachmentRow>(command);
+        return MessageAttachmentRepository.BuildByMessageIdDictionary(rows);
     }
 
     private static SearchGuildMessagesItem MapToSearchGuildMessagesItem(
