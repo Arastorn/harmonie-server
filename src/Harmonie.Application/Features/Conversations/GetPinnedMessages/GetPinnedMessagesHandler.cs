@@ -16,16 +16,13 @@ public sealed class GetPinnedMessagesHandler : IAuthenticatedHandler<GetConversa
 
     private readonly IConversationRepository _conversationRepository;
     private readonly IPinnedMessageRepository _pinnedMessageRepository;
-    private readonly IMessageAttachmentRepository _messageAttachmentRepository;
 
     public GetPinnedMessagesHandler(
         IConversationRepository conversationRepository,
-        IPinnedMessageRepository pinnedMessageRepository,
-        IMessageAttachmentRepository messageAttachmentRepository)
+        IPinnedMessageRepository pinnedMessageRepository)
     {
         _conversationRepository = conversationRepository;
         _pinnedMessageRepository = pinnedMessageRepository;
-        _messageAttachmentRepository = messageAttachmentRepository;
     }
 
     public async Task<ApplicationResponse<GetConversationPinnedMessagesResponse>> HandleAsync(
@@ -74,14 +71,10 @@ public sealed class GetPinnedMessagesHandler : IAuthenticatedHandler<GetConversa
             limit,
             cancellationToken);
 
-        var attachmentsByMessageId = await _messageAttachmentRepository.GetByMessageIdsAsync(
-            page.Items.Select(x => MessageId.From(x.MessageId)).ToArray(),
-            cancellationToken);
-
         var items = page.Items
             .Select(x =>
             {
-                attachmentsByMessageId.TryGetValue(MessageId.From(x.MessageId), out var attachments);
+                page.AttachmentsByMessageId.TryGetValue(MessageId.From(x.MessageId), out var attachments);
                 return new GetPinnedMessagesItemResponse(
                     MessageId: x.MessageId,
                     AuthorUserId: x.AuthorUserId,

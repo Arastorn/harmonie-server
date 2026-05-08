@@ -37,6 +37,7 @@ public sealed record PinnedMessagesCursor(
 
 public sealed record PinnedMessagesPage(
     IReadOnlyList<PinnedMessageSummary> Items,
+    IReadOnlyDictionary<MessageId, IReadOnlyList<MessageAttachment>> AttachmentsByMessageId,
     PinnedMessagesCursor? NextCursor);
 
 public sealed record PinnedMessageSummary(

@@ -41,69 +41,94 @@ internal sealed class MessageSearchRepository : IMessageSearchRepository
         parameters.Add("SearchText", query.SearchText);
         parameters.Add("Take", take);
 
-        var sqlBuilder = new StringBuilder(
+        var predicateBuilder = new StringBuilder(
             """
-            WITH search_query AS (
-                SELECT websearch_to_tsquery('simple', @SearchText) AS ts_query
-            )
-            SELECT m.id AS "MessageId",
-                   m.channel_id AS "ChannelId",
-                   gc.name AS "ChannelName",
-                   m.author_user_id AS "AuthorUserId",
-                   u.username AS "AuthorUsername",
-                   u.display_name AS "AuthorDisplayName",
-                   u.avatar_file_id AS "AuthorAvatarFileId",
-                   u.avatar_color AS "AuthorAvatarColor",
-                   u.avatar_icon AS "AuthorAvatarIcon",
-                   u.avatar_bg AS "AuthorAvatarBg",
-                   m.content AS "Content",
-                   m.created_at_utc AS "CreatedAtUtc",
-                   m.updated_at_utc AS "UpdatedAtUtc"
-            FROM messages m
-            INNER JOIN guild_channels gc ON gc.id = m.channel_id
-            INNER JOIN users u ON u.id = m.author_user_id
-            CROSS JOIN search_query sq
             WHERE gc.guild_id = @GuildId
               AND m.deleted_at_utc IS NULL
               AND u.deleted_at IS NULL
               AND m.search_vector @@ sq.ts_query
             """);
-        sqlBuilder.AppendLine();
+        predicateBuilder.AppendLine();
 
         if (query.ChannelId is not null)
         {
-            sqlBuilder.AppendLine("  AND m.channel_id = @ChannelId");
+            predicateBuilder.AppendLine("  AND m.channel_id = @ChannelId");
             parameters.Add("ChannelId", query.ChannelId.Value);
         }
 
         if (query.AuthorId is not null)
         {
-            sqlBuilder.AppendLine("  AND m.author_user_id = @AuthorId");
+            predicateBuilder.AppendLine("  AND m.author_user_id = @AuthorId");
             parameters.Add("AuthorId", query.AuthorId.Value);
         }
 
         if (query.BeforeCreatedAtUtc.HasValue)
         {
-            sqlBuilder.AppendLine("  AND m.created_at_utc <= @BeforeCreatedAtUtc");
+            predicateBuilder.AppendLine("  AND m.created_at_utc <= @BeforeCreatedAtUtc");
             parameters.Add("BeforeCreatedAtUtc", query.BeforeCreatedAtUtc.Value);
         }
 
         if (query.AfterCreatedAtUtc.HasValue)
         {
-            sqlBuilder.AppendLine("  AND m.created_at_utc >= @AfterCreatedAtUtc");
+            predicateBuilder.AppendLine("  AND m.created_at_utc >= @AfterCreatedAtUtc");
             parameters.Add("AfterCreatedAtUtc", query.AfterCreatedAtUtc.Value);
         }
 
         if (query.Cursor is not null)
         {
-            sqlBuilder.AppendLine("  AND (m.created_at_utc, m.id) < (@CursorCreatedAtUtc, @CursorMessageId)");
+            predicateBuilder.AppendLine("  AND (m.created_at_utc, m.id) < (@CursorCreatedAtUtc, @CursorMessageId)");
             parameters.Add("CursorCreatedAtUtc", query.Cursor.CreatedAtUtc);
             parameters.Add("CursorMessageId", query.Cursor.MessageId.Value);
         }
 
-        sqlBuilder.AppendLine("ORDER BY m.created_at_utc DESC, m.id DESC");
-        sqlBuilder.AppendLine("LIMIT @Take");
-        var sql = sqlBuilder.ToString();
+        var predicate = predicateBuilder.ToString();
+        const string orderLimit = "ORDER BY m.created_at_utc DESC, m.id DESC\nLIMIT @Take";
+
+        var sql = $"""
+                   WITH search_query AS (
+                       SELECT websearch_to_tsquery('simple', @SearchText) AS ts_query
+                   )
+                   SELECT m.id AS "MessageId",
+                          m.channel_id AS "ChannelId",
+                          gc.name AS "ChannelName",
+                          m.author_user_id AS "AuthorUserId",
+                          u.username AS "AuthorUsername",
+                          u.display_name AS "AuthorDisplayName",
+                          u.avatar_file_id AS "AuthorAvatarFileId",
+                          u.avatar_color AS "AuthorAvatarColor",
+                          u.avatar_icon AS "AuthorAvatarIcon",
+                          u.avatar_bg AS "AuthorAvatarBg",
+                          m.content AS "Content",
+                          m.created_at_utc AS "CreatedAtUtc",
+                          m.updated_at_utc AS "UpdatedAtUtc"
+                   FROM messages m
+                   INNER JOIN guild_channels gc ON gc.id = m.channel_id
+                   INNER JOIN users u ON u.id = m.author_user_id
+                   CROSS JOIN search_query sq
+                   {predicate}
+                   {orderLimit};
+
+                   WITH search_query AS (
+                       SELECT websearch_to_tsquery('simple', @SearchText) AS ts_query
+                   )
+                   SELECT ma.message_id AS "MessageId",
+                          ma.position AS "Position",
+                          uf.id AS "UploadedFileId",
+                          uf.filename AS "FileName",
+                          uf.content_type AS "ContentType",
+                          uf.size_bytes AS "SizeBytes"
+                   FROM message_attachments ma
+                   INNER JOIN uploaded_files uf ON uf.id = ma.uploaded_file_id
+                   WHERE ma.message_id IN (
+                       SELECT m.id
+                       FROM messages m
+                       INNER JOIN guild_channels gc ON gc.id = m.channel_id
+                       INNER JOIN users u ON u.id = m.author_user_id
+                       CROSS JOIN search_query sq
+                       {predicate}
+                       {orderLimit})
+                   ORDER BY ma.message_id, ma.position;
+                   """;
 
         var command = new CommandDefinition(
             sql,
@@ -111,12 +136,15 @@ internal sealed class MessageSearchRepository : IMessageSearchRepository
             transaction: _dbSession.Transaction,
             cancellationToken: cancellationToken);
 
-        var rows = (await connection.QueryAsync<ChannelMessageSearchRow>(command)).ToArray();
+        using var multi = await connection.QueryMultipleAsync(command);
+        var rows = (await multi.ReadAsync<ChannelMessageSearchRow>()).ToArray();
+        var attachmentRows = (await multi.ReadAsync<Harmonie.Infrastructure.Rows.Messages.MessageAttachmentRow>()).ToArray();
+
         var hasMore = rows.Length > limit;
         var pageRows = hasMore ? rows.Take(limit).ToArray() : rows;
-        var attachmentsByMessageId = await FetchAttachmentsAsync(
-            pageRows.Select(row => row.MessageId).ToArray(),
-            cancellationToken);
+        var pageMessageIds = new HashSet<Guid>(pageRows.Select(r => r.MessageId));
+        var attachmentsByMessageId = MessageAttachmentRepository.BuildByMessageIdDictionary(
+            attachmentRows.Where(r => pageMessageIds.Contains(r.MessageId)));
 
         var items = pageRows
             .Select(row => MapToSearchGuildMessagesItem(row, attachmentsByMessageId))
@@ -150,53 +178,77 @@ internal sealed class MessageSearchRepository : IMessageSearchRepository
         parameters.Add("SearchText", query.SearchText);
         parameters.Add("Take", take);
 
-        var sqlBuilder = new StringBuilder(
+        var predicateBuilder = new StringBuilder(
             """
-            WITH search_query AS (
-                SELECT websearch_to_tsquery('simple', @SearchText) AS ts_query
-            )
-            SELECT m.id AS "MessageId",
-                   m.author_user_id AS "AuthorUserId",
-                   u.username AS "AuthorUsername",
-                   u.display_name AS "AuthorDisplayName",
-                   u.avatar_file_id AS "AuthorAvatarFileId",
-                   u.avatar_color AS "AuthorAvatarColor",
-                   u.avatar_icon AS "AuthorAvatarIcon",
-                   u.avatar_bg AS "AuthorAvatarBg",
-                   m.content AS "Content",
-                   m.created_at_utc AS "CreatedAtUtc",
-                   m.updated_at_utc AS "UpdatedAtUtc"
-            FROM messages m
-            INNER JOIN users u ON u.id = m.author_user_id
-            CROSS JOIN search_query sq
             WHERE m.conversation_id = @ConversationId
               AND m.deleted_at_utc IS NULL
               AND m.search_vector @@ sq.ts_query
             """);
-        sqlBuilder.AppendLine();
+        predicateBuilder.AppendLine();
 
         if (query.BeforeCreatedAtUtc.HasValue)
         {
-            sqlBuilder.AppendLine("  AND m.created_at_utc <= @BeforeCreatedAtUtc");
+            predicateBuilder.AppendLine("  AND m.created_at_utc <= @BeforeCreatedAtUtc");
             parameters.Add("BeforeCreatedAtUtc", query.BeforeCreatedAtUtc.Value);
         }
 
         if (query.AfterCreatedAtUtc.HasValue)
         {
-            sqlBuilder.AppendLine("  AND m.created_at_utc >= @AfterCreatedAtUtc");
+            predicateBuilder.AppendLine("  AND m.created_at_utc >= @AfterCreatedAtUtc");
             parameters.Add("AfterCreatedAtUtc", query.AfterCreatedAtUtc.Value);
         }
 
         if (query.Cursor is not null)
         {
-            sqlBuilder.AppendLine("  AND (m.created_at_utc, m.id) < (@CursorCreatedAtUtc, @CursorMessageId)");
+            predicateBuilder.AppendLine("  AND (m.created_at_utc, m.id) < (@CursorCreatedAtUtc, @CursorMessageId)");
             parameters.Add("CursorCreatedAtUtc", query.Cursor.CreatedAtUtc);
             parameters.Add("CursorMessageId", query.Cursor.MessageId.Value);
         }
 
-        sqlBuilder.AppendLine("ORDER BY m.created_at_utc DESC, m.id DESC");
-        sqlBuilder.AppendLine("LIMIT @Take");
-        var sql = sqlBuilder.ToString();
+        var predicate = predicateBuilder.ToString();
+        const string orderLimit = "ORDER BY m.created_at_utc DESC, m.id DESC\nLIMIT @Take";
+
+        var sql = $"""
+                   WITH search_query AS (
+                       SELECT websearch_to_tsquery('simple', @SearchText) AS ts_query
+                   )
+                   SELECT m.id AS "MessageId",
+                          m.author_user_id AS "AuthorUserId",
+                          u.username AS "AuthorUsername",
+                          u.display_name AS "AuthorDisplayName",
+                          u.avatar_file_id AS "AuthorAvatarFileId",
+                          u.avatar_color AS "AuthorAvatarColor",
+                          u.avatar_icon AS "AuthorAvatarIcon",
+                          u.avatar_bg AS "AuthorAvatarBg",
+                          m.content AS "Content",
+                          m.created_at_utc AS "CreatedAtUtc",
+                          m.updated_at_utc AS "UpdatedAtUtc"
+                   FROM messages m
+                   INNER JOIN users u ON u.id = m.author_user_id
+                   CROSS JOIN search_query sq
+                   {predicate}
+                   {orderLimit};
+
+                   WITH search_query AS (
+                       SELECT websearch_to_tsquery('simple', @SearchText) AS ts_query
+                   )
+                   SELECT ma.message_id AS "MessageId",
+                          ma.position AS "Position",
+                          uf.id AS "UploadedFileId",
+                          uf.filename AS "FileName",
+                          uf.content_type AS "ContentType",
+                          uf.size_bytes AS "SizeBytes"
+                   FROM message_attachments ma
+                   INNER JOIN uploaded_files uf ON uf.id = ma.uploaded_file_id
+                   WHERE ma.message_id IN (
+                       SELECT m.id
+                       FROM messages m
+                       INNER JOIN users u ON u.id = m.author_user_id
+                       CROSS JOIN search_query sq
+                       {predicate}
+                       {orderLimit})
+                   ORDER BY ma.message_id, ma.position;
+                   """;
 
         var command = new CommandDefinition(
             sql,
@@ -204,12 +256,15 @@ internal sealed class MessageSearchRepository : IMessageSearchRepository
             transaction: _dbSession.Transaction,
             cancellationToken: cancellationToken);
 
-        var rows = (await connection.QueryAsync<ConversationMessageSearchRow>(command)).ToArray();
+        using var multi = await connection.QueryMultipleAsync(command);
+        var rows = (await multi.ReadAsync<ConversationMessageSearchRow>()).ToArray();
+        var attachmentRows = (await multi.ReadAsync<Harmonie.Infrastructure.Rows.Messages.MessageAttachmentRow>()).ToArray();
+
         var hasMore = rows.Length > limit;
         var pageRows = hasMore ? rows.Take(limit).ToArray() : rows;
-        var attachmentsByMessageId = await FetchAttachmentsAsync(
-            pageRows.Select(row => row.MessageId).ToArray(),
-            cancellationToken);
+        var pageMessageIds = new HashSet<Guid>(pageRows.Select(r => r.MessageId));
+        var attachmentsByMessageId = MessageAttachmentRepository.BuildByMessageIdDictionary(
+            attachmentRows.Where(r => pageMessageIds.Contains(r.MessageId)));
 
         var items = pageRows
             .Select(row => MapToSearchConversationMessagesItem(row, attachmentsByMessageId))
@@ -223,37 +278,6 @@ internal sealed class MessageSearchRepository : IMessageSearchRepository
         }
 
         return new SearchConversationMessagesPage(items, nextCursor);
-    }
-
-    private async Task<IReadOnlyDictionary<Guid, IReadOnlyList<MessageAttachment>>> FetchAttachmentsAsync(
-        IReadOnlyCollection<Guid> messageIds,
-        CancellationToken cancellationToken)
-    {
-        if (messageIds.Count == 0)
-            return new Dictionary<Guid, IReadOnlyList<MessageAttachment>>();
-
-        const string sql = """
-                           SELECT ma.message_id AS "MessageId",
-                                  ma.position AS "Position",
-                                  uf.id AS "UploadedFileId",
-                                  uf.filename AS "FileName",
-                                  uf.content_type AS "ContentType",
-                                  uf.size_bytes AS "SizeBytes"
-                           FROM message_attachments ma
-                           INNER JOIN uploaded_files uf ON uf.id = ma.uploaded_file_id
-                           WHERE ma.message_id = ANY(@MessageIds)
-                           ORDER BY ma.message_id, ma.position
-                           """;
-
-        var connection = await _dbSession.GetOpenConnectionAsync(cancellationToken);
-        var command = new CommandDefinition(
-            sql,
-            new { MessageIds = messageIds.ToArray() },
-            transaction: _dbSession.Transaction,
-            cancellationToken: cancellationToken);
-
-        var rows = await connection.QueryAsync<Harmonie.Infrastructure.Rows.Messages.MessageAttachmentRow>(command);
-        return MessageAttachmentRepository.BuildByMessageIdDictionary(rows);
     }
 
     private static SearchGuildMessagesItem MapToSearchGuildMessagesItem(

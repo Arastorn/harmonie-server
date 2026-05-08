@@ -18,22 +18,16 @@ public sealed class GetConversationPinnedMessagesHandlerTests
 {
     private readonly Mock<IConversationRepository> _conversationRepositoryMock;
     private readonly Mock<IPinnedMessageRepository> _pinnedMessageRepositoryMock;
-    private readonly Mock<IMessageAttachmentRepository> _messageAttachmentRepositoryMock;
     private readonly GetPinnedMessagesHandler _handler;
 
     public GetConversationPinnedMessagesHandlerTests()
     {
         _conversationRepositoryMock = new Mock<IConversationRepository>();
         _pinnedMessageRepositoryMock = new Mock<IPinnedMessageRepository>();
-        _messageAttachmentRepositoryMock = new Mock<IMessageAttachmentRepository>();
-        _messageAttachmentRepositoryMock
-            .Setup(x => x.GetByMessageIdsAsync(It.IsAny<IReadOnlyCollection<MessageId>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Dictionary<MessageId, IReadOnlyList<MessageAttachment>>());
 
         _handler = new GetPinnedMessagesHandler(
             _conversationRepositoryMock.Object,
-            _pinnedMessageRepositoryMock.Object,
-            _messageAttachmentRepositoryMock.Object);
+            _pinnedMessageRepositoryMock.Object);
     }
 
     [Fact]
@@ -79,7 +73,10 @@ public sealed class GetConversationPinnedMessagesHandlerTests
             .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, participant, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ConversationAccess(conversation, participantObj));
 
-        var emptyPage = new PinnedMessagesPage(Array.Empty<PinnedMessageSummary>(), null);
+        var emptyPage = new PinnedMessagesPage(
+            Array.Empty<PinnedMessageSummary>(),
+            new Dictionary<MessageId, IReadOnlyList<MessageAttachment>>(),
+            null);
         _pinnedMessageRepositoryMock
             .Setup(x => x.GetPinnedMessagesAsync(conversation.Id, participant, null, It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(emptyPage);
@@ -113,7 +110,10 @@ public sealed class GetConversationPinnedMessagesHandlerTests
             .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, participant, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ConversationAccess(conversation, participantObj));
 
-        var page = new PinnedMessagesPage(summaries, null);
+        var page = new PinnedMessagesPage(
+            summaries,
+            new Dictionary<MessageId, IReadOnlyList<MessageAttachment>>(),
+            null);
         _pinnedMessageRepositoryMock
             .Setup(x => x.GetPinnedMessagesAsync(conversation.Id, participant, null, It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(page);

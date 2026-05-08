@@ -17,16 +17,13 @@ public sealed class GetPinnedMessagesHandler : IAuthenticatedHandler<GetChannelP
 
     private readonly IGuildChannelRepository _guildChannelRepository;
     private readonly IPinnedMessageRepository _pinnedMessageRepository;
-    private readonly IMessageAttachmentRepository _messageAttachmentRepository;
 
     public GetPinnedMessagesHandler(
         IGuildChannelRepository guildChannelRepository,
-        IPinnedMessageRepository pinnedMessageRepository,
-        IMessageAttachmentRepository messageAttachmentRepository)
+        IPinnedMessageRepository pinnedMessageRepository)
     {
         _guildChannelRepository = guildChannelRepository;
         _pinnedMessageRepository = pinnedMessageRepository;
-        _messageAttachmentRepository = messageAttachmentRepository;
     }
 
     public async Task<ApplicationResponse<GetPinnedMessagesResponse>> HandleAsync(
@@ -82,14 +79,10 @@ public sealed class GetPinnedMessagesHandler : IAuthenticatedHandler<GetChannelP
             limit,
             cancellationToken);
 
-        var attachmentsByMessageId = await _messageAttachmentRepository.GetByMessageIdsAsync(
-            page.Items.Select(x => MessageId.From(x.MessageId)).ToArray(),
-            cancellationToken);
-
         var items = page.Items
             .Select(x =>
             {
-                attachmentsByMessageId.TryGetValue(MessageId.From(x.MessageId), out var attachments);
+                page.AttachmentsByMessageId.TryGetValue(MessageId.From(x.MessageId), out var attachments);
                 return new GetPinnedMessagesItemResponse(
                     MessageId: x.MessageId,
                     AuthorUserId: x.AuthorUserId,

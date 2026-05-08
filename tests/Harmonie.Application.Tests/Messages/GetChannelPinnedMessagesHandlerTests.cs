@@ -19,22 +19,16 @@ public sealed class GetChannelPinnedMessagesHandlerTests
 {
     private readonly Mock<IGuildChannelRepository> _guildChannelRepositoryMock;
     private readonly Mock<IPinnedMessageRepository> _pinnedMessageRepositoryMock;
-    private readonly Mock<IMessageAttachmentRepository> _messageAttachmentRepositoryMock;
     private readonly GetPinnedMessagesHandler _handler;
 
     public GetChannelPinnedMessagesHandlerTests()
     {
         _guildChannelRepositoryMock = new Mock<IGuildChannelRepository>();
         _pinnedMessageRepositoryMock = new Mock<IPinnedMessageRepository>();
-        _messageAttachmentRepositoryMock = new Mock<IMessageAttachmentRepository>();
-        _messageAttachmentRepositoryMock
-            .Setup(x => x.GetByMessageIdsAsync(It.IsAny<IReadOnlyCollection<MessageId>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Dictionary<MessageId, IReadOnlyList<MessageAttachment>>());
 
         _handler = new GetPinnedMessagesHandler(
             _guildChannelRepositoryMock.Object,
-            _pinnedMessageRepositoryMock.Object,
-            _messageAttachmentRepositoryMock.Object);
+            _pinnedMessageRepositoryMock.Object);
     }
 
     [Fact]
@@ -95,7 +89,10 @@ public sealed class GetChannelPinnedMessagesHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(channel.Id, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ChannelAccessContext(channel, GuildRole.Member));
 
-        var emptyPage = new PinnedMessagesPage(Array.Empty<PinnedMessageSummary>(), null);
+        var emptyPage = new PinnedMessagesPage(
+            Array.Empty<PinnedMessageSummary>(),
+            new Dictionary<MessageId, IReadOnlyList<MessageAttachment>>(),
+            null);
         _pinnedMessageRepositoryMock
             .Setup(x => x.GetPinnedMessagesAsync(channel.Id, callerId, null, It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(emptyPage);
@@ -134,7 +131,10 @@ public sealed class GetChannelPinnedMessagesHandlerTests
             .Setup(x => x.GetWithCallerRoleAsync(channel.Id, callerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ChannelAccessContext(channel, GuildRole.Member));
 
-        var page = new PinnedMessagesPage(summaries, null);
+        var page = new PinnedMessagesPage(
+            summaries,
+            new Dictionary<MessageId, IReadOnlyList<MessageAttachment>>(),
+            null);
         _pinnedMessageRepositoryMock
             .Setup(x => x.GetPinnedMessagesAsync(channel.Id, callerId, null, It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(page);
