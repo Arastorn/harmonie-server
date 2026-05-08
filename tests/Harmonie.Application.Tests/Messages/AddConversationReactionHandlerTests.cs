@@ -1,6 +1,8 @@
 using FluentAssertions;
 using Harmonie.Application.Common;
 using Harmonie.Application.Features.Conversations.AddReaction;
+using Harmonie.Application.Features.Conversations.Reactions;
+using Harmonie.Application.Common.Messages;
 using Harmonie.Application.Interfaces.Common;
 using Harmonie.Application.Interfaces.Conversations;
 using Harmonie.Application.Interfaces.Messages;
@@ -27,6 +29,7 @@ public sealed class AddConversationReactionHandlerTests
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly Mock<IUnitOfWorkTransaction> _transactionMock;
     private readonly Mock<IReactionNotifier> _reactionNotifierMock;
+    private readonly ReactionOrchestrator _orchestrator;
     private readonly AddReactionHandler _handler;
 
     public AddConversationReactionHandlerTests()
@@ -44,13 +47,16 @@ public sealed class AddConversationReactionHandlerTests
             .Setup(x => x.NotifyReactionAddedToConversationAsync(It.IsAny<ConversationReactionAddedNotification>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        _handler = new AddReactionHandler(
-            _conversationRepositoryMock.Object,
+        _orchestrator = new ReactionOrchestrator(
             _messageRepositoryMock.Object,
             _reactionRepositoryMock.Object,
-            _unitOfWorkMock.Object,
+            _unitOfWorkMock.Object);
+
+        _handler = new AddReactionHandler(
+            _conversationRepositoryMock.Object,
             _reactionNotifierMock.Object,
-            NullLogger<AddReactionHandler>.Instance);
+            NullLogger<ConversationReactionScope>.Instance,
+            _orchestrator);
     }
 
     [Fact]

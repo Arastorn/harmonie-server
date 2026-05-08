@@ -1,5 +1,7 @@
 using FluentAssertions;
 using Harmonie.Application.Common;
+using Harmonie.Application.Common.Messages;
+using Harmonie.Application.Features.Conversations.Reactions;
 using Harmonie.Application.Features.Conversations.RemoveReaction;
 using Harmonie.Application.Interfaces.Common;
 using Harmonie.Application.Interfaces.Conversations;
@@ -26,6 +28,7 @@ public sealed class RemoveConversationReactionHandlerTests
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly Mock<IUnitOfWorkTransaction> _transactionMock;
     private readonly Mock<IReactionNotifier> _reactionNotifierMock;
+    private readonly ReactionOrchestrator _orchestrator;
     private readonly RemoveReactionHandler _handler;
 
     public RemoveConversationReactionHandlerTests()
@@ -43,13 +46,16 @@ public sealed class RemoveConversationReactionHandlerTests
             .Setup(x => x.NotifyReactionRemovedFromConversationAsync(It.IsAny<ConversationReactionRemovedNotification>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        _handler = new RemoveReactionHandler(
-            _conversationRepositoryMock.Object,
+        _orchestrator = new ReactionOrchestrator(
             _messageRepositoryMock.Object,
             _reactionRepositoryMock.Object,
-            _unitOfWorkMock.Object,
+            _unitOfWorkMock.Object);
+
+        _handler = new RemoveReactionHandler(
+            _conversationRepositoryMock.Object,
             _reactionNotifierMock.Object,
-            NullLogger<RemoveReactionHandler>.Instance);
+            NullLogger<ConversationReactionScope>.Instance,
+            _orchestrator);
     }
 
     [Fact]

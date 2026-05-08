@@ -24,7 +24,7 @@ public sealed class ChannelSendMessageScope : ISendMessageScope<ChannelSendMessa
         GuildId GuildId,
         string GuildName,
         string CallerUsername,
-        string CallerDisplayName) : SendScopeContext;
+        string CallerDisplayName) : ScopeContext;
 
     private readonly GuildChannelId _channelId;
     private readonly IGuildChannelRepository _guildChannelRepository;

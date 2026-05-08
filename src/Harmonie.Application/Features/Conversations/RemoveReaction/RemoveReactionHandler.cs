@@ -1,5 +1,6 @@
 using Harmonie.Application.Common;
-using Harmonie.Application.Interfaces.Common;
+using Harmonie.Application.Common.Messages;
+using Harmonie.Application.Features.Conversations.Reactions;
 using Harmonie.Application.Interfaces.Conversations;
 using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Domain.ValueObjects.Conversations;
@@ -13,29 +14,21 @@ public sealed record ConversationRemoveReactionInput(ConversationId Conversation
 
 public sealed class RemoveReactionHandler : IAuthenticatedHandler<ConversationRemoveReactionInput, bool>
 {
-    private static readonly TimeSpan NotificationTimeout = TimeSpan.FromSeconds(5);
-
     private readonly IConversationRepository _conversationRepository;
-    private readonly IMessageRepository _messageRepository;
-    private readonly IMessageReactionRepository _reactionRepository;
-    private readonly IUnitOfWork _unitOfWork;
     private readonly IReactionNotifier _reactionNotifier;
-    private readonly ILogger<RemoveReactionHandler> _logger;
+    private readonly ILogger<ConversationReactionScope> _scopeLogger;
+    private readonly ReactionOrchestrator _orchestrator;
 
     public RemoveReactionHandler(
         IConversationRepository conversationRepository,
-        IMessageRepository messageRepository,
-        IMessageReactionRepository reactionRepository,
-        IUnitOfWork unitOfWork,
         IReactionNotifier reactionNotifier,
-        ILogger<RemoveReactionHandler> logger)
+        ILogger<ConversationReactionScope> scopeLogger,
+        ReactionOrchestrator orchestrator)
     {
         _conversationRepository = conversationRepository;
-        _messageRepository = messageRepository;
-        _reactionRepository = reactionRepository;
-        _unitOfWork = unitOfWork;
         _reactionNotifier = reactionNotifier;
-        _logger = logger;
+        _scopeLogger = scopeLogger;
+        _orchestrator = orchestrator;
     }
 
     public async Task<ApplicationResponse<bool>> HandleAsync(
@@ -43,55 +36,15 @@ public sealed class RemoveReactionHandler : IAuthenticatedHandler<ConversationRe
         UserId currentUserId,
         CancellationToken cancellationToken = default)
     {
-        var access = await _conversationRepository.GetByIdWithParticipantCheckAsync(request.ConversationId, currentUserId, cancellationToken);
-        if (access is null)
-        {
-            return ApplicationResponse<bool>.Fail(
-                ApplicationErrorCodes.Conversation.NotFound,
-                "Conversation was not found");
-        }
-        if (access.Participant is null)
-        {
-            return ApplicationResponse<bool>.Fail(
-                ApplicationErrorCodes.Conversation.AccessDenied,
-                "You do not have access to this conversation");
-        }
+        var scope = new ConversationReactionScope(
+            request.ConversationId, _conversationRepository, _reactionNotifier, _scopeLogger);
 
-        var message = await _messageRepository.GetByIdAsync(request.MessageId, cancellationToken);
-        if (message is null || !message.Scope.Matches(request.ConversationId))
-        {
-            return ApplicationResponse<bool>.Fail(
-                ApplicationErrorCodes.Reaction.MessageNotFound,
-                "Message was not found");
-        }
-
-        await using var transaction = await _unitOfWork.BeginAsync(cancellationToken);
-        await _reactionRepository.RemoveAsync(request.MessageId, currentUserId, request.Emoji, cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
-
-        await NotifyReactionRemovedSafelyAsync(
-            new ConversationReactionRemovedNotification(
-                request.MessageId,
-                request.ConversationId,
-                access.Conversation.Name,
-                access.Conversation.Type.ToString(),
-                currentUserId,
-                access.CallerUsername ?? string.Empty,
-                access.CallerDisplayName,
-                request.Emoji));
-
-        return ApplicationResponse<bool>.Ok(true);
-    }
-
-    private async Task NotifyReactionRemovedSafelyAsync(
-        ConversationReactionRemovedNotification notification)
-    {
-        await BestEffortNotificationHelper.TryNotifyAsync(
-            token => _reactionNotifier.NotifyReactionRemovedFromConversationAsync(notification, token),
-            NotificationTimeout,
-            _logger,
-            "RemoveConversationReaction notification failed (best-effort). MessageId={MessageId}, ConversationId={ConversationId}",
-            notification.MessageId,
-            notification.ConversationId);
+        return await _orchestrator.RemoveAsync(
+            scope,
+            new MessageScope.Conversation(request.ConversationId),
+            request.MessageId,
+            request.Emoji,
+            currentUserId,
+            cancellationToken);
     }
 }
