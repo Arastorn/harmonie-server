@@ -5,7 +5,7 @@ using Harmonie.Application.Services;
 using Harmonie.Domain.Entities.Messages;
 using Harmonie.Domain.Enums;
 using Harmonie.Domain.ValueObjects.Channels;
-using Harmonie.Domain.ValueObjects.Messages;
+using Harmonie.Domain.ValueObjects.Guilds;
 using Harmonie.Domain.ValueObjects.Users;
 using Microsoft.Extensions.Logging;
 
@@ -14,24 +14,30 @@ namespace Harmonie.Application.Features.Channels.SendMessage;
 /// <summary>
 /// Channel-specific implementation of <see cref="ISendMessageScope"/>.
 /// </summary>
-internal sealed class ChannelSendMessageScope : ISendMessageScope
+public sealed class ChannelSendMessageScope : ISendMessageScope
 {
     private static readonly TimeSpan NotificationTimeout = TimeSpan.FromSeconds(5);
+
+    private sealed record ChannelSendContext(
+        GuildChannelId ChannelId,
+        string ChannelName,
+        Guid GuildId,
+        string GuildName,
+        string CallerUsername,
+        string CallerDisplayName) : SendScopeContext;
 
     private readonly GuildChannelId _channelId;
     private readonly IGuildChannelRepository _guildChannelRepository;
     private readonly ITextChannelNotifier _textChannelNotifier;
     private readonly LinkPreviewResolutionService _linkPreviewService;
-    private readonly ILogger _logger;
-
-    private ChannelAccessContext? _ctx;
+    private readonly ILogger<ChannelSendMessageScope> _logger;
 
     public ChannelSendMessageScope(
         GuildChannelId channelId,
         IGuildChannelRepository guildChannelRepository,
         ITextChannelNotifier textChannelNotifier,
         LinkPreviewResolutionService linkPreviewService,
-        ILogger logger)
+        ILogger<ChannelSendMessageScope> logger)
     {
         _channelId = channelId;
         _guildChannelRepository = guildChannelRepository;
@@ -40,56 +46,64 @@ internal sealed class ChannelSendMessageScope : ISendMessageScope
         _logger = logger;
     }
 
-    public async Task<ApplicationError?> AuthorizeAsync(UserId caller, CancellationToken ct)
+    public async Task<AuthorizationResult> AuthorizeAsync(UserId caller, CancellationToken ct)
     {
         var ctx = await _guildChannelRepository.GetWithCallerRoleAsync(_channelId, caller, ct);
         if (ctx is null)
         {
-            return new ApplicationError(
+            return new AuthorizationResult(null, new ApplicationError(
                 ApplicationErrorCodes.Channel.NotFound,
-                "Channel was not found");
+                "Channel was not found"));
         }
 
         if (ctx.Channel.Type != GuildChannelType.Text)
         {
-            return new ApplicationError(
+            return new AuthorizationResult(null, new ApplicationError(
                 ApplicationErrorCodes.Channel.NotText,
-                "Messages can only be sent to text channels");
+                "Messages can only be sent to text channels"));
         }
 
         if (ctx.CallerRole is null)
         {
-            return new ApplicationError(
+            return new AuthorizationResult(null, new ApplicationError(
                 ApplicationErrorCodes.Channel.AccessDenied,
-                "You do not have access to this channel");
+                "You do not have access to this channel"));
         }
 
-        _ctx = ctx;
-        return null; // authorized
+        var context = new ChannelSendContext(
+            _channelId,
+            ctx.Channel.Name,
+            ctx.Channel.GuildId.Value,
+            ctx.GuildName ?? string.Empty,
+            ctx.CallerUsername ?? string.Empty,
+            ctx.CallerDisplayName ?? string.Empty);
+
+        return new AuthorizationResult(context, null);
     }
 
-    public Task PreparePostCommitAsync(CancellationToken ct) => Task.CompletedTask;
+    public Task ApplyInTransactionSideEffectsAsync(SendScopeContext context, CancellationToken ct)
+        => Task.CompletedTask;
 
     public async Task NotifyMessageCreatedAsync(
+        SendScopeContext context,
         Message message,
-        IReadOnlyList<MessageAttachment> attachments,
+        IReadOnlyList<MessageAttachmentDto> attachments,
         ReplyPreviewDto? replyTo,
         CancellationToken ct)
     {
-        if (_ctx is null)
-            return;
+        var ctx = (ChannelSendContext)context;
 
         var notification = new TextChannelMessageCreatedNotification(
             message.Id,
-            _channelId,
-            _ctx.Channel.Name,
-            _ctx.Channel.GuildId,
-            _ctx.GuildName ?? string.Empty,
+            ctx.ChannelId,
+            ctx.ChannelName,
+            GuildId.From(ctx.GuildId),
+            ctx.GuildName,
             message.AuthorUserId,
-            _ctx.CallerUsername ?? string.Empty,
-            _ctx.CallerDisplayName,
+            ctx.CallerUsername,
+            ctx.CallerDisplayName,
             message.Content?.Value,
-            attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
+            attachments,
             replyTo,
             message.CreatedAtUtc);
 
@@ -102,18 +116,21 @@ internal sealed class ChannelSendMessageScope : ISendMessageScope
             notification.ChannelId);
     }
 
-    public void ResolveLinkPreviewsAsync(Message message, IReadOnlyList<Uri> urls, CancellationToken ct)
+    public void ScheduleLinkPreviewResolution(
+        SendScopeContext context,
+        Message message,
+        IReadOnlyList<Uri> urls,
+        CancellationToken ct)
     {
-        if (_ctx is null)
-            return;
+        var ctx = (ChannelSendContext)context;
 
         // TODO: Replace fire-and-forget with a domain event + dedicated background worker
         _ = _linkPreviewService.ResolveAndNotifyForChannelAsync(
             message.Id,
-            _channelId,
-            _ctx.Channel.Name,
-            _ctx.Channel.GuildId,
-            _ctx.GuildName ?? string.Empty,
+            ctx.ChannelId,
+            ctx.ChannelName,
+            GuildId.From(ctx.GuildId),
+            ctx.GuildName,
             urls,
             ct);
     }

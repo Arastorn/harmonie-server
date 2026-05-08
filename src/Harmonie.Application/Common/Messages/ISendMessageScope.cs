@@ -5,38 +5,63 @@ using Harmonie.Domain.ValueObjects.Users;
 namespace Harmonie.Application.Common.Messages;
 
 /// <summary>
+/// Opaque context returned by <see cref="ISendMessageScope.AuthorizeAsync"/>
+/// and consumed by downstream scope methods. Concrete types are internal to
+/// each scope implementation.
+/// </summary>
+public abstract record SendScopeContext
+{
+    private protected SendScopeContext() { }
+}
+
+/// <summary>
 /// Abstraction over scope-specific concerns for message operations
-/// (authorization, notification, link previews, post-commit side effects).
+/// (authorization, notification, link previews, in-transaction side effects).
 /// </summary>
 public interface ISendMessageScope
 {
     /// <summary>
     /// Authorizes the caller for the scope.
-    /// Returns an error on failure, null on success.
+    /// Returns an error on failure, or a context on success.
     /// </summary>
-    Task<ApplicationError?> AuthorizeAsync(UserId caller, CancellationToken ct);
+    Task<AuthorizationResult> AuthorizeAsync(UserId caller, CancellationToken ct);
 
     /// <summary>
-    /// Prepares post-commit side effects (e.g. unhiding participants).
-    /// Must be called before the transaction is committed so the updates
-    /// participate in the same unit of work.
+    /// Applies scope-specific side effects that must participate in the same
+    /// unit of work (e.g. unhiding participants on send).
+    /// Called inside the transaction, before commit.
     /// </summary>
-    Task PreparePostCommitAsync(CancellationToken ct);
+    Task ApplyInTransactionSideEffectsAsync(SendScopeContext context, CancellationToken ct);
 
     /// <summary>
     /// Notifies scope participants that a message was created.
     /// Implementation must use best-effort notification (fire-and-forget).
     /// </summary>
     Task NotifyMessageCreatedAsync(
+        SendScopeContext context,
         Message message,
-        IReadOnlyList<MessageAttachment> attachments,
+        IReadOnlyList<MessageAttachmentDto> attachments,
         ReplyPreviewDto? replyTo,
         CancellationToken ct);
 
     /// <summary>
     /// Triggers fire-and-forget link preview resolution for the given message.
     /// </summary>
-    void ResolveLinkPreviewsAsync(Message message, IReadOnlyList<Uri> urls, CancellationToken ct);
+    void ScheduleLinkPreviewResolution(
+        SendScopeContext context,
+        Message message,
+        IReadOnlyList<Uri> urls,
+        CancellationToken ct);
+}
+
+/// <summary>
+/// Result of <see cref="ISendMessageScope.AuthorizeAsync"/>.
+/// </summary>
+public sealed record AuthorizationResult(
+    SendScopeContext? Context,
+    ApplicationError? Error)
+{
+    public bool IsAuthorized => Context is not null && Error is null;
 }
 
 /// <summary>

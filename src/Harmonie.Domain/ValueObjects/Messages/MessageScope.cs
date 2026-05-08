@@ -18,11 +18,4 @@ public abstract record MessageScope
     public bool Matches(GuildChannelId channelId) => this is Channel c && c.ChannelId == channelId;
 
     public bool Matches(ConversationId conversationId) => this is Conversation c && c.ConversationId == conversationId;
-
-    public bool Matches(MessageScope other) => (this, other) switch
-    {
-        (Channel a, Channel b) => a.ChannelId == b.ChannelId,
-        (Conversation a, Conversation b) => a.ConversationId == b.ConversationId,
-        _ => false
-    };
 }

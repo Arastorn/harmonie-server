@@ -36,6 +36,7 @@ public sealed class SendMessageHandlerTests
     private readonly Mock<ILinkPreviewFetcher> _linkPreviewFetcherMock;
     private readonly Mock<IServiceScopeFactory> _serviceScopeFactoryMock;
     private readonly Mock<ITextChannelNotifier> _textChannelNotifierMock;
+    private readonly MessageSendOrchestrator _orchestrator;
     private readonly SendMessageHandler _handler;
 
     public SendMessageHandlerTests()
@@ -73,17 +74,20 @@ public sealed class SendMessageHandlerTests
 
         _messageAttachmentRepositoryMock = new Mock<IMessageAttachmentRepository>();
 
-        _handler = new SendMessageHandler(
-            _guildChannelRepositoryMock.Object,
+        _orchestrator = new MessageSendOrchestrator(
             _channelMessageRepositoryMock.Object,
             _messageAttachmentRepositoryMock.Object,
             new MessageAttachmentResolver(_uploadedFileRepositoryMock.Object),
-            _unitOfWorkMock.Object,
+            _unitOfWorkMock.Object);
+
+        _handler = new SendMessageHandler(
+            _guildChannelRepositoryMock.Object,
             _textChannelNotifierMock.Object,
             new LinkPreviewResolutionService(
                 _serviceScopeFactoryMock.Object,
                 NullLogger<LinkPreviewResolutionService>.Instance),
-            NullLogger<SendMessageHandler>.Instance);
+            NullLogger<ChannelSendMessageScope>.Instance,
+            _orchestrator);
     }
 
     [Fact]

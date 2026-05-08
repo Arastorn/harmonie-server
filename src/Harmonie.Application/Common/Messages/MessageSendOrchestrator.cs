@@ -14,19 +14,32 @@ namespace Harmonie.Application.Common.Messages;
 /// Extracts the identical logic that was duplicated between channel and conversation
 /// SendMessage handlers.
 /// </summary>
-public static class MessageSendOrchestrator
+public sealed class MessageSendOrchestrator
 {
-    public static async Task<ApplicationResponse<MessageSendResult>> SendAsync(
+    private readonly IMessageRepository _messageRepository;
+    private readonly IMessageAttachmentRepository _messageAttachmentRepository;
+    private readonly MessageAttachmentResolver _attachmentResolver;
+    private readonly IUnitOfWork _unitOfWork;
+
+    public MessageSendOrchestrator(
+        IMessageRepository messageRepository,
+        IMessageAttachmentRepository messageAttachmentRepository,
+        MessageAttachmentResolver attachmentResolver,
+        IUnitOfWork unitOfWork)
+    {
+        _messageRepository = messageRepository;
+        _messageAttachmentRepository = messageAttachmentRepository;
+        _attachmentResolver = attachmentResolver;
+        _unitOfWork = unitOfWork;
+    }
+
+    public async Task<ApplicationResponse<MessageSendResult>> SendAsync(
         ISendMessageScope scope,
         MessageScope messageScope,
         string? rawContent,
         IReadOnlyList<Guid>? attachmentFileIds,
         Guid? replyToMessageId,
         UserId callerId,
-        IMessageRepository messageRepository,
-        IMessageAttachmentRepository messageAttachmentRepository,
-        MessageAttachmentResolver attachmentResolver,
-        IUnitOfWork unitOfWork,
         CancellationToken ct)
     {
         // ── Content validation ──────────────────────────────────────────
@@ -45,9 +58,12 @@ public static class MessageSendOrchestrator
         }
 
         // ── Authorization ───────────────────────────────────────────────
-        var authError = await scope.AuthorizeAsync(callerId, ct);
-        if (authError is not null)
-            return ApplicationResponse<MessageSendResult>.Fail(authError);
+        var authResult = await scope.AuthorizeAsync(callerId, ct);
+        if (!authResult.IsAuthorized)
+        {
+            return ApplicationResponse<MessageSendResult>.Fail(
+                authResult.Error!);
+        }
 
         // ── Reply target resolution ─────────────────────────────────────
         MessageId? replyToTargetId = null;
@@ -55,8 +71,8 @@ public static class MessageSendOrchestrator
         if (replyToMessageId.HasValue)
         {
             var targetMessageId = MessageId.From(replyToMessageId.Value);
-            replyTargetSummary = await messageRepository.GetReplyTargetSummaryAsync(targetMessageId, ct);
-            if (replyTargetSummary is null || !replyTargetSummary.Scope.Matches(messageScope))
+            replyTargetSummary = await _messageRepository.GetReplyTargetSummaryAsync(targetMessageId, ct);
+            if (replyTargetSummary is null || replyTargetSummary.Scope != messageScope)
             {
                 return ApplicationResponse<MessageSendResult>.Fail(
                     ApplicationErrorCodes.Message.NotFound,
@@ -66,7 +82,7 @@ public static class MessageSendOrchestrator
         }
 
         // ── Attachment resolution ───────────────────────────────────────
-        var attachmentResolution = await attachmentResolver.ResolveAsync(
+        var attachmentResolution = await _attachmentResolver.ResolveAsync(
             attachmentFileIds,
             callerId,
             ct);
@@ -124,11 +140,11 @@ public static class MessageSendOrchestrator
         }
 
         // ── Persist ─────────────────────────────────────────────────────
-        await using var transaction = await unitOfWork.BeginAsync(ct);
-        await messageRepository.AddAsync(messageResult.Value, ct);
+        await using var transaction = await _unitOfWork.BeginAsync(ct);
+        await _messageRepository.AddAsync(messageResult.Value, ct);
         if (attachments.Count > 0)
-            await messageAttachmentRepository.AddRangeAsync(attachments, ct);
-        await scope.PreparePostCommitAsync(ct);
+            await _messageAttachmentRepository.AddRangeAsync(attachments, ct);
+        await scope.ApplyInTransactionSideEffectsAsync(authResult.Context!, ct);
         await transaction.CommitAsync(ct);
 
         // ── Reply preview DTO ───────────────────────────────────────────
@@ -146,10 +162,14 @@ public static class MessageSendOrchestrator
                 replyTargetSummary.DeletedAtUtc);
         }
 
+        // ── Attachment DTO mapping ──────────────────────────────────────
+        var attachmentDtos = attachments.Select(MessageAttachmentDto.FromDomain).ToArray();
+
         // ── Notify ──────────────────────────────────────────────────────
         await scope.NotifyMessageCreatedAsync(
+            authResult.Context!,
             messageResult.Value,
-            attachments,
+            attachmentDtos,
             replyTo,
             ct);
 
@@ -157,7 +177,7 @@ public static class MessageSendOrchestrator
         var urls = LinkPreviewResolutionService.ParseUrls(messageResult.Value.Content?.Value);
         if (urls.Count > 0)
         {
-            scope.ResolveLinkPreviewsAsync(messageResult.Value, urls, ct);
+            scope.ScheduleLinkPreviewResolution(authResult.Context!, messageResult.Value, urls, ct);
         }
 
         // ── Result ──────────────────────────────────────────────────────
@@ -165,7 +185,7 @@ public static class MessageSendOrchestrator
             MessageId: messageResult.Value.Id.Value,
             AuthorUserId: messageResult.Value.AuthorUserId.Value,
             Content: messageResult.Value.Content?.Value,
-            Attachments: attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
+            Attachments: attachmentDtos,
             ReplyTo: replyTo,
             CreatedAtUtc: messageResult.Value.CreatedAtUtc));
     }
