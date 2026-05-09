@@ -7,6 +7,7 @@ using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Application.Interfaces.Uploads;
 using Harmonie.Application.Interfaces.Users;
 using Harmonie.Application.Tests.Common;
+using Harmonie.Domain.Common;
 using Harmonie.Domain.Entities.Messages;
 using Harmonie.Domain.Entities.Uploads;
 using Harmonie.Domain.ValueObjects.Channels;
@@ -570,5 +571,105 @@ public sealed class MessageEditDeleteOrchestratorTests
 
         // Cleanup must happen outside the transaction: delete → commit → dispose → cleanup
         callOrder.Should().Equal("deleteRef", "commit", "txDispose", "cleanup");
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  EditAsync — mentions
+
+    [Fact]
+    public async Task EditAsync_WithValidMentions_ShouldReplaceAndReturnMentions()
+    {
+        var scopeMock = CreateAuthorizedScope();
+        var messageId = AnyMessageId();
+        var messageScope = ChannelScope();
+        var authorId = UserId.New();
+        var mentionUser = UserId.New();
+        SetupMessageExists(messageId, messageScope, authorId);
+
+        _messageAttachmentRepositoryMock
+            .Setup(x => x.GetByMessageIdAsync(messageId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<MessageAttachment>());
+
+        _userRepositoryMock
+            .Setup(x => x.GetManyByIdsAsync(
+                It.IsAny<IReadOnlyList<UserId>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { ApplicationTestBuilders.CreateUser(mentionUser) });
+
+        scopeMock
+            .Setup(x => x.ValidateMentionedUsersAsync(
+                It.IsAny<IReadOnlyCollection<UserId>>(), Ctx, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success());
+
+        _messageRepositoryMock
+            .Setup(x => x.ReplaceMentionsAsync(
+                messageId, It.IsAny<IReadOnlyCollection<UserId>>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var result = await _orchestrator.EditAsync(
+            scopeMock.Object, messageScope, messageId, TestContent,
+            new List<Guid> { mentionUser.Value }, authorId, TestContext.Current.CancellationToken);
+
+        result.Success.Should().BeTrue();
+        result.Data!.MentionedUserIds.Should().ContainSingle().Which.Should().Be(mentionUser.Value);
+    }
+
+    [Fact]
+    public async Task EditAsync_WithEmptyMentionList_ShouldClearMentions()
+    {
+        var scopeMock = CreateAuthorizedScope();
+        var messageId = AnyMessageId();
+        var messageScope = ChannelScope();
+        var authorId = UserId.New();
+        SetupMessageExists(messageId, messageScope, authorId);
+
+        _messageAttachmentRepositoryMock
+            .Setup(x => x.GetByMessageIdAsync(messageId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<MessageAttachment>());
+
+        _messageRepositoryMock
+            .Setup(x => x.ReplaceMentionsAsync(
+                It.IsAny<MessageId>(), It.Is<IReadOnlyCollection<UserId>>(c => c.Count == 0), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var result = await _orchestrator.EditAsync(
+            scopeMock.Object, messageScope, messageId, TestContent,
+            Array.Empty<Guid>(), authorId, TestContext.Current.CancellationToken);
+
+        result.Success.Should().BeTrue();
+        result.Data!.MentionedUserIds.Should().BeEmpty();
+        _messageRepositoryMock.Verify(
+            x => x.ReplaceMentionsAsync(
+                It.IsAny<MessageId>(), It.IsAny<IReadOnlyCollection<UserId>>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task EditAsync_WithNullMentions_ShouldNotTouchMentions()
+    {
+        var scopeMock = CreateAuthorizedScope();
+        var messageId = AnyMessageId();
+        var messageScope = ChannelScope();
+        var authorId = UserId.New();
+        SetupMessageExists(messageId, messageScope, authorId);
+
+        _messageAttachmentRepositoryMock
+            .Setup(x => x.GetByMessageIdAsync(messageId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<MessageAttachment>());
+
+        _messageRepositoryMock
+            .Setup(x => x.GetMentionedUserIdsByMessageIdAsync(
+                It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<Guid, IReadOnlyList<Guid>>());
+
+        var result = await _orchestrator.EditAsync(
+            scopeMock.Object, messageScope, messageId, TestContent,
+            null, authorId, TestContext.Current.CancellationToken);
+
+        result.Success.Should().BeTrue();
+        result.Data!.MentionedUserIds.Should().BeEmpty();
+        _messageRepositoryMock.Verify(
+            x => x.ReplaceMentionsAsync(
+                It.IsAny<MessageId>(), It.IsAny<IReadOnlyCollection<UserId>>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 }

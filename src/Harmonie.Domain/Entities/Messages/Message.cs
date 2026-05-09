@@ -61,7 +61,7 @@ public sealed class Message : Entity<MessageId>
         if (mentions.Count > MaxMentionedUsers)
             return Result.Failure<Message>($"A message can mention at most {MaxMentionedUsers} users");
 
-        if (mentions.Distinct().Count() != mentions.Count)
+        if (new HashSet<UserId>(mentions).Count != mentions.Count)
             return Result.Failure<Message>("Mentioned user IDs must be distinct");
 
         return Result.Success(new Message(
@@ -117,6 +117,6 @@ public sealed class Message : Entity<MessageId>
             createdAtUtc,
             updatedAtUtc,
             deletedAtUtc,
-            mentionedUserIds ?? Array.Empty<UserId>());
+            (mentionedUserIds is not null ? mentionedUserIds.ToArray() : Array.Empty<UserId>()));
     }
 }

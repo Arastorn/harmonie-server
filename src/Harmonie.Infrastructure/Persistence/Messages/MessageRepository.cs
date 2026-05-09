@@ -290,6 +290,12 @@ internal sealed class MessageRepository : IMessageRepository
         return await connection.ExecuteAsync(command);
     }
 
+    /// <summary>
+    /// Persist mention rows for a message. The <paramref name="mentionedUserIds"/> collection
+    /// must contain distinct IDs; duplicates will cause a unique-constraint violation on the
+    /// composite PK (message_id, mentioned_user_id). Callers must ensure distinctness.
+    /// Must be called inside the same transaction as the message insert.
+    /// </summary>
     public async Task AddMentionsAsync(
         MessageId messageId,
         IReadOnlyCollection<UserId> mentionedUserIds,

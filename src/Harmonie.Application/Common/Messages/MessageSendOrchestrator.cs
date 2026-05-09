@@ -114,33 +114,20 @@ public sealed class MessageSendOrchestrator
         }
 
         // ── Mention validation ──────────────────────────────────────────
-        IReadOnlyCollection<UserId>? mentionUserIds = null;
+        UserId[]? mentionUserIds = null;
         if (mentionedUserIds is { Count: > 0 })
         {
-            var distinctMentionIds = mentionedUserIds.Distinct().ToArray();
-            var userIds = distinctMentionIds.Select(UserId.From).ToArray();
+            var validated = await MentionValidationHelper.ValidateAsync(
+                mentionedUserIds,
+                _userRepository,
+                (ids, ctx, t) => scope.ValidateMentionedUsersAsync(ids, ctx, t),
+                context,
+                ct);
 
-            // Verify all users exist
-            var existingUsers = await _userRepository.GetManyByIdsAsync(userIds.ToArray(), ct);
-            var existingUserIds = existingUsers.Select(u => u.Id).ToHashSet();
-            var missingIds = userIds.Where(id => !existingUserIds.Contains(id)).ToArray();
-            if (missingIds.Length > 0)
-            {
-                return ApplicationResponse<MessageSendResult>.Fail(
-                    ApplicationErrorCodes.Message.MentionedUserNotFound,
-                    $"One or more mentioned users were not found: {string.Join(", ", missingIds.Select(id => id.Value))}");
-            }
+            if (!validated.Success)
+                return ApplicationResponse<MessageSendResult>.Fail(validated.Error!);
 
-            // Verify membership via scope
-            var validateResult = await scope.ValidateMentionedUsersAsync(userIds.ToArray(), context, ct);
-            if (validateResult.IsFailure)
-            {
-                return ApplicationResponse<MessageSendResult>.Fail(
-                    ApplicationErrorCodes.Message.MentionedUserNotMember,
-                    validateResult.Error ?? "One or more mentioned users are not members of this scope");
-            }
-
-            mentionUserIds = userIds;
+            mentionUserIds = validated.Data!;
         }
 
         // ── Domain message creation ─────────────────────────────────────
@@ -183,7 +170,7 @@ public sealed class MessageSendOrchestrator
         await _messageRepository.AddAsync(messageResult.Value, ct);
         if (attachments.Count > 0)
             await _messageAttachmentRepository.AddRangeAsync(attachments, ct);
-        if (mentionUserIds is { Count: > 0 })
+        if (mentionUserIds is { Length: > 0 })
             await _messageRepository.AddMentionsAsync(messageResult.Value.Id, mentionUserIds, ct);
         await scope.ApplyInTransactionSideEffectsAsync(context, ct);
         await transaction.CommitAsync(ct);

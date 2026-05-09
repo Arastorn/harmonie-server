@@ -107,30 +107,19 @@ public sealed class MessageEditDeleteOrchestrator
             shouldUpdateMentions = true;
             if (mentionedUserIds.Count > 0)
             {
-                var distinctMentionIds = mentionedUserIds.Distinct().ToArray();
-                var userIds = distinctMentionIds.Select(UserId.From).ToArray();
+                var validated = await MentionValidationHelper.ValidateAsync(
+                    mentionedUserIds,
+                    _userRepository,
+                    (ids, ctx, t) => scope.ValidateMentionedUsersAsync(ids, ctx, t),
+                    context,
+                    ct);
 
-                var existingUsers = await _userRepository.GetManyByIdsAsync(userIds.ToArray(), ct);
-                var existingUserIds = existingUsers.Select(u => u.Id).ToHashSet();
-                var missingIds = userIds.Where(id => !existingUserIds.Contains(id)).ToArray();
-                if (missingIds.Length > 0)
-                {
-                    return ApplicationResponse<MessageEditResult>.Fail(
-                        ApplicationErrorCodes.Message.MentionedUserNotFound,
-                        $"One or more mentioned users were not found: {string.Join(", ", missingIds.Select(id => id.Value))}");
-                }
+                if (!validated.Success)
+                    return ApplicationResponse<MessageEditResult>.Fail(validated.Error!);
 
-                var validateResult = await scope.ValidateMentionedUsersAsync(userIds.ToArray(), context, ct);
-                if (validateResult.IsFailure)
-                {
-                    return ApplicationResponse<MessageEditResult>.Fail(
-                        ApplicationErrorCodes.Message.MentionedUserNotMember,
-                        validateResult.Error ?? "One or more mentioned users are not members of this scope");
-                }
-
-                resolvedMentionIds = distinctMentionIds;
+                resolvedMentionIds = validated.Data!.Select(id => id.Value).ToArray();
             }
-            // else: empty list → resolvedMentionIds stays null, but shouldUpdateMentions=true clears the table
+            // else: empty list → shouldUpdateMentions=true clears the table
         }
 
         // ── Persist ─────────────────────────────────────────────────────

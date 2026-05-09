@@ -7,6 +7,7 @@ using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Application.Interfaces.Uploads;
 using Harmonie.Application.Interfaces.Users;
 using Harmonie.Application.Tests.Common;
+using Harmonie.Domain.Common;
 using Harmonie.Domain.Entities.Messages;
 using Harmonie.Domain.Entities.Uploads;
 using Harmonie.Domain.Enums;
@@ -245,6 +246,81 @@ public sealed class MessageSendOrchestratorTests
             x => x.ScheduleLinkPreviewResolution(
                 context, It.IsAny<Message>(), It.IsAny<IReadOnlyList<Uri>>(), It.IsAny<CancellationToken>()),
             Times.Never);
+    }
+
+    // ── 7. Mention validation ───────────────────────────────────────────
+
+    [Fact]
+    public async Task SendAsync_WithValidMentions_ShouldPersistAndReturnMentionedUserIds()
+    {
+        var scopeMock = CreateAuthorizedScope();
+        var mentionUser = UserId.New();
+        var context = new ChannelSendMessageScope.Context(
+            GuildChannelId.New(), "general", GuildId.New(), "MyGuild", "caller", "Display");
+
+        scopeMock
+            .Setup(x => x.ValidateMentionedUsersAsync(
+                It.IsAny<IReadOnlyCollection<UserId>>(), It.IsAny<ChannelSendMessageScope.Context>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success());
+
+        _userRepositoryMock
+            .Setup(x => x.GetManyByIdsAsync(
+                It.IsAny<IReadOnlyList<UserId>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { ApplicationTestBuilders.CreateUser(mentionUser) });
+
+        _messageRepositoryMock
+            .Setup(x => x.AddAsync(It.IsAny<Message>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var result = await _orchestrator.SendAsync(
+            scopeMock.Object, AnyScope(), "hello @someone", null, null,
+            new List<Guid> { mentionUser.Value }, AnyUser(), TestContext.Current.CancellationToken);
+
+        result.Success.Should().BeTrue();
+        result.Data!.MentionedUserIds.Should().ContainSingle().Which.Should().Be(mentionUser.Value);
+    }
+
+    [Fact]
+    public async Task SendAsync_WithNonExistentMentionedUser_ShouldReturnMentionedUserNotFound()
+    {
+        var scopeMock = CreateAuthorizedScope();
+        var missingUserId = Guid.NewGuid();
+
+        _userRepositoryMock
+            .Setup(x => x.GetManyByIdsAsync(
+                It.IsAny<IReadOnlyList<UserId>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<Harmonie.Domain.Entities.Users.User>());
+
+        var result = await _orchestrator.SendAsync(
+            scopeMock.Object, AnyScope(), "hello", null, null,
+            new List<Guid> { missingUserId }, AnyUser(), TestContext.Current.CancellationToken);
+
+        result.Success.Should().BeFalse();
+        result.Error!.Code.Should().Be(ApplicationErrorCodes.Message.MentionedUserNotFound);
+    }
+
+    [Fact]
+    public async Task SendAsync_WithNonMemberMentionedUser_ShouldReturnMentionedUserNotMember()
+    {
+        var scopeMock = CreateAuthorizedScope();
+        var mentionUser = UserId.New();
+
+        _userRepositoryMock
+            .Setup(x => x.GetManyByIdsAsync(
+                It.IsAny<IReadOnlyList<UserId>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { ApplicationTestBuilders.CreateUser(mentionUser) });
+
+        scopeMock
+            .Setup(x => x.ValidateMentionedUsersAsync(
+                It.IsAny<IReadOnlyCollection<UserId>>(), It.IsAny<ChannelSendMessageScope.Context>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure("Not a member"));
+
+        var result = await _orchestrator.SendAsync(
+            scopeMock.Object, AnyScope(), "hello", null, null,
+            new List<Guid> { mentionUser.Value }, AnyUser(), TestContext.Current.CancellationToken);
+
+        result.Success.Should().BeFalse();
+        result.Error!.Code.Should().Be(ApplicationErrorCodes.Message.MentionedUserNotMember);
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────
