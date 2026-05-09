@@ -59,8 +59,9 @@ public sealed class MessageEditDeleteOrchestrator
         if (authError is not null)
             return ApplicationResponse<MessageEditResult>.Fail(authError);
 
+        // context and message are non-null after the authError guard
         // ── Author check ────────────────────────────────────────────────
-        if (message.AuthorUserId != callerId)
+        if (message!.AuthorUserId != callerId)
         {
             return ApplicationResponse<MessageEditResult>.Fail(
                 ApplicationErrorCodes.Message.EditForbidden,
@@ -91,9 +92,9 @@ public sealed class MessageEditDeleteOrchestrator
         await _messageRepository.UpdateAsync(message, ct);
         await transaction.CommitAsync(ct);
 
-        // ── Notify ──────────────────────────────────────────────────────
+        // ── Notification ────────────────────────────────────────────────
         await scope.NotifyMessageUpdatedAsync(
-            context,
+            context!,
             message.Id,
             message.Content?.Value,
             updatedAtUtc.Value,
@@ -126,10 +127,11 @@ public sealed class MessageEditDeleteOrchestrator
         if (authError is not null)
             return ApplicationResponse<bool>.Fail(authError);
 
+        // context and message are non-null after the authError guard
         // ── Author check (with scope-specific admin override) ───────────
         // Channel scopes allow admins to delete others' messages (CanDeleteOthersMessages = true).
         // Conversation scopes never allow non-authors to delete (CanDeleteOthersMessages = false).
-        if (message.AuthorUserId != callerId && !scope.CanDeleteOthersMessages(context))
+        if (message!.AuthorUserId != callerId && !scope.CanDeleteOthersMessages(context!))
         {
             return ApplicationResponse<bool>.Fail(
                 ApplicationErrorCodes.Message.DeleteForbidden,
@@ -150,8 +152,8 @@ public sealed class MessageEditDeleteOrchestrator
         await _messageRepository.SoftDeleteAsync(message, ct);
         await transaction.CommitAsync(ct);
 
-        // ── Notify ──────────────────────────────────────────────────────
-        await scope.NotifyMessageDeletedAsync(context, message.Id, ct);
+        // ── Notification ────────────────────────────────────────────────
+        await scope.NotifyMessageDeletedAsync(context!, message.Id, ct);
 
         return ApplicationResponse<bool>.Ok(true);
     }
@@ -171,8 +173,9 @@ public sealed class MessageEditDeleteOrchestrator
         if (authError is not null)
             return ApplicationResponse<bool>.Fail(authError);
 
+        // message is non-null after the authError guard
         // ── Author check ────────────────────────────────────────────────
-        if (message.AuthorUserId != callerId)
+        if (message!.AuthorUserId != callerId)
         {
             return ApplicationResponse<bool>.Fail(
                 ApplicationErrorCodes.Message.DeleteForbidden,
@@ -203,8 +206,10 @@ public sealed class MessageEditDeleteOrchestrator
     /// <summary>
     /// Authorizes the caller via the scope and fetches the target message,
     /// validating that it belongs to the expected scope.
+    /// Returns nullable context/message; callers must null-check Error before
+    /// dereferencing them.
     /// </summary>
-    private async Task<(TContext Context, Message Message, ApplicationError? Error)>
+    private async Task<(TContext? Context, Message? Message, ApplicationError? Error)>
         AuthorizeAndFetchMessageAsync<TContext>(
             IMessageEditDeleteScope<TContext> scope,
             MessageScope messageScope,
@@ -215,14 +220,14 @@ public sealed class MessageEditDeleteOrchestrator
     {
         var authResult = await scope.AuthorizeAsync(callerId, ct);
         if (authResult is AuthorizationResult<TContext>.Denied denied)
-            return (default!, default!, denied.Error);
+            return (null, null, denied.Error);
 
         var context = ((AuthorizationResult<TContext>.Authorized)authResult).Context;
 
         var message = await _messageRepository.GetByIdAsync(messageId, ct);
         if (message is null || message.Scope != messageScope)
         {
-            return (default!, default!, new ApplicationError(
+            return (null, null, new ApplicationError(
                 ApplicationErrorCodes.Message.NotFound,
                 "Message was not found"));
         }
