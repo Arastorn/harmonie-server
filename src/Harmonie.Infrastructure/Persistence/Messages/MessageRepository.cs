@@ -94,7 +94,11 @@ internal sealed class MessageRepository : IMessageRepository
                                   deleted_at_utc AS "DeletedAtUtc"
                            FROM messages
                            WHERE id = @MessageId
-                             AND deleted_at_utc IS NULL
+                             AND deleted_at_utc IS NULL;
+
+                           SELECT mentioned_user_id
+                           FROM message_mentions
+                           WHERE message_id = @MessageId;
                            """;
 
         var connection = await _dbSession.GetOpenConnectionAsync(cancellationToken);
@@ -104,11 +108,17 @@ internal sealed class MessageRepository : IMessageRepository
             transaction: _dbSession.Transaction,
             cancellationToken: cancellationToken);
 
-        var row = await connection.QuerySingleOrDefaultAsync<MessageRow>(command);
+        using var multi = await connection.QueryMultipleAsync(command);
+        var row = await multi.ReadSingleOrDefaultAsync<MessageRow>();
         if (row is null)
             return null;
 
-        return MessageRepositoryHelpers.MapToMessage(row);
+        var mentionRows = (await multi.ReadAsync<Guid>()).ToArray();
+        var mentionUserIds = mentionRows.Length > 0
+            ? mentionRows.Select(UserId.From).ToArray()
+            : Array.Empty<UserId>();
+
+        return MessageRepositoryHelpers.MapToMessage(row, mentionUserIds);
     }
 
     public async Task UpdateAsync(

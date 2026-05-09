@@ -83,6 +83,26 @@ public sealed class Message : Entity<MessageId>
         return Result.Success();
     }
 
+    /// <summary>
+    /// Replaces the mention set and marks the entity as updated.
+    /// Enforces domain invariants: distinct IDs, max count.
+    /// Pass null or empty to clear all mentions.
+    /// </summary>
+    public Result ReplaceMentions(IReadOnlyCollection<UserId>? mentionedUserIds)
+    {
+        var mentions = mentionedUserIds ?? Array.Empty<UserId>();
+
+        if (mentions.Count > MaxMentionedUsers)
+            return Result.Failure($"A message can mention at most {MaxMentionedUsers} users");
+
+        if (new HashSet<UserId>(mentions).Count != mentions.Count)
+            return Result.Failure("Mentioned user IDs must be distinct");
+
+        MentionedUserIds = mentions.ToArray();
+        MarkAsUpdated();
+        return Result.Success();
+    }
+
     public Result Delete()
     {
         if (DeletedAtUtc is not null)

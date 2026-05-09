@@ -4,7 +4,7 @@
 
 CREATE TABLE IF NOT EXISTS message_mentions (
     message_id UUID NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
-    mentioned_user_id UUID NOT NULL REFERENCES users(id),
+    mentioned_user_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     CONSTRAINT pk_message_mentions PRIMARY KEY (message_id, mentioned_user_id)
 );
 

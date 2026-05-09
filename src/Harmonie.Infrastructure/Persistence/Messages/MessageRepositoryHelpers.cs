@@ -43,7 +43,7 @@ internal static class MessageRepositoryHelpers
                     .ToArray());
     }
 
-    internal static Message MapToMessage(MessageRow row)
+    internal static Message MapToMessage(MessageRow row, IReadOnlyCollection<UserId>? mentionedUserIds = null)
     {
         MessageContent? messageContent = null;
         if (row.Content is not null)
@@ -68,7 +68,8 @@ internal static class MessageRepositoryHelpers
             messageContent,
             row.CreatedAtUtc,
             row.UpdatedAtUtc,
-            row.DeletedAtUtc);
+            row.DeletedAtUtc,
+            mentionedUserIds);
     }
 
     internal static MessageScope MapToScope(Guid? channelId, Guid? conversationId)

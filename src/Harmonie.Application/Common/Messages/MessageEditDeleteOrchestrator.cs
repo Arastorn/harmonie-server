@@ -100,11 +100,10 @@ public sealed class MessageEditDeleteOrchestrator
         // null = don't touch mentions (field absent, backward compat)
         // []   = clear all mentions
         // ids  = validate and replace
-        IReadOnlyList<Guid>? resolvedMentionIds = null;
-        bool shouldUpdateMentions = false;
+        bool mentionsTouched = false;
         if (mentionedUserIds is not null)
         {
-            shouldUpdateMentions = true;
+            UserId[] validatedIds;
             if (mentionedUserIds.Count > 0)
             {
                 var validated = await MentionValidationHelper.ValidateAsync(
@@ -117,32 +116,38 @@ public sealed class MessageEditDeleteOrchestrator
                 if (validated is MentionValidationResult.Failure editFailure)
                     return ApplicationResponse<MessageEditResult>.Fail(editFailure.ErrorCode, editFailure.ErrorMessage);
 
-                resolvedMentionIds = ((MentionValidationResult.Success)validated).Value.Select(id => id.Value).ToArray();
+                validatedIds = ((MentionValidationResult.Success)validated).Value;
             }
-            // else: empty list → shouldUpdateMentions=true clears the table
+            else
+            {
+                validatedIds = Array.Empty<UserId>();
+            }
+
+            var replaceResult = message.ReplaceMentions(validatedIds);
+            if (replaceResult.IsFailure)
+            {
+                return ApplicationResponse<MessageEditResult>.Fail(
+                    ApplicationErrorCodes.Common.DomainRuleViolation,
+                    replaceResult.Error ?? "Unable to replace message mentions");
+            }
+
+            mentionsTouched = true;
         }
 
         // ── Persist ─────────────────────────────────────────────────────
         await using var transaction = await _unitOfWork.BeginAsync(ct);
         await _messageRepository.UpdateAsync(message, ct);
-        if (shouldUpdateMentions)
-            await _messageRepository.ReplaceMentionsAsync(message.Id, resolvedMentionIds?.Select(UserId.From).ToArray() ?? Array.Empty<UserId>(), ct);
+        if (mentionsTouched)
+            await _messageRepository.ReplaceMentionsAsync(message.Id, message.MentionedUserIds, ct);
         await transaction.CommitAsync(ct);
 
-        // ── Attachments + mentions for response & notification ──────────
+        // ── Attachments for response ────────────────────────────────────
         var attachments = await _messageAttachmentRepository.GetByMessageIdAsync(messageId, ct);
 
-        IReadOnlyList<Guid> mentionIdsResponse;
-        if (shouldUpdateMentions)
-        {
-            mentionIdsResponse = resolvedMentionIds ?? Array.Empty<Guid>();
-        }
-        else
-        {
-            var mentionsDict = await _messageRepository.GetMentionedUserIdsByMessageIdAsync(
-                [message.Id.Value], ct);
-            mentionIdsResponse = mentionsDict.TryGetValue(message.Id.Value, out var ids) ? ids : Array.Empty<Guid>();
-        }
+        // ── Resolve mention IDs for response & notification ─────────────
+        // If mentions were touched, the entity is already up-to-date.
+        // If not, GetByIdAsync already hydrated them during the initial fetch.
+        var mentionIdsResponse = message.MentionedUserIds.Select(id => id.Value).ToArray();
 
         // ── Notify ──────────────────────────────────────────────────────
         await scope.NotifyMessageUpdatedAsync(
@@ -159,7 +164,7 @@ public sealed class MessageEditDeleteOrchestrator
             AuthorUserId: message.AuthorUserId.Value,
             Content: message.Content?.Value,
             Attachments: attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
-            MentionedUserIds: mentionIdsResponse.ToArray(),
+            MentionedUserIds: mentionIdsResponse,
             CreatedAtUtc: message.CreatedAtUtc,
             UpdatedAtUtc: updatedAtUtc));
     }
