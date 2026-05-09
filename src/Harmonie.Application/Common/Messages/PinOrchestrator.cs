@@ -36,7 +36,11 @@ public sealed class PinOrchestrator
         where TContext : ScopeContext
     {
         // ── Authorization + message fetch ───────────────────────────────
-        var fetched = await AuthorizeAndFetchMessageAsync(scope, messageScope, messageId, callerId, ct);
+        var fetched = await MessageScopeAuthorizer.AuthorizeAndFetchAsync(
+            _messageRepository,
+            (caller, ct) => scope.AuthorizeAsync(caller, ct),
+            messageScope, messageId, callerId,
+            ApplicationErrorCodes.Pin.MessageNotFound, ct);
         if (fetched is FetchMessageResult<TContext>.Failed failed)
             return ApplicationResponse<bool>.Fail(failed.Error);
 
@@ -71,7 +75,11 @@ public sealed class PinOrchestrator
         where TContext : ScopeContext
     {
         // ── Authorization + message fetch ───────────────────────────────
-        var fetched = await AuthorizeAndFetchMessageAsync(scope, messageScope, messageId, callerId, ct);
+        var fetched = await MessageScopeAuthorizer.AuthorizeAndFetchAsync(
+            _messageRepository,
+            (caller, ct) => scope.AuthorizeAsync(caller, ct),
+            messageScope, messageId, callerId,
+            ApplicationErrorCodes.Pin.MessageNotFound, ct);
         if (fetched is FetchMessageResult<TContext>.Failed failed)
             return ApplicationResponse<bool>.Fail(failed.Error);
 
@@ -86,34 +94,5 @@ public sealed class PinOrchestrator
         await scope.NotifyPinRemovedAsync(context, messageId, callerId, DateTime.UtcNow, ct);
 
         return ApplicationResponse<bool>.Ok(true);
-    }
-
-    /// <summary>
-    /// Authorizes the caller via the scope and fetches the target message,
-    /// validating that it belongs to the expected scope.
-    /// </summary>
-    private async Task<FetchMessageResult<TContext>> AuthorizeAndFetchMessageAsync<TContext>(
-        IPinScope<TContext> scope,
-        MessageScope messageScope,
-        MessageId messageId,
-        UserId callerId,
-        CancellationToken ct)
-        where TContext : ScopeContext
-    {
-        var authResult = await scope.AuthorizeAsync(callerId, ct);
-        if (authResult is AuthorizationResult<TContext>.Denied denied)
-            return new FetchMessageResult<TContext>.Failed(denied.Error);
-
-        var context = ((AuthorizationResult<TContext>.Authorized)authResult).Context;
-
-        var message = await _messageRepository.GetByIdAsync(messageId, ct);
-        if (message is null || message.Scope != messageScope)
-        {
-            return new FetchMessageResult<TContext>.Failed(new ApplicationError(
-                ApplicationErrorCodes.Pin.MessageNotFound,
-                "Message was not found"));
-        }
-
-        return new FetchMessageResult<TContext>.Found(context, message);
     }
 }
