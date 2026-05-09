@@ -40,13 +40,11 @@ public sealed class ConversationReactionScope : IReactionScope<ConversationReact
 
     public async Task<AuthorizationResult<Context>> AuthorizeAsync(UserId caller, CancellationToken ct)
     {
-        var access = await _conversationRepository.GetByIdWithParticipantCheckAsync(_conversationId, caller, ct);
-        if (access is null)
-            return Denied(ApplicationErrorCodes.Conversation.NotFound, "Conversation was not found");
+        var result = await ConversationScopeAuthorizer.AuthorizeAsync(_conversationRepository, _conversationId, caller, ct);
+        if (result is ConversationAuthResult.Denied denied)
+            return new AuthorizationResult<Context>.Denied(denied.Error);
 
-        if (access.Participant is null)
-            return Denied(ApplicationErrorCodes.Conversation.AccessDenied, "You do not have access to this conversation");
-
+        var access = ((ConversationAuthResult.Authorized)result).Context;
         return new AuthorizationResult<Context>.Authorized(new Context(
             _conversationId, access.Conversation.Name, access.Conversation.Type,
             access.CallerUsername ?? string.Empty,
@@ -82,7 +80,4 @@ public sealed class ConversationReactionScope : IReactionScope<ConversationReact
             "RemoveConversationReaction notification failed (best-effort). MessageId={MessageId}, ConversationId={ConversationId}",
             notification.MessageId, notification.ConversationId);
     }
-
-    private static AuthorizationResult<Context> Denied(string code, string detail)
-        => new AuthorizationResult<Context>.Denied(new ApplicationError(code, detail));
 }

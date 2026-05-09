@@ -3,7 +3,6 @@ using Harmonie.Application.Common.Messages;
 using Harmonie.Application.Interfaces.Channels;
 using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Domain.Entities.Messages;
-using Harmonie.Domain.Enums;
 using Harmonie.Domain.ValueObjects.Channels;
 using Harmonie.Domain.ValueObjects.Messages;
 using Harmonie.Domain.ValueObjects.Users;
@@ -33,15 +32,9 @@ public sealed class ChannelReadScope : IReadScope<ChannelReadScope.Context>
 
     public async Task<AuthorizationResult<Context>> AuthorizeAsync(UserId caller, CancellationToken ct)
     {
-        var ctx = await _guildChannelRepository.GetWithCallerRoleAsync(_channelId, caller, ct);
-        if (ctx is null)
-            return Denied(ApplicationErrorCodes.Channel.NotFound, "Channel was not found");
-
-        if (ctx.Channel.Type != GuildChannelType.Text)
-            return Denied(ApplicationErrorCodes.Channel.NotText, "Read acknowledgement is only available in text channels");
-
-        if (ctx.CallerRole is null)
-            return Denied(ApplicationErrorCodes.Channel.AccessDenied, "You do not have access to this channel");
+        var result = await ChannelScopeAuthorizer.AuthorizeAsync(_guildChannelRepository, _channelId, caller, ct);
+        if (result is ChannelAuthResult.Denied denied)
+            return new AuthorizationResult<Context>.Denied(denied.Error);
 
         return new AuthorizationResult<Context>.Authorized(new Context());
     }
@@ -51,7 +44,4 @@ public sealed class ChannelReadScope : IReadScope<ChannelReadScope.Context>
 
     public Task UpsertReadStateAsync(MessageReadState state, CancellationToken ct)
         => _channelReadStateRepository.UpsertAsync(state, ct);
-
-    private static AuthorizationResult<Context> Denied(string code, string detail)
-        => new AuthorizationResult<Context>.Denied(new ApplicationError(code, detail));
 }

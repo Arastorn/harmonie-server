@@ -43,22 +43,17 @@ public sealed class ChannelMessageEditDeleteScope : IMessageEditDeleteScope<Chan
 
     public async Task<AuthorizationResult<Context>> AuthorizeAsync(UserId caller, CancellationToken ct)
     {
-        var ctx = await _guildChannelRepository.GetWithCallerRoleAsync(_channelId, caller, ct);
-        if (ctx is null)
-            return Denied(ApplicationErrorCodes.Channel.NotFound, "Channel was not found");
+        var result = await ChannelScopeAuthorizer.AuthorizeAsync(_guildChannelRepository, _channelId, caller, ct);
+        if (result is ChannelAuthResult.Denied denied)
+            return new AuthorizationResult<Context>.Denied(denied.Error);
 
-        if (ctx.Channel.Type != GuildChannelType.Text)
-            return Denied(ApplicationErrorCodes.Channel.NotText, "Messages can only be edited in text channels");
-
-        if (ctx.CallerRole is null)
-            return Denied(ApplicationErrorCodes.Channel.AccessDenied, "You do not have access to this channel");
-
+        var access = ((ChannelAuthResult.Authorized)result).Context;
         return new AuthorizationResult<Context>.Authorized(new Context(
             _channelId,
-            ctx.Channel.Name,
-            ctx.Channel.GuildId,
-            ctx.GuildName ?? string.Empty,
-            ctx.CallerRole));
+            access.Channel.Name,
+            access.Channel.GuildId,
+            access.GuildName ?? string.Empty,
+            access.CallerRole));
     }
 
     // In channels, admins can delete any message, not just their own.
@@ -110,7 +105,4 @@ public sealed class ChannelMessageEditDeleteScope : IMessageEditDeleteScope<Chan
             notification.MessageId,
             notification.ChannelId);
     }
-
-    private static AuthorizationResult<Context> Denied(string code, string detail)
-        => new AuthorizationResult<Context>.Denied(new ApplicationError(code, detail));
 }

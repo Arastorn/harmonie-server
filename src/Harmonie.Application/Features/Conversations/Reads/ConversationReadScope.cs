@@ -32,12 +32,9 @@ public sealed class ConversationReadScope : IReadScope<ConversationReadScope.Con
 
     public async Task<AuthorizationResult<Context>> AuthorizeAsync(UserId caller, CancellationToken ct)
     {
-        var access = await _conversationRepository.GetByIdWithParticipantCheckAsync(_conversationId, caller, ct);
-        if (access is null)
-            return Denied(ApplicationErrorCodes.Conversation.NotFound, "Conversation was not found");
-
-        if (access.Participant is null)
-            return Denied(ApplicationErrorCodes.Conversation.AccessDenied, "You do not have access to this conversation");
+        var result = await ConversationScopeAuthorizer.AuthorizeAsync(_conversationRepository, _conversationId, caller, ct);
+        if (result is ConversationAuthResult.Denied denied)
+            return new AuthorizationResult<Context>.Denied(denied.Error);
 
         return new AuthorizationResult<Context>.Authorized(new Context());
     }
@@ -47,7 +44,4 @@ public sealed class ConversationReadScope : IReadScope<ConversationReadScope.Con
 
     public Task UpsertReadStateAsync(MessageReadState state, CancellationToken ct)
         => _conversationReadStateRepository.UpsertAsync(state, ct);
-
-    private static AuthorizationResult<Context> Denied(string code, string detail)
-        => new AuthorizationResult<Context>.Denied(new ApplicationError(code, detail));
 }

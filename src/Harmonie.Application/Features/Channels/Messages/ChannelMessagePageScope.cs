@@ -29,22 +29,13 @@ public sealed class ChannelMessagePageScope : IMessagePageScope<ChannelMessagePa
 
     public async Task<AuthorizationResult<Context>> AuthorizeAsync(UserId caller, CancellationToken ct)
     {
-        var ctx = await _guildChannelRepository.GetWithCallerRoleAsync(_channelId, caller, ct);
-        if (ctx is null)
-            return Denied(ApplicationErrorCodes.Channel.NotFound, "Channel was not found");
-
-        if (ctx.Channel.Type != GuildChannelType.Text)
-            return Denied(ApplicationErrorCodes.Channel.NotText, "Messages can only be read from text channels");
-
-        if (ctx.CallerRole is null)
-            return Denied(ApplicationErrorCodes.Channel.AccessDenied, "You do not have access to this channel");
+        var result = await ChannelScopeAuthorizer.AuthorizeAsync(_guildChannelRepository, _channelId, caller, ct);
+        if (result is ChannelAuthResult.Denied denied)
+            return new AuthorizationResult<Context>.Denied(denied.Error);
 
         return new AuthorizationResult<Context>.Authorized(new Context());
     }
 
     public Task<MessagePage> GetPageAsync(MessageCursor? cursor, int limit, UserId callerId, CancellationToken ct)
         => _paginationRepository.GetChannelPageAsync(_channelId, cursor, limit, callerId, ct);
-
-    private static AuthorizationResult<Context> Denied(string code, string detail)
-        => new AuthorizationResult<Context>.Denied(new ApplicationError(code, detail));
 }
