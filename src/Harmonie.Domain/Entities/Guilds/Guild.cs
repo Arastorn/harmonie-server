@@ -1,4 +1,5 @@
 using Harmonie.Domain.Common;
+using Harmonie.Domain.ValueObjects.Common;
 using Harmonie.Domain.ValueObjects.Guilds;
 using Harmonie.Domain.ValueObjects.Uploads;
 using Harmonie.Domain.ValueObjects.Users;
@@ -13,20 +14,17 @@ public sealed class Guild : Entity<GuildId>
 
     public UploadedFileId? IconFileId { get; private set; }
 
-    public string? IconColor { get; private set; }
-
-    public string? IconName { get; private set; }
-
-    public string? IconBg { get; private set; }
+    /// <summary>
+    /// Icon visual appearance (color, name/icon, background).
+    /// </summary>
+    public Appearance Icon { get; private set; } = Appearance.Empty;
 
     private Guild(
         GuildId id,
         GuildName name,
         UserId ownerUserId,
         UploadedFileId? iconFileId,
-        string? iconColor,
-        string? iconName,
-        string? iconBg,
+        Appearance icon,
         DateTime createdAtUtc,
         DateTime updatedAtUtc)
     {
@@ -34,9 +32,7 @@ public sealed class Guild : Entity<GuildId>
         Name = name;
         OwnerUserId = ownerUserId;
         IconFileId = iconFileId;
-        IconColor = iconColor;
-        IconName = iconName;
-        IconBg = iconBg;
+        Icon = icon;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
     }
@@ -57,9 +53,7 @@ public sealed class Guild : Entity<GuildId>
             name,
             ownerUserId,
             iconFileId: null,
-            iconColor: null,
-            iconName: null,
-            iconBg: null,
+            icon: Appearance.Empty,
             now,
             now);
 
@@ -73,9 +67,7 @@ public sealed class Guild : Entity<GuildId>
         DateTime createdAtUtc,
         DateTime updatedAtUtc,
         UploadedFileId? iconFileId = null,
-        string? iconColor = null,
-        string? iconName = null,
-        string? iconBg = null)
+        Appearance? icon = null)
     {
         ArgumentNullException.ThrowIfNull(id);
         ArgumentNullException.ThrowIfNull(name);
@@ -86,9 +78,7 @@ public sealed class Guild : Entity<GuildId>
             name,
             ownerUserId,
             iconFileId,
-            iconColor,
-            iconName,
-            iconBg,
+            icon ?? Appearance.Empty,
             createdAtUtc,
             updatedAtUtc);
     }
@@ -112,36 +102,13 @@ public sealed class Guild : Entity<GuildId>
         return Result.Success();
     }
 
-    public Result UpdateIconColor(string? iconColor)
+    /// <summary>
+    /// Update the guild's icon appearance (color, name/icon, background).
+    /// </summary>
+    public Result UpdateIcon(Appearance icon)
     {
-        if (iconColor?.Length > 50)
-            return Result.Failure("Guild icon color is too long");
-
-        IconColor = iconColor;
+        Icon = icon;
         MarkAsUpdated();
-
-        return Result.Success();
-    }
-
-    public Result UpdateIconName(string? iconName)
-    {
-        if (iconName?.Length > 50)
-            return Result.Failure("Guild icon name is too long");
-
-        IconName = iconName;
-        MarkAsUpdated();
-
-        return Result.Success();
-    }
-
-    public Result UpdateIconBg(string? iconBg)
-    {
-        if (iconBg?.Length > 50)
-            return Result.Failure("Guild icon background is too long");
-
-        IconBg = iconBg;
-        MarkAsUpdated();
-
         return Result.Success();
     }
 }

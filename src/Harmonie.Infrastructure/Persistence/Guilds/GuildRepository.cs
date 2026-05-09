@@ -2,6 +2,7 @@ using Dapper;
 using Harmonie.Application.Interfaces.Guilds;
 using Harmonie.Domain.Entities.Guilds;
 using Harmonie.Domain.Enums;
+using Harmonie.Domain.ValueObjects.Common;
 using Harmonie.Domain.ValueObjects.Guilds;
 using Harmonie.Domain.ValueObjects.Uploads;
 using Harmonie.Domain.ValueObjects.Users;
@@ -132,9 +133,9 @@ public sealed class GuildRepository : IGuildRepository
                 Name = guild.Name.Value,
                 OwnerUserId = guild.OwnerUserId.Value,
                 IconFileId = guild.IconFileId?.Value,
-                guild.IconColor,
-                guild.IconName,
-                guild.IconBg,
+                IconColor = guild.Icon.Color,
+                IconName = guild.Icon.Glyph,
+                IconBg = guild.Icon.Bg,
                 guild.CreatedAtUtc,
                 UpdatedAtUtc = guild.UpdatedAtUtc ?? guild.CreatedAtUtc
             },
@@ -166,9 +167,9 @@ public sealed class GuildRepository : IGuildRepository
                 Id = guild.Id.Value,
                 Name = guild.Name.Value,
                 IconFileId = guild.IconFileId?.Value,
-                guild.IconColor,
-                guild.IconName,
-                guild.IconBg,
+                IconColor = guild.Icon.Color,
+                IconName = guild.Icon.Glyph,
+                IconBg = guild.Icon.Bg,
                 UpdatedAtUtc = guild.UpdatedAtUtc ?? guild.CreatedAtUtc
             },
             transaction: _dbSession.Transaction,
@@ -234,6 +235,10 @@ public sealed class GuildRepository : IGuildRepository
         if (nameResult.IsFailure || nameResult.Value is null)
             throw new InvalidOperationException("Stored guild name is invalid.");
 
+        var iconAppearanceResult = Appearance.Create(row.IconColor, row.IconName, row.IconBg);
+        if (iconAppearanceResult.IsFailure || iconAppearanceResult.Value is null)
+            throw new InvalidOperationException($"Stored guild icon appearance is invalid: {iconAppearanceResult.Error}");
+
         return Guild.Rehydrate(
             GuildId.From(row.Id),
             nameResult.Value,
@@ -241,9 +246,7 @@ public sealed class GuildRepository : IGuildRepository
             row.CreatedAtUtc,
             row.UpdatedAtUtc,
             row.IconFileId.HasValue ? UploadedFileId.From(row.IconFileId.Value) : null,
-            row.IconColor,
-            row.IconName,
-            row.IconBg);
+            icon: iconAppearanceResult.Value);
     }
 
     private static Guild MapToGuild(GuildWithRoleRow row)
@@ -252,6 +255,10 @@ public sealed class GuildRepository : IGuildRepository
         if (nameResult.IsFailure || nameResult.Value is null)
             throw new InvalidOperationException("Stored guild name is invalid.");
 
+        var iconAppearanceResult = Appearance.Create(row.IconColor, row.IconName, row.IconBg);
+        if (iconAppearanceResult.IsFailure || iconAppearanceResult.Value is null)
+            throw new InvalidOperationException($"Stored guild icon appearance is invalid: {iconAppearanceResult.Error}");
+
         return Guild.Rehydrate(
             GuildId.From(row.Id),
             nameResult.Value,
@@ -259,9 +266,7 @@ public sealed class GuildRepository : IGuildRepository
             row.CreatedAtUtc,
             row.UpdatedAtUtc,
             row.IconFileId.HasValue ? UploadedFileId.From(row.IconFileId.Value) : null,
-            row.IconColor,
-            row.IconName,
-            row.IconBg);
+            icon: iconAppearanceResult.Value);
     }
 
     private sealed class GuildWithRoleRow

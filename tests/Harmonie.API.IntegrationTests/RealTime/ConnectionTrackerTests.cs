@@ -6,6 +6,7 @@ using Harmonie.Application.Interfaces.Guilds;
 using Harmonie.Application.Interfaces.Users;
 using Harmonie.Domain.Entities.Guilds;
 using Harmonie.Domain.Entities.Users;
+using Harmonie.Domain.ValueObjects.Common;
 using Harmonie.Domain.ValueObjects.Guilds;
 using Harmonie.Domain.ValueObjects.Users;
 using Microsoft.Extensions.DependencyInjection;
@@ -373,9 +374,7 @@ public sealed class ConnectionTrackerTests : IDisposable
             lastLoginAtUtc: DateTime.UtcNow,
             displayName: null,
             bio: null,
-            avatarColor: null,
-            avatarIcon: null,
-            avatarBg: null,
+            avatar: Appearance.Empty,
             theme: "default",
             language: null,
             status: statusResult.Value!,

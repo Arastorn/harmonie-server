@@ -2,6 +2,7 @@ using Dapper;
 using Harmonie.Application.Interfaces.Guilds;
 using Harmonie.Domain.Entities.Guilds;
 using Harmonie.Domain.Enums;
+using Harmonie.Domain.ValueObjects.Common;
 using Harmonie.Domain.ValueObjects.Guilds;
 using Harmonie.Domain.ValueObjects.Uploads;
 using Harmonie.Domain.ValueObjects.Users;
@@ -282,6 +283,10 @@ public sealed class GuildMemberRepository : IGuildMemberRepository
         if (guildNameResult.IsFailure || guildNameResult.Value is null)
             throw new InvalidOperationException("Stored guild name is invalid.");
 
+        var iconAppearanceResult = Appearance.Create(row.IconColor, row.IconName, row.IconBg);
+        if (iconAppearanceResult.IsFailure || iconAppearanceResult.Value is null)
+            throw new InvalidOperationException($"Stored guild icon appearance is invalid: {iconAppearanceResult.Error}");
+
         var guild = Guild.Rehydrate(
             GuildId.From(row.GuildId),
             guildNameResult.Value,
@@ -289,9 +294,7 @@ public sealed class GuildMemberRepository : IGuildMemberRepository
             row.GuildCreatedAtUtc,
             row.GuildUpdatedAtUtc,
             iconFileId: row.IconFileId.HasValue ? UploadedFileId.From(row.IconFileId.Value) : null,
-            row.IconColor,
-            row.IconName,
-            row.IconBg);
+            icon: iconAppearanceResult.Value);
 
         return new UserGuildMembership(
             guild,

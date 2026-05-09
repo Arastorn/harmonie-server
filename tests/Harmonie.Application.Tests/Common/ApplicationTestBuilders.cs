@@ -4,6 +4,7 @@ using Harmonie.Domain.Entities.Messages;
 using Harmonie.Domain.Entities.Uploads;
 using Harmonie.Domain.Entities.Users;
 using Harmonie.Domain.Enums;
+using Harmonie.Domain.ValueObjects.Common;
 using Harmonie.Domain.ValueObjects.Channels;
 using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.ValueObjects.Guilds;
@@ -44,9 +45,7 @@ internal static class ApplicationTestBuilders
             lastLoginAtUtc: null,
             displayName: null,
             bio: null,
-            avatarColor: null,
-            avatarIcon: null,
-            avatarBg: null,
+            avatar: Appearance.Empty,
             theme: "default",
             language: null,
             status: UserStatus.Online,

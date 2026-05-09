@@ -1,4 +1,5 @@
 using Harmonie.Domain.Common;
+using Harmonie.Domain.ValueObjects.Common;
 using Harmonie.Domain.ValueObjects.Uploads;
 using Harmonie.Domain.ValueObjects.Users;
 
@@ -53,19 +54,9 @@ public sealed class User : Entity<UserId>
     public string? Bio { get; private set; }
 
     /// <summary>
-    /// Avatar appearance color
+    /// Avatar visual appearance (color, icon, background).
     /// </summary>
-    public string? AvatarColor { get; private set; }
-
-    /// <summary>
-    /// Avatar appearance icon
-    /// </summary>
-    public string? AvatarIcon { get; private set; }
-
-    /// <summary>
-    /// Avatar appearance background
-    /// </summary>
-    public string? AvatarBg { get; private set; }
+    public Appearance Avatar { get; private set; } = Appearance.Empty;
 
     /// <summary>
     /// UI theme preference. Themes are open-ended (user-supplied strings);
@@ -100,9 +91,7 @@ public sealed class User : Entity<UserId>
         DateTime? lastLoginAtUtc,
         string? displayName,
         string? bio,
-        string? avatarColor,
-        string? avatarIcon,
-        string? avatarBg,
+        Appearance avatar,
         string theme,
         string? language,
         UserStatus status,
@@ -120,9 +109,7 @@ public sealed class User : Entity<UserId>
         LastLoginAtUtc = lastLoginAtUtc;
         DisplayName = displayName;
         Bio = bio;
-        AvatarColor = avatarColor;
-        AvatarIcon = avatarIcon;
-        AvatarBg = avatarBg;
+        Avatar = avatar;
         Theme = theme;
         Language = language;
         Status = status;
@@ -155,9 +142,7 @@ public sealed class User : Entity<UserId>
             lastLoginAtUtc: null,
             displayName: null,
             bio: null,
-            avatarColor: null,
-            avatarIcon: null,
-            avatarBg: null,
+            avatar: Appearance.Empty,
             theme: "default",
             language: null,
             status: UserStatus.Online,
@@ -179,9 +164,7 @@ public sealed class User : Entity<UserId>
         DateTime? lastLoginAtUtc,
         string? displayName,
         string? bio,
-        string? avatarColor,
-        string? avatarIcon,
-        string? avatarBg,
+        Appearance avatar,
         string theme,
         string? language,
         UserStatus status,
@@ -200,9 +183,7 @@ public sealed class User : Entity<UserId>
             lastLoginAtUtc,
             displayName,
             bio,
-            avatarColor,
-            avatarIcon,
-            avatarBg,
+            avatar,
             theme,
             language,
             status,
@@ -295,32 +276,12 @@ public sealed class User : Entity<UserId>
         return Result.Success();
     }
 
-    public Result UpdateAvatarColor(string? avatarColor)
+    /// <summary>
+    /// Update the user's avatar appearance (color, icon, background).
+    /// </summary>
+    public Result UpdateAvatar(Appearance appearance)
     {
-        if (avatarColor?.Length > 50)
-            return Result.Failure("Avatar color is too long");
-
-        AvatarColor = avatarColor;
-        MarkAsUpdated();
-        return Result.Success();
-    }
-
-    public Result UpdateAvatarIcon(string? avatarIcon)
-    {
-        if (avatarIcon?.Length > 50)
-            return Result.Failure("Avatar icon is too long");
-
-        AvatarIcon = avatarIcon;
-        MarkAsUpdated();
-        return Result.Success();
-    }
-
-    public Result UpdateAvatarBg(string? avatarBg)
-    {
-        if (avatarBg?.Length > 50)
-            return Result.Failure("Avatar background is too long");
-
-        AvatarBg = avatarBg;
+        Avatar = appearance;
         MarkAsUpdated();
         return Result.Success();
     }

@@ -5,6 +5,7 @@ using Harmonie.Application.Interfaces.Common;
 using Harmonie.Application.Interfaces.Guilds;
 using Harmonie.Domain.Common;
 using Harmonie.Domain.Entities.Guilds;
+using Harmonie.Domain.ValueObjects.Common;
 using Harmonie.Domain.Enums;
 using Harmonie.Domain.ValueObjects.Guilds;
 using Harmonie.Domain.ValueObjects.Uploads;
@@ -72,28 +73,13 @@ public sealed class CreateGuildHandler : IAuthenticatedHandler<CreateGuildReques
                 return BuildIconValidationFailure(nameof(request.IconFileId), iconFileResult);
         }
 
-        if (request.Icon is not null)
+        if (request.Icon is not null && (request.Icon.Color is not null || request.Icon.Name is not null || request.Icon.Bg is not null))
         {
-            if (request.Icon.Color is not null)
-            {
-                var result = guild.UpdateIconColor(request.Icon.Color);
-                if (result.IsFailure)
-                    return BuildIconValidationFailure("Icon.Color", result.Error);
-            }
+            var appearanceResult = Appearance.Create(request.Icon.Color, request.Icon.Name, request.Icon.Bg);
+            if (appearanceResult.IsFailure || appearanceResult.Value is null)
+                return BuildIconValidationFailure("Icon", appearanceResult.Error);
 
-            if (request.Icon.Name is not null)
-            {
-                var result = guild.UpdateIconName(request.Icon.Name);
-                if (result.IsFailure)
-                    return BuildIconValidationFailure("Icon.Name", result.Error);
-            }
-
-            if (request.Icon.Bg is not null)
-            {
-                var result = guild.UpdateIconBg(request.Icon.Bg);
-                if (result.IsFailure)
-                    return BuildIconValidationFailure("Icon.Bg", result.Error);
-            }
+            guild.UpdateIcon(appearanceResult.Value);
         }
 
         var ownerMembershipResult = GuildMember.Create(
@@ -173,8 +159,8 @@ public sealed class CreateGuildHandler : IAuthenticatedHandler<CreateGuildReques
 
     private static GuildIconDto? BuildIcon(Guild guild)
     {
-        return guild.IconColor is not null || guild.IconName is not null || guild.IconBg is not null
-            ? new GuildIconDto(guild.IconColor, guild.IconName, guild.IconBg)
+        return guild.Icon.HasValue
+            ? new GuildIconDto(guild.Icon.Color, guild.Icon.Glyph, guild.Icon.Bg)
             : null;
     }
 
