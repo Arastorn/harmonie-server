@@ -1,4 +1,5 @@
 using Harmonie.Application.Common;
+using Harmonie.Application.Features.Users;
 using Harmonie.Application.Interfaces.Conversations;
 using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.ValueObjects.Users;
@@ -38,19 +39,24 @@ public sealed class GetConversationParticipantsHandler
                 "You do not have access to this conversation");
         }
 
-        var dtos = access.Participants
-            .Select(p => new ConversationParticipantDto(
-                UserId: p.UserId,
-                Username: p.Username,
-                DisplayName: p.DisplayName,
-                AvatarFileId: p.AvatarFileId,
-                AvatarColor: p.AvatarColor,
-                AvatarIcon: p.AvatarIcon,
-                AvatarBg: p.AvatarBg,
-                JoinedAtUtc: p.JoinedAtUtc))
+        var items = access.Participants
+            .Select(p =>
+            {
+                var avatar = p.AvatarColor is not null || p.AvatarIcon is not null || p.AvatarBg is not null
+                    ? new AvatarAppearanceDto(p.AvatarColor, p.AvatarIcon, p.AvatarBg)
+                    : null;
+
+                return new GetConversationParticipantsItem(
+                    UserId: p.UserId,
+                    Username: p.Username,
+                    DisplayName: p.DisplayName,
+                    AvatarFileId: p.AvatarFileId,
+                    Avatar: avatar,
+                    JoinedAtUtc: p.JoinedAtUtc);
+            })
             .ToArray();
 
         return ApplicationResponse<GetConversationParticipantsResponse>.Ok(
-            new GetConversationParticipantsResponse(dtos));
+            new GetConversationParticipantsResponse(items));
     }
 }

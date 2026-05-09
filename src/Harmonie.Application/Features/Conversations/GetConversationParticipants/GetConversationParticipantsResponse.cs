@@ -1,14 +1,14 @@
+using Harmonie.Application.Features.Users;
+
 namespace Harmonie.Application.Features.Conversations.GetConversationParticipants;
 
 public sealed record GetConversationParticipantsResponse(
-    IReadOnlyList<ConversationParticipantDto> Participants);
+    IReadOnlyList<GetConversationParticipantsItem> Participants);
 
-public sealed record ConversationParticipantDto(
+public sealed record GetConversationParticipantsItem(
     Guid UserId,
     string Username,
     string? DisplayName,
     Guid? AvatarFileId,
-    string? AvatarColor,
-    string? AvatarIcon,
-    string? AvatarBg,
+    AvatarAppearanceDto? Avatar,
     DateTime JoinedAtUtc);

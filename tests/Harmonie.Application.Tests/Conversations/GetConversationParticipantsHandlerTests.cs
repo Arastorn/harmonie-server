@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Harmonie.Application.Common;
 using Harmonie.Application.Features.Conversations.GetConversationParticipants;
+using Harmonie.Application.Features.Users;
 using Harmonie.Application.Interfaces.Conversations;
 using Harmonie.Domain.Entities.Conversations;
 using Harmonie.Domain.ValueObjects.Conversations;
@@ -61,11 +62,11 @@ public sealed class GetConversationParticipantsHandlerTests
         var userId = UserId.New();
         var otherUserId = UserId.New();
         var conversationId = ConversationId.New();
+        var now = DateTime.UtcNow;
 
         var callerParticipant = ConversationParticipant.Rehydrate(
             conversationId, userId, DateTime.UtcNow, hiddenAtUtc: null);
 
-        var now = DateTime.UtcNow;
         var profiles = new[]
         {
             new ParticipantProfile(
@@ -101,12 +102,18 @@ public sealed class GetConversationParticipantsHandlerTests
         dto0.UserId.Should().Be(userId.Value);
         dto0.Username.Should().Be("caller");
         dto0.DisplayName.Should().Be("Caller");
-        dto0.AvatarColor.Should().Be("#111");
+        dto0.Avatar.Should().NotBeNull();
+        dto0.Avatar!.Color.Should().Be("#111");
+        dto0.Avatar.Icon.Should().BeNull();
+        dto0.Avatar.Bg.Should().BeNull();
+        dto0.JoinedAtUtc.Should().Be(now);
 
         var dto1 = response.Data.Participants[1];
         dto1.UserId.Should().Be(otherUserId.Value);
         dto1.Username.Should().Be("other");
         dto1.AvatarFileId.Should().NotBeNull();
-        dto1.AvatarIcon.Should().Be("star");
+        dto1.Avatar!.Icon.Should().Be("star");
+        dto1.Avatar.Bg.Should().Be("#222");
+        dto1.JoinedAtUtc.Should().Be(now.AddDays(-1));
     }
 }

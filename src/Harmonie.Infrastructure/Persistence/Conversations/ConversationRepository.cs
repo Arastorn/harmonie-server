@@ -378,7 +378,7 @@ public sealed class ConversationRepository : IConversationRepository
         var connection = await _dbSession.GetOpenConnectionAsync(cancellationToken);
         var command = new CommandDefinition(
             sql,
-            new { ConversationId = conversationId.Value, CallerId = callerId.Value },
+            new { ConversationId = conversationId.Value },
             transaction: _dbSession.Transaction,
             cancellationToken: cancellationToken);
 
@@ -388,12 +388,9 @@ public sealed class ConversationRepository : IConversationRepository
             return null;
 
         var rows = (await multi.ReadAsync<ParticipantProfileRow>()).ToArray();
+        // If the conversation exists but has no active (non-deleted) participants, treat as not found.
         if (rows.Length == 0)
-        {
-            return new ConversationAccessWithParticipantProfiles(
-                CallerParticipant: null,
-                Participants: []);
-        }
+            return null;
 
         ConversationParticipant? callerParticipant = null;
         var profiles = rows.Select(r =>
