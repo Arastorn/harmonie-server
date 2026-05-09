@@ -16,11 +16,10 @@ public static class MentionValidationHelper
     /// verifies membership via the scope, and returns the validated distinct UserId array.
     /// On failure, the error code and message are set.
     /// </summary>
-    public static async Task<MentionValidationResult> ValidateAsync<TContext>(
+    public static async Task<MentionValidationResult> ValidateAsync(
         IReadOnlyList<Guid> rawMentionedUserIds,
         IUserRepository userRepository,
-        Func<IReadOnlyCollection<UserId>, TContext, CancellationToken, Task<Result>> validateMembershipAsync,
-        TContext context,
+        Func<IReadOnlyCollection<UserId>, CancellationToken, Task<Result>> validateMembershipAsync,
         CancellationToken ct)
     {
         var distinctIds = rawMentionedUserIds.Distinct().ToArray();
@@ -42,7 +41,7 @@ public static class MentionValidationHelper
                 $"One or more mentioned users were not found: {string.Join(", ", missingIds)}");
         }
 
-        var validateResult = await validateMembershipAsync(userIds, context, ct);
+        var validateResult = await validateMembershipAsync(userIds, ct);
         if (validateResult.IsFailure)
         {
             return new MentionValidationResult.Failure(

@@ -110,8 +110,7 @@ public sealed class MessageEditDeleteOrchestrator
                 var validated = await MentionValidationHelper.ValidateAsync(
                     mentionedUserIds,
                     _userRepository,
-                    (ids, ctx, t) => scope.ValidateMentionedUsersAsync(ids, ctx, t),
-                    context,
+                    (ids, ct2) => scope.ValidateMentionedUsersAsync(ids, context, ct2),
                     ct);
 
                 if (validated is MentionValidationResult.Failure editFailure)

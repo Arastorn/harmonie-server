@@ -18,7 +18,7 @@ public static class SendMessageEndpoint
             .RequireAuthorization()
             .RequireRateLimiting("message-post")
             .WithSummary("Send a conversation message")
-            .WithDescription("Posts a message in a conversation where the authenticated user is a participant. Optional `attachmentFileIds` values must reference files previously uploaded with attachment purpose.")
+            .WithDescription("Posts a message in a conversation where the authenticated user is a participant. Optional `attachmentFileIds` values must reference files previously uploaded with attachment purpose. `mentionedUserIds` can be omitted or empty for no mentions; mentioned users must be conversation participants.")
             .Produces<SendMessageResponse>(StatusCodes.Status201Created)
             .Produces(StatusCodes.Status429TooManyRequests)
             .ProducesErrors(

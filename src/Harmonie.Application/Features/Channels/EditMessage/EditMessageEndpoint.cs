@@ -18,7 +18,7 @@ public static class EditMessageEndpoint
             .WithTags("Channels")
             .RequireAuthorization()
             .WithSummary("Edit a message")
-            .WithDescription("Updates the content of a message. Only the message author can edit their own messages.")
+            .WithDescription("Updates the content of a message. Only the message author can edit their own messages. Omit `mentionedUserIds` to leave mentions unchanged; pass an empty array to clear all mentions; pass IDs to replace the mention set.")
             .Produces<EditMessageResponse>(StatusCodes.Status200OK)
             .ProducesErrors(
                 ApplicationErrorCodes.Common.ValidationFailed,
