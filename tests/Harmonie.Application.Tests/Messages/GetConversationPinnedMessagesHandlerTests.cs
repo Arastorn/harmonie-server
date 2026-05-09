@@ -1,6 +1,8 @@
 using FluentAssertions;
 using Harmonie.Application.Common;
+using Harmonie.Application.Common.Messages;
 using Harmonie.Application.Features.Conversations.GetPinnedMessages;
+using Harmonie.Application.Features.Conversations.Pins;
 using Harmonie.Application.Interfaces.Conversations;
 using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Application.Tests.Common;
@@ -18,16 +20,19 @@ public sealed class GetConversationPinnedMessagesHandlerTests
 {
     private readonly Mock<IConversationRepository> _conversationRepositoryMock;
     private readonly Mock<IPinnedMessageRepository> _pinnedMessageRepositoryMock;
+    private readonly PinnedMessageFetchOrchestrator _orchestrator;
     private readonly GetPinnedMessagesHandler _handler;
 
     public GetConversationPinnedMessagesHandlerTests()
     {
         _conversationRepositoryMock = new Mock<IConversationRepository>();
         _pinnedMessageRepositoryMock = new Mock<IPinnedMessageRepository>();
+        _orchestrator = new PinnedMessageFetchOrchestrator();
 
         _handler = new GetPinnedMessagesHandler(
             _conversationRepositoryMock.Object,
-            _pinnedMessageRepositoryMock.Object);
+            _pinnedMessageRepositoryMock.Object,
+            _orchestrator);
     }
 
     [Fact]

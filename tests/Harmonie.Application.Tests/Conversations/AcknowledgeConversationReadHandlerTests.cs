@@ -1,6 +1,8 @@
 using FluentAssertions;
 using Harmonie.Application.Common;
+using Harmonie.Application.Common.Messages;
 using Harmonie.Application.Features.Conversations.AcknowledgeRead;
+using Harmonie.Application.Features.Conversations.Reads;
 using Harmonie.Application.Interfaces.Common;
 using Harmonie.Application.Interfaces.Conversations;
 using Harmonie.Application.Interfaces.Messages;
@@ -21,6 +23,7 @@ public sealed class AcknowledgeConversationReadHandlerTests
     private readonly Mock<IConversationReadStateRepository> _conversationReadStateRepositoryMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly Mock<IUnitOfWorkTransaction> _transactionMock;
+    private readonly ReadOrchestrator _orchestrator;
     private readonly AcknowledgeReadHandler _handler;
 
     public AcknowledgeConversationReadHandlerTests()
@@ -33,11 +36,13 @@ public sealed class AcknowledgeConversationReadHandlerTests
 
         _transactionMock = _unitOfWorkMock.SetupTransactionMock();
 
+        _orchestrator = new ReadOrchestrator(_messageRepositoryMock.Object, _unitOfWorkMock.Object);
+
         _handler = new AcknowledgeReadHandler(
             _conversationRepositoryMock.Object,
             _messageRepositoryMock.Object,
             _conversationReadStateRepositoryMock.Object,
-            _unitOfWorkMock.Object);
+            _orchestrator);
     }
 
     [Fact]

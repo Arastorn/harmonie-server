@@ -19,6 +19,10 @@ public static class DependencyInjection
         services.AddScoped<MessageSendOrchestrator>();
         services.AddScoped<ReactionOrchestrator>();
         services.AddScoped<MessageEditDeleteOrchestrator>();
+        services.AddScoped<PinOrchestrator>();
+        services.AddScoped<ReadOrchestrator>();
+        services.AddScoped<MessageFetchOrchestrator>();
+        services.AddScoped<PinnedMessageFetchOrchestrator>();
 
         services.AddAuthHandlers();
         services.AddGuildHandlers();

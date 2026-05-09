@@ -1,8 +1,8 @@
 using Harmonie.Application.Common;
 using Harmonie.Application.Common.Messages;
+using Harmonie.Application.Features.Channels.Messages;
 using Harmonie.Application.Interfaces.Channels;
 using Harmonie.Application.Interfaces.Messages;
-using Harmonie.Domain.Enums;
 using Harmonie.Domain.ValueObjects.Channels;
 using Harmonie.Domain.ValueObjects.Users;
 
@@ -12,17 +12,18 @@ public sealed record GetChannelMessagesInput(GuildChannelId ChannelId, string? B
 
 public sealed class GetMessagesHandler : IAuthenticatedHandler<GetChannelMessagesInput, GetMessagesResponse>
 {
-    private const int DefaultLimit = 50;
-
     private readonly IGuildChannelRepository _guildChannelRepository;
-    private readonly IMessagePaginationRepository _channelMessageRepository;
+    private readonly IMessagePaginationRepository _paginationRepository;
+    private readonly MessageFetchOrchestrator _orchestrator;
 
     public GetMessagesHandler(
         IGuildChannelRepository guildChannelRepository,
-        IMessagePaginationRepository channelMessageRepository)
+        IMessagePaginationRepository paginationRepository,
+        MessageFetchOrchestrator orchestrator)
     {
         _guildChannelRepository = guildChannelRepository;
-        _channelMessageRepository = channelMessageRepository;
+        _paginationRepository = paginationRepository;
+        _orchestrator = orchestrator;
     }
 
     public async Task<ApplicationResponse<GetMessagesResponse>> HandleAsync(
@@ -30,95 +31,20 @@ public sealed class GetMessagesHandler : IAuthenticatedHandler<GetChannelMessage
         UserId currentUserId,
         CancellationToken cancellationToken = default)
     {
-        MessageCursor? beforeCursor = null;
-        if (request.Before is not null)
-        {
-            if (!MessageCursorCodec.TryParse(request.Before, out var parsedCursor) || parsedCursor is null)
-            {
-                return ApplicationResponse<GetMessagesResponse>.Fail(
-                    ApplicationErrorCodes.Common.ValidationFailed,
-                    "Request validation failed",
-                    EndpointExtensions.SingleValidationError(
-                        nameof(request.Before),
-                        ApplicationErrorCodes.Validation.InvalidFormat,
-                        "Before cursor is invalid"));
-            }
+        var scope = new ChannelMessagePageScope(
+            request.ChannelId, _guildChannelRepository, _paginationRepository);
 
-            beforeCursor = parsedCursor;
-        }
+        var result = await _orchestrator.FetchAsync(
+            scope, request.Before, request.Limit, currentUserId, cancellationToken);
 
-        var limit = request.Limit ?? DefaultLimit;
+        if (!result.Success)
+            return ApplicationResponse<GetMessagesResponse>.Fail(result.Error!);
 
-        var ctx = await _guildChannelRepository.GetWithCallerRoleAsync(request.ChannelId, currentUserId, cancellationToken);
-        if (ctx is null)
-        {
-            return ApplicationResponse<GetMessagesResponse>.Fail(
-                ApplicationErrorCodes.Channel.NotFound,
-                "Channel was not found");
-        }
-
-        if (ctx.Channel.Type != GuildChannelType.Text)
-        {
-            return ApplicationResponse<GetMessagesResponse>.Fail(
-                ApplicationErrorCodes.Channel.NotText,
-                "Messages can only be read from text channels");
-        }
-
-        if (ctx.CallerRole is null)
-        {
-            return ApplicationResponse<GetMessagesResponse>.Fail(
-                ApplicationErrorCodes.Channel.AccessDenied,
-                "You do not have access to this channel");
-        }
-
-        var page = await _channelMessageRepository.GetChannelPageAsync(
-            request.ChannelId,
-            beforeCursor,
-            limit,
-            currentUserId,
-            cancellationToken);
-
-        var items = page.Items
-            .OrderBy(x => x.CreatedAtUtc)
-            .ThenBy(x => x.Id.Value)
-            .Select(x =>
-            {
-                page.ReactionsByMessageId.TryGetValue(x.Id.Value, out var reactions);
-                page.AttachmentsByMessageId.TryGetValue(x.Id.Value, out var attachments);
-                IReadOnlyList<LinkPreviewDto>? previews = null;
-                page.LinkPreviewsByMessageId?.TryGetValue(x.Id.Value, out previews);
-                var isPinned = page.PinnedMessageIds?.Contains(x.Id.Value) == true;
-                ReplyPreviewDto? replyTo = null;
-                if (x.ReplyToMessageId is not null)
-                {
-                    page.ReplyPreviewsByTargetMessageId?.TryGetValue(x.ReplyToMessageId.Value, out replyTo);
-                }
-                return new GetMessagesItemResponse(
-                    MessageId: x.Id.Value,
-                    AuthorUserId: x.AuthorUserId.Value,
-                    Content: x.Content?.Value,
-                    Attachments: attachments?.Select(MessageAttachmentDto.FromDomain).ToArray()
-                                 ?? Array.Empty<MessageAttachmentDto>(),
-                    Reactions: reactions?.Select(r => new MessageReactionDto(r.Emoji, r.Count, r.ReactedByCaller,
-                        r.Users.Select(u => new ReactionUserDto(u.UserId, u.Username, u.DisplayName)).ToArray())).ToArray()
-                              ?? Array.Empty<MessageReactionDto>(),
-                    LinkPreviews: previews?.ToArray(),
-                    IsPinned: isPinned,
-                    ReplyTo: replyTo,
-                    CreatedAtUtc: x.CreatedAtUtc,
-                    UpdatedAtUtc: x.UpdatedAtUtc);
-            })
-            .ToArray();
-
-        var payload = new GetMessagesResponse(
+        return ApplicationResponse<GetMessagesResponse>.Ok(new GetMessagesResponse(
             ChannelId: request.ChannelId.Value,
-            Items: items,
-            NextCursor: page.NextCursor is null
-                ? null
-                : MessageCursorCodec.Encode(page.NextCursor),
-            LastReadMessageId: page.LastReadState?.LastReadMessageId.Value,
-            LastReadAtUtc: page.LastReadState?.ReadAtUtc);
-
-        return ApplicationResponse<GetMessagesResponse>.Ok(payload);
+            Items: result.Data!.Items,
+            NextCursor: result.Data.NextCursor,
+            LastReadMessageId: result.Data.LastReadMessageId,
+            LastReadAtUtc: result.Data.LastReadAtUtc));
     }
 }
