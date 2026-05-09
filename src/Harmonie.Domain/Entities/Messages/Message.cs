@@ -57,12 +57,9 @@ public sealed class Message : Entity<MessageId>
             return Result.Failure<Message>("Author user ID is required");
 
         var mentions = mentionedUserIds ?? Array.Empty<UserId>();
-
-        if (mentions.Count > MaxMentionedUsers)
-            return Result.Failure<Message>($"A message can mention at most {MaxMentionedUsers} users");
-
-        if (new HashSet<UserId>(mentions).Count != mentions.Count)
-            return Result.Failure<Message>("Mentioned user IDs must be distinct");
+        var validationError = ValidateMentions(mentions);
+        if (validationError is not null)
+            return Result.Failure<Message>(validationError);
 
         return Result.Success(new Message(
             MessageId.New(),
@@ -91,16 +88,24 @@ public sealed class Message : Entity<MessageId>
     public Result ReplaceMentions(IReadOnlyCollection<UserId>? mentionedUserIds)
     {
         var mentions = mentionedUserIds ?? Array.Empty<UserId>();
-
-        if (mentions.Count > MaxMentionedUsers)
-            return Result.Failure($"A message can mention at most {MaxMentionedUsers} users");
-
-        if (new HashSet<UserId>(mentions).Count != mentions.Count)
-            return Result.Failure("Mentioned user IDs must be distinct");
+        var validationError = ValidateMentions(mentions);
+        if (validationError is not null)
+            return Result.Failure(validationError);
 
         MentionedUserIds = mentions.ToArray();
         MarkAsUpdated();
         return Result.Success();
+    }
+
+    private static string? ValidateMentions(IReadOnlyCollection<UserId> mentions)
+    {
+        if (mentions.Count > MaxMentionedUsers)
+            return $"A message can mention at most {MaxMentionedUsers} users";
+
+        if (new HashSet<UserId>(mentions).Count != mentions.Count)
+            return "Mentioned user IDs must be distinct";
+
+        return null;
     }
 
     public Result Delete()

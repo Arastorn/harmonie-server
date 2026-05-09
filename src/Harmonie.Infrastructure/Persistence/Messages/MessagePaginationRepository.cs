@@ -234,7 +234,13 @@ internal sealed class MessagePaginationRepository : IMessagePaginationRepository
                 g => (IReadOnlyList<Guid>)g.Select(r => r.mentionedUserId).Distinct().ToArray());
 
         var items = pageRows
-            .Select(row => MessageRepositoryHelpers.MapToMessage(row))
+            .Select(row =>
+            {
+                mentionedUserIdsByMessageId.TryGetValue(row.Id, out var mentionIds);
+                return MessageRepositoryHelpers.MapToMessage(
+                    row,
+                    mentionIds?.Select(UserId.From).ToArray());
+            })
             .OrderBy(x => x.CreatedAtUtc)
             .ThenBy(x => x.Id.Value)
             .ToArray();
@@ -472,7 +478,13 @@ internal sealed class MessagePaginationRepository : IMessagePaginationRepository
                 g => (IReadOnlyList<Guid>)g.Select(r => r.mentionedUserId).Distinct().ToArray());
 
         var items = pageRows
-            .Select(row => MessageRepositoryHelpers.MapToMessage(row))
+            .Select(row =>
+            {
+                mentionedUserIdsByMessageId.TryGetValue(row.Id, out var mentionIds);
+                return MessageRepositoryHelpers.MapToMessage(
+                    row,
+                    mentionIds?.Select(UserId.From).ToArray());
+            })
             .OrderBy(x => x.CreatedAtUtc)
             .ThenBy(x => x.Id.Value)
             .ToArray();
