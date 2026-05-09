@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Harmonie.Domain.Entities.Users;
+using Harmonie.Domain.ValueObjects.Common;
 using Harmonie.Domain.ValueObjects.Uploads;
 using Harmonie.Domain.ValueObjects.Users;
 using Xunit;
@@ -157,59 +158,29 @@ public sealed class UserTests
     }
 
     [Fact]
-    public void UpdateAvatarColor_WithValidValue_ShouldSucceed()
+    public void UpdateAvatar_WithValidAppearance_ShouldSucceed()
     {
         var user = CreateUser();
+        var appearance = Appearance.Create("#FFF4D6", "star", "#000").Value!;
 
-        var result = user.UpdateAvatarColor("#FFF4D6");
+        var result = user.UpdateAvatar(appearance);
 
         result.IsSuccess.Should().BeTrue();
-        user.AvatarColor.Should().Be("#FFF4D6");
+        user.Avatar.Color.Should().Be("#FFF4D6");
+        user.Avatar.Glyph.Should().Be("star");
+        user.Avatar.Bg.Should().Be("#000");
     }
 
     [Fact]
-    public void UpdateAvatarColor_WithNull_ShouldClear()
+    public void UpdateAvatar_WithEmpty_ShouldClear()
     {
         var user = CreateUser();
-        user.UpdateAvatarColor("#FFF4D6");
+        user.UpdateAvatar(Appearance.Create("#FFF4D6", null, null).Value!);
 
-        var result = user.UpdateAvatarColor(null);
+        var result = user.UpdateAvatar(Appearance.Empty);
 
         result.IsSuccess.Should().BeTrue();
-        user.AvatarColor.Should().BeNull();
-    }
-
-    [Fact]
-    public void UpdateAvatarColor_WithTooLongValue_ShouldFail()
-    {
-        var user = CreateUser();
-
-        var result = user.UpdateAvatarColor(new string('c', 51));
-
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be("Avatar color is too long");
-    }
-
-    [Fact]
-    public void UpdateAvatarIcon_WithTooLongValue_ShouldFail()
-    {
-        var user = CreateUser();
-
-        var result = user.UpdateAvatarIcon(new string('i', 51));
-
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be("Avatar icon is too long");
-    }
-
-    [Fact]
-    public void UpdateAvatarBg_WithTooLongValue_ShouldFail()
-    {
-        var user = CreateUser();
-
-        var result = user.UpdateAvatarBg(new string('b', 51));
-
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be("Avatar background is too long");
+        user.Avatar.HasValue.Should().BeFalse();
     }
 
     [Theory]
@@ -263,9 +234,7 @@ public sealed class UserTests
             lastLoginAtUtc: null,
             displayName: null,
             bio: null,
-            avatarColor: null,
-            avatarIcon: null,
-            avatarBg: null,
+            avatar: Appearance.Empty,
             theme: "dark",
             language: null,
             status: UserStatus.Idle,

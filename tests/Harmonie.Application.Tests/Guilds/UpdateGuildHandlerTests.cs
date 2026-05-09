@@ -7,6 +7,7 @@ using Harmonie.Application.Interfaces.Guilds;
 using Harmonie.Application.Interfaces.Uploads;
 using Harmonie.Application.Tests.Common;
 using Harmonie.Domain.Entities.Guilds;
+using Harmonie.Domain.ValueObjects.Common;
 using Harmonie.Domain.Entities.Uploads;
 using Harmonie.Domain.Enums;
 using Harmonie.Domain.ValueObjects.Guilds;
@@ -123,9 +124,9 @@ public sealed class UpdateGuildHandlerTests
                 It.Is<Guild>(updatedGuild =>
                     updatedGuild.Name.Value == "Updated Guild"
                     && updatedGuild.IconFileId == UploadedFileId.From(Guid.Parse("1c73fa0b-0a39-4ea8-b43e-48c703bbf5fe"))
-                    && updatedGuild.IconColor == "#7C3AED"
-                    && updatedGuild.IconName == "sword"
-                    && updatedGuild.IconBg == "#1F2937"),
+                    && updatedGuild.Icon.Color == "#7C3AED"
+                    && updatedGuild.Icon.Glyph == "sword"
+                    && updatedGuild.Icon.Bg == "#1F2937"),
                 It.IsAny<CancellationToken>()),
             Times.Once);
 
@@ -136,9 +137,7 @@ public sealed class UpdateGuildHandlerTests
     public async Task HandleAsync_WhenIconIsCleared_ShouldSetIconPayloadToNull()
     {
         var guild = ApplicationTestBuilders.CreateGuild();
-        guild.UpdateIconColor("#INITIAL");
-        guild.UpdateIconName("shield");
-        guild.UpdateIconBg("#000000");
+        guild.UpdateIcon(Appearance.Create("#INITIAL", "shield", "#000000").Value!);
 
         var ownerId = guild.OwnerUserId;
 

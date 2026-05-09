@@ -126,8 +126,8 @@ public sealed class OpenConversationHandler : IAuthenticatedHandler<OpenConversa
 
     private static ConversationParticipantDto ToParticipantDto(User user)
     {
-        var avatar = user.AvatarColor is not null || user.AvatarIcon is not null || user.AvatarBg is not null
-            ? new AvatarAppearanceDto(user.AvatarColor, user.AvatarIcon, user.AvatarBg)
+        var avatar = user.Avatar.HasValue
+            ? new AvatarAppearanceDto(user.Avatar.Color, user.Avatar.Glyph, user.Avatar.Bg)
             : null;
 
         return new ConversationParticipantDto(

@@ -4,6 +4,7 @@ using Harmonie.Application.Common.Uploads;
 using Harmonie.Application.Features.Users.UpdateMyProfile;
 using Harmonie.Application.Interfaces.Uploads;
 using Harmonie.Application.Interfaces.Users;
+using Harmonie.Domain.ValueObjects.Common;
 using Harmonie.Application.Tests.Common;
 using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.ValueObjects.Guilds;
@@ -250,9 +251,7 @@ public sealed class UpdateMyProfileHandlerTests
     public async Task HandleAsync_WhenAvatarAppearanceIsPartial_ShouldOnlyUpdateProvidedSubFields()
     {
         var user = ApplicationTestBuilders.CreateUser();
-        user.UpdateAvatarColor("#INITIAL");
-        user.UpdateAvatarIcon("heart");
-        user.UpdateAvatarBg("#000000");
+        user.UpdateAvatar(Appearance.Create("#INITIAL", "heart", "#000000").Value!);
 
         var request = new UpdateMyProfileRequest
         {

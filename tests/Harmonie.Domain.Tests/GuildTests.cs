@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Harmonie.Domain.Entities.Guilds;
+using Harmonie.Domain.ValueObjects.Common;
 using Harmonie.Domain.ValueObjects.Guilds;
 using Harmonie.Domain.ValueObjects.Uploads;
 using Harmonie.Domain.ValueObjects.Users;
@@ -52,36 +53,28 @@ public sealed class GuildTests
     }
 
     [Fact]
-    public void UpdateIconColor_WithNull_ShouldClear()
+    public void UpdateIcon_WithValidAppearance_ShouldSucceed()
     {
         var guild = Guild.Create(GuildName.Create("Color Guild").Value!, UserId.New()).Value!;
-        guild.UpdateIconColor("#7C3AED");
+        var appearance = Appearance.Create("#7C3AED", "star", "#FFF").Value!;
 
-        var result = guild.UpdateIconColor(null);
+        var result = guild.UpdateIcon(appearance);
 
         result.IsSuccess.Should().BeTrue();
-        guild.IconColor.Should().BeNull();
+        guild.Icon.Color.Should().Be("#7C3AED");
+        guild.Icon.Glyph.Should().Be("star");
+        guild.Icon.Bg.Should().Be("#FFF");
     }
 
     [Fact]
-    public void UpdateIconName_WithTooLongValue_ShouldFail()
+    public void UpdateIcon_WithNullFieldsInAppearance_ShouldClear()
     {
-        var guild = Guild.Create(GuildName.Create("Icon Name Guild").Value!, UserId.New()).Value!;
+        var guild = Guild.Create(GuildName.Create("Color Guild").Value!, UserId.New()).Value!;
+        guild.UpdateIcon(Appearance.Create("#7C3AED", null, null).Value!);
 
-        var result = guild.UpdateIconName(new string('i', 51));
+        var result = guild.UpdateIcon(Appearance.Empty);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be("Guild icon name is too long");
-    }
-
-    [Fact]
-    public void UpdateIconBg_WithTooLongValue_ShouldFail()
-    {
-        var guild = Guild.Create(GuildName.Create("Background Guild").Value!, UserId.New()).Value!;
-
-        var result = guild.UpdateIconBg(new string('b', 51));
-
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be("Guild icon background is too long");
+        result.IsSuccess.Should().BeTrue();
+        guild.Icon.HasValue.Should().BeFalse();
     }
 }

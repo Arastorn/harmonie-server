@@ -21,21 +21,6 @@ public sealed class UpdateMyProfileValidator : AbstractValidator<UpdateMyProfile
             .When(x => x.AvatarFileIdIsSet && x.AvatarFileId.HasValue)
             .WithMessage("Avatar file ID must be a valid non-empty GUID");
 
-        RuleFor(x => x.AvatarColor)
-            .MaximumLength(50)
-            .WithMessage("Avatar color cannot exceed 50 characters")
-            .When(x => x.AvatarColorIsSet && x.AvatarColor is not null);
-
-        RuleFor(x => x.AvatarIcon)
-            .MaximumLength(50)
-            .WithMessage("Avatar icon cannot exceed 50 characters")
-            .When(x => x.AvatarIconIsSet && x.AvatarIcon is not null);
-
-        RuleFor(x => x.AvatarBg)
-            .MaximumLength(50)
-            .WithMessage("Avatar background cannot exceed 50 characters")
-            .When(x => x.AvatarBgIsSet && x.AvatarBg is not null);
-
         RuleFor(x => x.Theme)
             .MaximumLength(50)
             .WithMessage("Theme cannot exceed 50 characters")

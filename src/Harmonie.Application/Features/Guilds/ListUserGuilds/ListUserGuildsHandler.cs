@@ -30,13 +30,11 @@ public sealed class ListUserGuildsHandler : IAuthenticatedHandler<Unit, ListUser
                     Name: membership.Guild.Name.Value,
                     OwnerUserId: membership.Guild.OwnerUserId.Value,
                     IconFileId: membership.Guild.IconFileId?.Value,
-                    Icon: membership.Guild.IconColor is not null
-                        || membership.Guild.IconName is not null
-                        || membership.Guild.IconBg is not null
+                    Icon: membership.Guild.Icon.HasValue
                         ? new GuildIconDto(
-                            membership.Guild.IconColor,
-                            membership.Guild.IconName,
-                            membership.Guild.IconBg)
+                            membership.Guild.Icon.Color,
+                            membership.Guild.Icon.Glyph,
+                            membership.Guild.Icon.Bg)
                         : null,
                     Role: membership.Role.ToString(),
                     JoinedAtUtc: membership.JoinedAtUtc,

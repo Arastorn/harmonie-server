@@ -5,6 +5,7 @@ using Harmonie.Application.Interfaces.Common;
 using Harmonie.Application.Interfaces.Guilds;
 using Harmonie.Domain.Common;
 using Harmonie.Domain.Entities.Guilds;
+using Harmonie.Domain.ValueObjects.Common;
 using Harmonie.Domain.Enums;
 using Harmonie.Domain.ValueObjects.Guilds;
 using Harmonie.Domain.ValueObjects.Uploads;
@@ -98,25 +99,17 @@ public sealed class UpdateGuildHandler
                 return BuildValidationFailure(nameof(input.IconFileId), iconFileResult);
         }
 
-        if (input.IconColorIsSet)
+        if (input.IconColorIsSet || input.IconNameIsSet || input.IconBgIsSet)
         {
-            var iconColorResult = guild.UpdateIconColor(input.IconColor);
-            if (iconColorResult.IsFailure)
-                return BuildValidationFailure("Icon.Color", iconColorResult);
-        }
+            var newAppearanceResult = Appearance.Create(
+                input.IconColorIsSet ? input.IconColor : guild.Icon.Color,
+                input.IconNameIsSet ? input.IconName : guild.Icon.Glyph,
+                input.IconBgIsSet ? input.IconBg : guild.Icon.Bg);
 
-        if (input.IconNameIsSet)
-        {
-            var iconNameResult = guild.UpdateIconName(input.IconName);
-            if (iconNameResult.IsFailure)
-                return BuildValidationFailure("Icon.Name", iconNameResult);
-        }
+            if (newAppearanceResult.IsFailure || newAppearanceResult.Value is null)
+                return BuildValidationFailure("Icon", newAppearanceResult.Error ?? "Icon appearance is invalid");
 
-        if (input.IconBgIsSet)
-        {
-            var iconBgResult = guild.UpdateIconBg(input.IconBg);
-            if (iconBgResult.IsFailure)
-                return BuildValidationFailure("Icon.Bg", iconBgResult);
+            guild.UpdateIcon(newAppearanceResult.Value);
         }
 
         var anyFieldSet = input.NameIsSet
@@ -158,8 +151,8 @@ public sealed class UpdateGuildHandler
 
     private static GuildIconDto? BuildIcon(Guild guild)
     {
-        return guild.IconColor is not null || guild.IconName is not null || guild.IconBg is not null
-            ? new GuildIconDto(guild.IconColor, guild.IconName, guild.IconBg)
+        return guild.Icon.HasValue
+            ? new GuildIconDto(guild.Icon.Color, guild.Icon.Glyph, guild.Icon.Bg)
             : null;
     }
 

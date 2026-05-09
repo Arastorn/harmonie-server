@@ -3,6 +3,7 @@ using Harmonie.Application.Features.Users;
 using Harmonie.Application.Interfaces.Auth;
 using Harmonie.Application.Interfaces.Common;
 using Harmonie.Application.Interfaces.Users;
+using Harmonie.Domain.ValueObjects.Common;
 using Harmonie.Domain.Entities.Users;
 using Harmonie.Domain.ValueObjects.Users;
 
@@ -94,35 +95,17 @@ public sealed class RegisterHandler : IHandler<RegisterRequest, RegisterResponse
         // Apply optional avatar fields
         if (request.Avatar is not null)
         {
-            var colorResult = user.UpdateAvatarColor(request.Avatar.Color);
-            if (colorResult.IsFailure)
+            var appearanceResult = Appearance.Create(request.Avatar.Color, request.Avatar.Icon, request.Avatar.Bg);
+            if (appearanceResult.IsFailure || appearanceResult.Value is null)
                 return ApplicationResponse<RegisterResponse>.Fail(
                     ApplicationErrorCodes.Common.ValidationFailed,
                     "Request validation failed",
                     EndpointExtensions.SingleValidationError(
-                        "Avatar.Color",
+                        "Avatar",
                         ApplicationErrorCodes.Validation.Invalid,
-                        colorResult.Error ?? "Avatar color is invalid"));
+                        appearanceResult.Error ?? "Avatar appearance is invalid"));
 
-            var iconResult = user.UpdateAvatarIcon(request.Avatar.Icon);
-            if (iconResult.IsFailure)
-                return ApplicationResponse<RegisterResponse>.Fail(
-                    ApplicationErrorCodes.Common.ValidationFailed,
-                    "Request validation failed",
-                    EndpointExtensions.SingleValidationError(
-                        "Avatar.Icon",
-                        ApplicationErrorCodes.Validation.Invalid,
-                        iconResult.Error ?? "Avatar icon is invalid"));
-
-            var bgResult = user.UpdateAvatarBg(request.Avatar.Bg);
-            if (bgResult.IsFailure)
-                return ApplicationResponse<RegisterResponse>.Fail(
-                    ApplicationErrorCodes.Common.ValidationFailed,
-                    "Request validation failed",
-                    EndpointExtensions.SingleValidationError(
-                        "Avatar.Bg",
-                        ApplicationErrorCodes.Validation.Invalid,
-                        bgResult.Error ?? "Avatar background is invalid"));
+            user.UpdateAvatar(appearanceResult.Value);
         }
 
         // Apply optional theme
@@ -159,8 +142,8 @@ public sealed class RegisterHandler : IHandler<RegisterRequest, RegisterResponse
             cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
-        var avatar = user.AvatarColor is not null || user.AvatarIcon is not null || user.AvatarBg is not null
-            ? new AvatarAppearanceDto(user.AvatarColor, user.AvatarIcon, user.AvatarBg)
+        var avatar = user.Avatar.HasValue
+            ? new AvatarAppearanceDto(user.Avatar.Color, user.Avatar.Glyph, user.Avatar.Bg)
             : null;
 
         var payload = new RegisterResponse(

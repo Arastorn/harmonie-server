@@ -3,6 +3,7 @@ using Harmonie.Application.Common;
 using Harmonie.Application.Features.Guilds.ListUserGuilds;
 using Harmonie.Application.Interfaces.Guilds;
 using Harmonie.Domain.Entities.Guilds;
+using Harmonie.Domain.ValueObjects.Common;
 using Harmonie.Domain.Enums;
 using Harmonie.Domain.ValueObjects.Guilds;
 using Harmonie.Domain.ValueObjects.Uploads;
@@ -100,9 +101,7 @@ public sealed class ListUserGuildsHandlerTests
             createdAtUtc: joinedAtUtc.AddHours(-1),
             updatedAtUtc: joinedAtUtc.AddHours(-1),
             iconFileId: iconFileId,
-            iconColor: iconColor,
-            iconName: iconName,
-            iconBg: iconBg);
+            icon: Appearance.Create(iconColor, iconName, iconBg).Value!);
 
         return new UserGuildMembership(guild, role, joinedAtUtc, hasUnread);
     }

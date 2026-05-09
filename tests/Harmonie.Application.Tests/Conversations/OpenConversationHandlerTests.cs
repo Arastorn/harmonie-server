@@ -4,6 +4,7 @@ using Harmonie.Application.Features.Conversations.OpenConversation;
 using Harmonie.Application.Interfaces.Common;
 using Harmonie.Application.Interfaces.Conversations;
 using Harmonie.Application.Interfaces.Users;
+using Harmonie.Domain.ValueObjects.Common;
 using Harmonie.Application.Tests.Common;
 using Harmonie.Domain.Entities.Conversations;
 using Harmonie.Domain.Entities.Users;
@@ -295,9 +296,7 @@ public sealed class OpenConversationHandlerTests
             lastLoginAtUtc: null,
             displayName: null,
             bio: null,
-            avatarColor: null,
-            avatarIcon: null,
-            avatarBg: null,
+            avatar: Appearance.Empty,
             theme: "default",
             language: null,
             status: UserStatus.Online,

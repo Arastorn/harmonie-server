@@ -2,6 +2,7 @@ using System.Text;
 using Dapper;
 using Harmonie.Application.Interfaces.Users;
 using Harmonie.Domain.Entities.Users;
+using Harmonie.Domain.ValueObjects.Common;
 using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.ValueObjects.Guilds;
 using Harmonie.Domain.ValueObjects.Uploads;
@@ -237,9 +238,9 @@ public sealed class UserRepository : IUserRepository
                 user.IsActive,
                 user.DisplayName,
                 user.Bio,
-                user.AvatarColor,
-                user.AvatarIcon,
-                user.AvatarBg,
+                AvatarColor = user.Avatar.Color,
+                AvatarIcon = user.Avatar.Glyph,
+                AvatarBg = user.Avatar.Bg,
                 user.Theme,
                 user.Language,
                 Status = user.Status.Value,
@@ -280,9 +281,9 @@ public sealed class UserRepository : IUserRepository
                 user.IsActive,
                 user.DisplayName,
                 user.Bio,
-                user.AvatarColor,
-                user.AvatarIcon,
-                user.AvatarBg,
+                AvatarColor = user.Avatar.Color,
+                AvatarIcon = user.Avatar.Glyph,
+                AvatarBg = user.Avatar.Bg,
                 user.Theme,
                 user.Language,
                 Status = user.Status.Value,
@@ -350,6 +351,10 @@ public sealed class UserRepository : IUserRepository
         if (statusResult.IsFailure || statusResult.Value is null)
             throw new InvalidOperationException($"Stored status is invalid: {statusResult.Error}");
 
+        var avatarResult = Appearance.Create(userRow.AvatarColor, userRow.AvatarIcon, userRow.AvatarBg);
+        if (avatarResult.IsFailure || avatarResult.Value is null)
+            throw new InvalidOperationException($"Stored avatar appearance is invalid: {avatarResult.Error}");
+
         return User.Rehydrate(
             UserId.From(userRow.Id),
             emailResult.Value,
@@ -361,9 +366,7 @@ public sealed class UserRepository : IUserRepository
             userRow.LastLoginAtUtc,
             userRow.DisplayName,
             userRow.Bio,
-            userRow.AvatarColor,
-            userRow.AvatarIcon,
-            userRow.AvatarBg,
+            avatarResult.Value,
             userRow.Theme,
             userRow.Language,
             statusResult.Value,

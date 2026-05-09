@@ -28,8 +28,8 @@ public sealed class GetMyProfileHandler : IAuthenticatedHandler<Unit, GetMyProfi
                 "User profile was not found");
         }
 
-        var avatar = user.AvatarColor is not null || user.AvatarIcon is not null || user.AvatarBg is not null
-            ? new AvatarAppearanceDto(user.AvatarColor, user.AvatarIcon, user.AvatarBg)
+        var avatar = user.Avatar.HasValue
+            ? new AvatarAppearanceDto(user.Avatar.Color, user.Avatar.Glyph, user.Avatar.Bg)
             : null;
 
         var payload = new GetMyProfileResponse(

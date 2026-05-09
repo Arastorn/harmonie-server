@@ -3,6 +3,7 @@ using Harmonie.Application.Common.Uploads;
 using Harmonie.Application.Features.Users;
 using Harmonie.Application.Interfaces.Users;
 using Harmonie.Domain.Common;
+using Harmonie.Domain.ValueObjects.Common;
 using Harmonie.Domain.ValueObjects.Uploads;
 using Harmonie.Domain.ValueObjects.Users;
 using Microsoft.Extensions.Logging;
@@ -66,25 +67,17 @@ public sealed class UpdateMyProfileHandler
                 return BuildValidationFailure(nameof(request.AvatarFileId), result);
         }
 
-        if (request.AvatarColorIsSet)
+        if (request.AvatarColorIsSet || request.AvatarIconIsSet || request.AvatarBgIsSet)
         {
-            var result = user.UpdateAvatarColor(request.AvatarColor);
-            if (result.IsFailure)
-                return BuildValidationFailure("Avatar.Color", result);
-        }
+            var newAppearanceResult = Appearance.Create(
+                request.AvatarColorIsSet ? request.AvatarColor : user.Avatar.Color,
+                request.AvatarIconIsSet ? request.AvatarIcon : user.Avatar.Glyph,
+                request.AvatarBgIsSet ? request.AvatarBg : user.Avatar.Bg);
 
-        if (request.AvatarIconIsSet)
-        {
-            var result = user.UpdateAvatarIcon(request.AvatarIcon);
-            if (result.IsFailure)
-                return BuildValidationFailure("Avatar.Icon", result);
-        }
+            if (newAppearanceResult.IsFailure || newAppearanceResult.Value is null)
+                return BuildValidationFailure("Avatar", newAppearanceResult.Error ?? "Avatar appearance is invalid");
 
-        if (request.AvatarBgIsSet)
-        {
-            var result = user.UpdateAvatarBg(request.AvatarBg);
-            if (result.IsFailure)
-                return BuildValidationFailure("Avatar.Bg", result);
+            user.UpdateAvatar(newAppearanceResult.Value);
         }
 
         if (request.ThemeIsSet)
@@ -133,9 +126,9 @@ public sealed class UpdateMyProfileHandler
                         Username: user.Username.Value,
                         DisplayName: user.DisplayName,
                         AvatarFileId: user.AvatarFileId,
-                        AvatarColor: user.AvatarColor,
-                        AvatarIcon: user.AvatarIcon,
-                        AvatarBg: user.AvatarBg,
+                        AvatarColor: user.Avatar.Color,
+                        AvatarIcon: user.Avatar.Glyph,
+                        AvatarBg: user.Avatar.Bg,
                         GuildIds: notificationContext.GuildIds,
                         ConversationIds: notificationContext.ConversationIds),
                     ct),
@@ -148,8 +141,8 @@ public sealed class UpdateMyProfileHandler
         if (shouldDeletePreviousAvatar)
             await _uploadedFileCleanupService.DeleteIfExistsAsync(previousAvatarFileId, cancellationToken);
 
-        var avatar = user.AvatarColor is not null || user.AvatarIcon is not null || user.AvatarBg is not null
-            ? new AvatarAppearanceDto(user.AvatarColor, user.AvatarIcon, user.AvatarBg)
+        var avatar = user.Avatar.HasValue
+            ? new AvatarAppearanceDto(user.Avatar.Color, user.Avatar.Glyph, user.Avatar.Bg)
             : null;
 
         var payload = new UpdateMyProfileResponse(

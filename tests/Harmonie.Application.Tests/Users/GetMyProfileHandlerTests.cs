@@ -2,6 +2,7 @@ using FluentAssertions;
 using Harmonie.Application.Common;
 using Harmonie.Application.Features.Users.GetMyProfile;
 using Harmonie.Application.Interfaces.Users;
+using Harmonie.Domain.ValueObjects.Common;
 using Harmonie.Application.Tests.Common;
 using Harmonie.Domain.ValueObjects.Uploads;
 using Harmonie.Domain.Entities.Users;
@@ -72,9 +73,7 @@ public sealed class GetMyProfileHandlerTests
     public async Task HandleAsync_WhenUserHasAvatarAppearance_ShouldReturnAvatarObject()
     {
         var user = ApplicationTestBuilders.CreateUser();
-        user.UpdateAvatarColor("#FFF4D6");
-        user.UpdateAvatarIcon("star");
-        user.UpdateAvatarBg("#1F2937");
+        user.UpdateAvatar(Appearance.Create("#FFF4D6", "star", "#1F2937").Value!);
 
         _userRepositoryMock
             .Setup(x => x.GetByIdAsync(user.Id, It.IsAny<CancellationToken>()))

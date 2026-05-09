@@ -101,9 +101,9 @@ public sealed class JoinConversationVoiceHandler : IAuthenticatedHandler<Convers
                     Username: dbUser.Username.Value,
                     DisplayName: dbUser.DisplayName,
                     AvatarFileId: dbUser.AvatarFileId,
-                    AvatarColor: dbUser.AvatarColor,
-                    AvatarIcon: dbUser.AvatarIcon,
-                    AvatarBg: dbUser.AvatarBg);
+                    AvatarColor: dbUser.Avatar.Color,
+                    AvatarIcon: dbUser.Avatar.Glyph,
+                    AvatarBg: dbUser.Avatar.Bg);
             }
             else
             {
