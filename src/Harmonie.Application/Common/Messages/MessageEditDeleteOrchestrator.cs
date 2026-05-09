@@ -54,8 +54,11 @@ public sealed class MessageEditDeleteOrchestrator
         }
 
         // ── Authorization + message fetch ───────────────────────────────
-        var fetched = await AuthorizeAndFetchMessageAsync(
-            scope, messageScope, messageId, callerId, ct);
+        var fetched = await MessageScopeAuthorizer.AuthorizeAndFetchAsync(
+            _messageRepository,
+            (caller, ct) => scope.AuthorizeAsync(caller, ct),
+            messageScope, messageId, callerId,
+            ApplicationErrorCodes.Message.NotFound, ct);
         if (fetched is FetchMessageResult<TContext>.Failed failed)
             return ApplicationResponse<MessageEditResult>.Fail(failed.Error);
 
@@ -123,8 +126,11 @@ public sealed class MessageEditDeleteOrchestrator
         where TContext : ScopeContext
     {
         // ── Authorization + message fetch ───────────────────────────────
-        var fetched = await AuthorizeAndFetchMessageAsync(
-            scope, messageScope, messageId, callerId, ct);
+        var fetched = await MessageScopeAuthorizer.AuthorizeAndFetchAsync(
+            _messageRepository,
+            (caller, ct) => scope.AuthorizeAsync(caller, ct),
+            messageScope, messageId, callerId,
+            ApplicationErrorCodes.Message.NotFound, ct);
         if (fetched is FetchMessageResult<TContext>.Failed failed)
             return ApplicationResponse<bool>.Fail(failed.Error);
 
@@ -170,8 +176,11 @@ public sealed class MessageEditDeleteOrchestrator
         where TContext : ScopeContext
     {
         // ── Authorization + message fetch ───────────────────────────────
-        var fetched = await AuthorizeAndFetchMessageAsync(
-            scope, messageScope, messageId, callerId, ct);
+        var fetched = await MessageScopeAuthorizer.AuthorizeAndFetchAsync(
+            _messageRepository,
+            (caller, ct) => scope.AuthorizeAsync(caller, ct),
+            messageScope, messageId, callerId,
+            ApplicationErrorCodes.Message.NotFound, ct);
         if (fetched is FetchMessageResult<TContext>.Failed failed)
             return ApplicationResponse<bool>.Fail(failed.Error);
 
@@ -204,34 +213,5 @@ public sealed class MessageEditDeleteOrchestrator
         await _uploadedFileCleanupService.DeleteIfExistsAsync(attachmentId, ct);
 
         return ApplicationResponse<bool>.Ok(true);
-    }
-
-    /// <summary>
-    /// Authorizes the caller via the scope and fetches the target message,
-    /// validating that it belongs to the expected scope.
-    /// </summary>
-    private async Task<FetchMessageResult<TContext>> AuthorizeAndFetchMessageAsync<TContext>(
-        IMessageEditDeleteScope<TContext> scope,
-        MessageScope messageScope,
-        MessageId messageId,
-        UserId callerId,
-        CancellationToken ct)
-        where TContext : ScopeContext
-    {
-        var authResult = await scope.AuthorizeAsync(callerId, ct);
-        if (authResult is AuthorizationResult<TContext>.Denied denied)
-            return new FetchMessageResult<TContext>.Failed(denied.Error);
-
-        var context = ((AuthorizationResult<TContext>.Authorized)authResult).Context;
-
-        var message = await _messageRepository.GetByIdAsync(messageId, ct);
-        if (message is null || message.Scope != messageScope)
-        {
-            return new FetchMessageResult<TContext>.Failed(new ApplicationError(
-                ApplicationErrorCodes.Message.NotFound,
-                "Message was not found"));
-        }
-
-        return new FetchMessageResult<TContext>.Found(context, message);
     }
 }

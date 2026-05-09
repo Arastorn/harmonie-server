@@ -19,16 +19,19 @@ public sealed class GetConversationMessagesHandlerTests
 {
     private readonly Mock<IConversationRepository> _conversationRepositoryMock;
     private readonly Mock<IMessagePaginationRepository> _directMessageRepositoryMock;
+    private readonly MessageFetchOrchestrator _orchestrator;
     private readonly GetMessagesHandler _handler;
 
     public GetConversationMessagesHandlerTests()
     {
         _conversationRepositoryMock = new Mock<IConversationRepository>();
         _directMessageRepositoryMock = new Mock<IMessagePaginationRepository>();
+        _orchestrator = new MessageFetchOrchestrator();
 
         _handler = new GetMessagesHandler(
             _conversationRepositoryMock.Object,
-            _directMessageRepositoryMock.Object);
+            _directMessageRepositoryMock.Object,
+            _orchestrator);
     }
 
     [Fact]

@@ -1,10 +1,9 @@
 using Harmonie.Application.Common;
 using Harmonie.Application.Common.Messages;
+using Harmonie.Application.Features.Channels.Pins;
 using Harmonie.Application.Interfaces.Channels;
 using Harmonie.Application.Interfaces.Messages;
-using Harmonie.Domain.Enums;
 using Harmonie.Domain.ValueObjects.Channels;
-using Harmonie.Domain.ValueObjects.Messages;
 using Harmonie.Domain.ValueObjects.Users;
 
 namespace Harmonie.Application.Features.Channels.GetPinnedMessages;
@@ -13,17 +12,18 @@ public sealed record GetChannelPinnedMessagesInput(GuildChannelId ChannelId, str
 
 public sealed class GetPinnedMessagesHandler : IAuthenticatedHandler<GetChannelPinnedMessagesInput, GetPinnedMessagesResponse>
 {
-    private const int DefaultLimit = 50;
-
     private readonly IGuildChannelRepository _guildChannelRepository;
     private readonly IPinnedMessageRepository _pinnedMessageRepository;
+    private readonly PinnedMessageFetchOrchestrator _orchestrator;
 
     public GetPinnedMessagesHandler(
         IGuildChannelRepository guildChannelRepository,
-        IPinnedMessageRepository pinnedMessageRepository)
+        IPinnedMessageRepository pinnedMessageRepository,
+        PinnedMessageFetchOrchestrator orchestrator)
     {
         _guildChannelRepository = guildChannelRepository;
         _pinnedMessageRepository = pinnedMessageRepository;
+        _orchestrator = orchestrator;
     }
 
     public async Task<ApplicationResponse<GetPinnedMessagesResponse>> HandleAsync(
@@ -31,79 +31,18 @@ public sealed class GetPinnedMessagesHandler : IAuthenticatedHandler<GetChannelP
         UserId currentUserId,
         CancellationToken cancellationToken = default)
     {
-        PinnedMessagesCursor? cursor = null;
-        if (request.Before is not null)
-        {
-            if (!PinnedMessagesCursorCodec.TryParse(request.Before, out var parsed) || parsed is null)
-            {
-                return ApplicationResponse<GetPinnedMessagesResponse>.Fail(
-                    ApplicationErrorCodes.Common.ValidationFailed,
-                    "Request validation failed",
-                    EndpointExtensions.SingleValidationError(
-                        nameof(request.Before),
-                        ApplicationErrorCodes.Validation.InvalidFormat,
-                        "Before cursor is invalid"));
-            }
+        var scope = new ChannelPinnedMessageFetchScope(
+            request.ChannelId, _guildChannelRepository, _pinnedMessageRepository);
 
-            cursor = parsed;
-        }
+        var result = await _orchestrator.FetchAsync(
+            scope, request.Before, request.Limit, currentUserId, cancellationToken);
 
-        var limit = request.Limit ?? DefaultLimit;
+        if (!result.Success)
+            return ApplicationResponse<GetPinnedMessagesResponse>.Fail(result.Error);
 
-        var ctx = await _guildChannelRepository.GetWithCallerRoleAsync(request.ChannelId, currentUserId, cancellationToken);
-        if (ctx is null)
-        {
-            return ApplicationResponse<GetPinnedMessagesResponse>.Fail(
-                ApplicationErrorCodes.Channel.NotFound,
-                "Channel was not found");
-        }
-
-        if (ctx.Channel.Type != GuildChannelType.Text)
-        {
-            return ApplicationResponse<GetPinnedMessagesResponse>.Fail(
-                ApplicationErrorCodes.Channel.NotText,
-                "Pinned messages can only be listed in text channels");
-        }
-
-        if (ctx.CallerRole is null)
-        {
-            return ApplicationResponse<GetPinnedMessagesResponse>.Fail(
-                ApplicationErrorCodes.Channel.AccessDenied,
-                "You do not have access to this channel");
-        }
-
-        var page = await _pinnedMessageRepository.GetPinnedMessagesAsync(
-            request.ChannelId,
-            currentUserId,
-            cursor,
-            limit,
-            cancellationToken);
-
-        var items = page.Items
-            .Select(x =>
-            {
-                page.AttachmentsByMessageId.TryGetValue(MessageId.From(x.MessageId), out var attachments);
-                return new GetPinnedMessagesItemResponse(
-                    MessageId: x.MessageId,
-                    AuthorUserId: x.AuthorUserId,
-                    AuthorUsername: x.AuthorUsername,
-                    AuthorDisplayName: x.AuthorDisplayName,
-                    Content: x.Content,
-                    Attachments: attachments?.Select(MessageAttachmentDto.FromDomain).ToArray()
-                                 ?? Array.Empty<MessageAttachmentDto>(),
-                    CreatedAtUtc: x.CreatedAtUtc,
-                    UpdatedAtUtc: x.UpdatedAtUtc,
-                    PinnedByUserId: x.PinnedByUserId,
-                    PinnedAtUtc: x.PinnedAtUtc);
-            })
-            .ToArray();
-
-        return ApplicationResponse<GetPinnedMessagesResponse>.Ok(
-            new GetPinnedMessagesResponse(
-                ChannelId: request.ChannelId.Value,
-                Items: items,
-                NextCursor: page.NextCursor is null
-                    ? null
-                    : PinnedMessagesCursorCodec.Encode(page.NextCursor)));
+        return ApplicationResponse<GetPinnedMessagesResponse>.Ok(new GetPinnedMessagesResponse(
+            ChannelId: request.ChannelId.Value,
+            Items: result.Data.Items,
+            NextCursor: result.Data.NextCursor));
     }
 }

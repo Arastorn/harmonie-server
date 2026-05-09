@@ -9,15 +9,3 @@ public sealed record GetMessagesResponse(
     string? NextCursor,
     Guid? LastReadMessageId,
     DateTime? LastReadAtUtc);
-
-public sealed record GetMessagesItemResponse(
-    Guid MessageId,
-    Guid AuthorUserId,
-    string? Content,
-    IReadOnlyList<MessageAttachmentDto> Attachments,
-    IReadOnlyList<MessageReactionDto> Reactions,
-    IReadOnlyList<LinkPreviewDto>? LinkPreviews,
-    bool IsPinned,
-    ReplyPreviewDto? ReplyTo,
-    DateTime CreatedAtUtc,
-    DateTime? UpdatedAtUtc);

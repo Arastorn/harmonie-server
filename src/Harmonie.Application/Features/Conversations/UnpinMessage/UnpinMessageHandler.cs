@@ -1,5 +1,6 @@
 using Harmonie.Application.Common;
-using Harmonie.Application.Interfaces.Common;
+using Harmonie.Application.Common.Messages;
+using Harmonie.Application.Features.Conversations.Pins;
 using Harmonie.Application.Interfaces.Conversations;
 using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Domain.ValueObjects.Conversations;
@@ -13,29 +14,21 @@ public sealed record ConversationUnpinMessageInput(ConversationId ConversationId
 
 public sealed class UnpinMessageHandler : IAuthenticatedHandler<ConversationUnpinMessageInput, bool>
 {
-    private static readonly TimeSpan NotificationTimeout = TimeSpan.FromSeconds(5);
-
     private readonly IConversationRepository _conversationRepository;
-    private readonly IMessageRepository _messageRepository;
-    private readonly IPinnedMessageRepository _pinnedMessageRepository;
-    private readonly IUnitOfWork _unitOfWork;
     private readonly IPinNotifier _pinNotifier;
-    private readonly ILogger<UnpinMessageHandler> _logger;
+    private readonly ILogger<ConversationPinScope> _scopeLogger;
+    private readonly PinOrchestrator _orchestrator;
 
     public UnpinMessageHandler(
         IConversationRepository conversationRepository,
-        IMessageRepository messageRepository,
-        IPinnedMessageRepository pinnedMessageRepository,
-        IUnitOfWork unitOfWork,
         IPinNotifier pinNotifier,
-        ILogger<UnpinMessageHandler> logger)
+        ILogger<ConversationPinScope> scopeLogger,
+        PinOrchestrator orchestrator)
     {
         _conversationRepository = conversationRepository;
-        _messageRepository = messageRepository;
-        _pinnedMessageRepository = pinnedMessageRepository;
-        _unitOfWork = unitOfWork;
         _pinNotifier = pinNotifier;
-        _logger = logger;
+        _scopeLogger = scopeLogger;
+        _orchestrator = orchestrator;
     }
 
     public async Task<ApplicationResponse<bool>> HandleAsync(
@@ -43,56 +36,14 @@ public sealed class UnpinMessageHandler : IAuthenticatedHandler<ConversationUnpi
         UserId currentUserId,
         CancellationToken cancellationToken = default)
     {
-        var access = await _conversationRepository.GetByIdWithParticipantCheckAsync(
-            request.ConversationId, currentUserId, cancellationToken);
-        if (access is null)
-        {
-            return ApplicationResponse<bool>.Fail(
-                ApplicationErrorCodes.Conversation.NotFound,
-                "Conversation was not found");
-        }
-        if (access.Participant is null)
-        {
-            return ApplicationResponse<bool>.Fail(
-                ApplicationErrorCodes.Conversation.AccessDenied,
-                "You do not have access to this conversation");
-        }
+        var scope = new ConversationPinScope(
+            request.ConversationId, _conversationRepository, _pinNotifier, _scopeLogger);
 
-        var message = await _messageRepository.GetByIdAsync(request.MessageId, cancellationToken);
-        if (message is null || !message.Scope.Matches(request.ConversationId))
-        {
-            return ApplicationResponse<bool>.Fail(
-                ApplicationErrorCodes.Pin.MessageNotFound,
-                "Message was not found");
-        }
-
-        await using var transaction = await _unitOfWork.BeginAsync(cancellationToken);
-        await _pinnedMessageRepository.RemoveAsync(request.MessageId, cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
-
-        await NotifyPinRemovedSafelyAsync(
-            new ConversationPinRemovedNotification(
-                request.MessageId,
-                request.ConversationId,
-                access.Conversation.Name,
-                access.Conversation.Type.ToString(),
-                currentUserId,
-                access.CallerUsername ?? string.Empty,
-                access.CallerDisplayName,
-                DateTime.UtcNow));
-
-        return ApplicationResponse<bool>.Ok(true);
-    }
-
-    private async Task NotifyPinRemovedSafelyAsync(
-        ConversationPinRemovedNotification notification)
-    {
-        await BestEffortNotificationHelper.TryNotifyAsync(
-            token => _pinNotifier.NotifyMessageUnpinnedInConversationAsync(notification, token),
-            NotificationTimeout,
-            _logger,
-            "Conversation unpin notification failed (best-effort). MessageId={MessageId}, ConversationId={ConversationId}",
-            notification.MessageId,
-            notification.ConversationId);
+        return await _orchestrator.UnpinAsync(
+            scope,
+            new MessageScope.Conversation(request.ConversationId),
+            request.MessageId,
+            currentUserId,
+            cancellationToken);
     }
 }

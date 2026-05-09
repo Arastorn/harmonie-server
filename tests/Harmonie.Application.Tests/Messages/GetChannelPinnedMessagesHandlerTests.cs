@@ -1,6 +1,8 @@
 using FluentAssertions;
 using Harmonie.Application.Common;
+using Harmonie.Application.Common.Messages;
 using Harmonie.Application.Features.Channels.GetPinnedMessages;
+using Harmonie.Application.Features.Channels.Pins;
 using Harmonie.Application.Interfaces.Channels;
 using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Application.Tests.Common;
@@ -19,16 +21,19 @@ public sealed class GetChannelPinnedMessagesHandlerTests
 {
     private readonly Mock<IGuildChannelRepository> _guildChannelRepositoryMock;
     private readonly Mock<IPinnedMessageRepository> _pinnedMessageRepositoryMock;
+    private readonly PinnedMessageFetchOrchestrator _orchestrator;
     private readonly GetPinnedMessagesHandler _handler;
 
     public GetChannelPinnedMessagesHandlerTests()
     {
         _guildChannelRepositoryMock = new Mock<IGuildChannelRepository>();
         _pinnedMessageRepositoryMock = new Mock<IPinnedMessageRepository>();
+        _orchestrator = new PinnedMessageFetchOrchestrator();
 
         _handler = new GetPinnedMessagesHandler(
             _guildChannelRepositoryMock.Object,
-            _pinnedMessageRepositoryMock.Object);
+            _pinnedMessageRepositoryMock.Object,
+            _orchestrator);
     }
 
     [Fact]

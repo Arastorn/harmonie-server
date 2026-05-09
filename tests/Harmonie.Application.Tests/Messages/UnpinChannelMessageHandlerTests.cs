@@ -1,5 +1,7 @@
 using FluentAssertions;
 using Harmonie.Application.Common;
+using Harmonie.Application.Common.Messages;
+using Harmonie.Application.Features.Channels.Pins;
 using Harmonie.Application.Features.Channels.UnpinMessage;
 using Harmonie.Application.Interfaces.Channels;
 using Harmonie.Application.Interfaces.Common;
@@ -29,6 +31,7 @@ public sealed class UnpinChannelMessageHandlerTests
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly Mock<IUnitOfWorkTransaction> _transactionMock;
     private readonly Mock<IPinNotifier> _pinNotifierMock;
+    private readonly PinOrchestrator _orchestrator;
     private readonly UnpinMessageHandler _handler;
 
     public UnpinChannelMessageHandlerTests()
@@ -46,13 +49,16 @@ public sealed class UnpinChannelMessageHandlerTests
             .Setup(x => x.NotifyMessageUnpinnedInChannelAsync(It.IsAny<ChannelPinRemovedNotification>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        _handler = new UnpinMessageHandler(
-            _guildChannelRepositoryMock.Object,
+        _orchestrator = new PinOrchestrator(
             _messageRepositoryMock.Object,
             _pinnedMessageRepositoryMock.Object,
-            _unitOfWorkMock.Object,
+            _unitOfWorkMock.Object);
+
+        _handler = new UnpinMessageHandler(
+            _guildChannelRepositoryMock.Object,
             _pinNotifierMock.Object,
-            NullLogger<UnpinMessageHandler>.Instance);
+            NullLogger<ChannelPinScope>.Instance,
+            _orchestrator);
     }
 
     [Fact]

@@ -21,16 +21,19 @@ public sealed class GetMessagesHandlerTests
 {
     private readonly Mock<IGuildChannelRepository> _guildChannelRepositoryMock;
     private readonly Mock<IMessagePaginationRepository> _channelMessageRepositoryMock;
+    private readonly MessageFetchOrchestrator _orchestrator;
     private readonly GetMessagesHandler _handler;
 
     public GetMessagesHandlerTests()
     {
         _guildChannelRepositoryMock = new Mock<IGuildChannelRepository>();
         _channelMessageRepositoryMock = new Mock<IMessagePaginationRepository>();
+        _orchestrator = new MessageFetchOrchestrator();
 
         _handler = new GetMessagesHandler(
             _guildChannelRepositoryMock.Object,
-            _channelMessageRepositoryMock.Object);
+            _channelMessageRepositoryMock.Object,
+            _orchestrator);
     }
 
     [Fact]

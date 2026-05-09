@@ -1,5 +1,6 @@
 using Harmonie.Application.Common;
 using Harmonie.Application.Common.Messages;
+using Harmonie.Application.Features.Conversations.Messages;
 using Harmonie.Application.Interfaces.Conversations;
 using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Domain.ValueObjects.Conversations;
@@ -11,17 +12,18 @@ public sealed record GetConversationMessagesInput(ConversationId ConversationId,
 
 public sealed class GetMessagesHandler : IAuthenticatedHandler<GetConversationMessagesInput, GetMessagesResponse>
 {
-    private const int DefaultLimit = 50;
-
     private readonly IConversationRepository _conversationRepository;
-    private readonly IMessagePaginationRepository _conversationMessageRepository;
+    private readonly IMessagePaginationRepository _paginationRepository;
+    private readonly MessageFetchOrchestrator _orchestrator;
 
     public GetMessagesHandler(
         IConversationRepository conversationRepository,
-        IMessagePaginationRepository conversationMessageRepository)
+        IMessagePaginationRepository paginationRepository,
+        MessageFetchOrchestrator orchestrator)
     {
         _conversationRepository = conversationRepository;
-        _conversationMessageRepository = conversationMessageRepository;
+        _paginationRepository = paginationRepository;
+        _orchestrator = orchestrator;
     }
 
     public async Task<ApplicationResponse<GetMessagesResponse>> HandleAsync(
@@ -29,87 +31,20 @@ public sealed class GetMessagesHandler : IAuthenticatedHandler<GetConversationMe
         UserId currentUserId,
         CancellationToken cancellationToken = default)
     {
-        MessageCursor? cursor = null;
-        if (request.Cursor is not null)
-        {
-            if (!MessageCursorCodec.TryParse(request.Cursor, out var parsedCursor) || parsedCursor is null)
-            {
-                return ApplicationResponse<GetMessagesResponse>.Fail(
-                    ApplicationErrorCodes.Common.ValidationFailed,
-                    "Request validation failed",
-                    EndpointExtensions.SingleValidationError(
-                        nameof(request.Cursor),
-                        ApplicationErrorCodes.Validation.InvalidFormat,
-                        "Cursor is invalid"));
-            }
+        var scope = new ConversationMessagePageScope(
+            request.ConversationId, _conversationRepository, _paginationRepository);
 
-            cursor = parsedCursor;
-        }
+        var result = await _orchestrator.FetchAsync(
+            scope, request.Cursor, request.Limit, currentUserId, cancellationToken);
 
-        var limit = request.Limit ?? DefaultLimit;
+        if (!result.Success)
+            return ApplicationResponse<GetMessagesResponse>.Fail(result.Error);
 
-        var access = await _conversationRepository.GetByIdWithParticipantCheckAsync(request.ConversationId, currentUserId, cancellationToken);
-        if (access is null)
-        {
-            return ApplicationResponse<GetMessagesResponse>.Fail(
-                ApplicationErrorCodes.Conversation.NotFound,
-                "Conversation was not found");
-        }
-        if (access.Participant is null)
-        {
-            return ApplicationResponse<GetMessagesResponse>.Fail(
-                ApplicationErrorCodes.Conversation.AccessDenied,
-                "You do not have access to this conversation");
-        }
-
-        var page = await _conversationMessageRepository.GetConversationPageAsync(
-            request.ConversationId,
-            cursor,
-            limit,
-            currentUserId,
-            cancellationToken);
-
-        var items = page.Items
-            .OrderBy(x => x.CreatedAtUtc)
-            .ThenBy(x => x.Id.Value)
-            .Select(x =>
-            {
-                page.ReactionsByMessageId.TryGetValue(x.Id.Value, out var reactions);
-                page.AttachmentsByMessageId.TryGetValue(x.Id.Value, out var attachments);
-                IReadOnlyList<LinkPreviewDto>? previews = null;
-                page.LinkPreviewsByMessageId?.TryGetValue(x.Id.Value, out previews);
-                var isPinned = page.PinnedMessageIds?.Contains(x.Id.Value) == true;
-                ReplyPreviewDto? replyTo = null;
-                if (x.ReplyToMessageId is not null)
-                {
-                    page.ReplyPreviewsByTargetMessageId?.TryGetValue(x.ReplyToMessageId.Value, out replyTo);
-                }
-                return new GetMessagesItemResponse(
-                    MessageId: x.Id.Value,
-                    AuthorUserId: x.AuthorUserId.Value,
-                    Content: x.Content?.Value,
-                    Attachments: attachments?.Select(MessageAttachmentDto.FromDomain).ToArray()
-                                 ?? Array.Empty<MessageAttachmentDto>(),
-                    Reactions: reactions?.Select(r => new MessageReactionDto(r.Emoji, r.Count, r.ReactedByCaller,
-                        r.Users.Select(u => new ReactionUserDto(u.UserId, u.Username, u.DisplayName)).ToArray())).ToArray()
-                              ?? Array.Empty<MessageReactionDto>(),
-                    LinkPreviews: previews?.ToArray(),
-                    IsPinned: isPinned,
-                    ReplyTo: replyTo,
-                    CreatedAtUtc: x.CreatedAtUtc,
-                    UpdatedAtUtc: x.UpdatedAtUtc);
-            })
-            .ToArray();
-
-        var payload = new GetMessagesResponse(
+        return ApplicationResponse<GetMessagesResponse>.Ok(new GetMessagesResponse(
             ConversationId: request.ConversationId.Value,
-            Items: items,
-            NextCursor: page.NextCursor is null
-                ? null
-                : MessageCursorCodec.Encode(page.NextCursor),
-            LastReadMessageId: page.LastReadState?.LastReadMessageId.Value,
-            LastReadAtUtc: page.LastReadState?.ReadAtUtc);
-
-        return ApplicationResponse<GetMessagesResponse>.Ok(payload);
+            Items: result.Data.Items,
+            NextCursor: result.Data.NextCursor,
+            LastReadMessageId: result.Data.LastReadMessageId,
+            LastReadAtUtc: result.Data.LastReadAtUtc));
     }
 }

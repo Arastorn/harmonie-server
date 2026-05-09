@@ -1,6 +1,8 @@
 using FluentAssertions;
 using Harmonie.Application.Common;
+using Harmonie.Application.Common.Messages;
 using Harmonie.Application.Features.Channels.PinMessage;
+using Harmonie.Application.Features.Channels.Pins;
 using Harmonie.Application.Interfaces.Channels;
 using Harmonie.Application.Interfaces.Common;
 using Harmonie.Application.Interfaces.Messages;
@@ -29,6 +31,7 @@ public sealed class PinChannelMessageHandlerTests
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly Mock<IUnitOfWorkTransaction> _transactionMock;
     private readonly Mock<IPinNotifier> _pinNotifierMock;
+    private readonly PinOrchestrator _orchestrator;
     private readonly PinMessageHandler _handler;
 
     public PinChannelMessageHandlerTests()
@@ -46,13 +49,16 @@ public sealed class PinChannelMessageHandlerTests
             .Setup(x => x.NotifyMessagePinnedInChannelAsync(It.IsAny<ChannelPinAddedNotification>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        _handler = new PinMessageHandler(
-            _guildChannelRepositoryMock.Object,
+        _orchestrator = new PinOrchestrator(
             _messageRepositoryMock.Object,
             _pinnedMessageRepositoryMock.Object,
-            _unitOfWorkMock.Object,
+            _unitOfWorkMock.Object);
+
+        _handler = new PinMessageHandler(
+            _guildChannelRepositoryMock.Object,
             _pinNotifierMock.Object,
-            NullLogger<PinMessageHandler>.Instance);
+            NullLogger<ChannelPinScope>.Instance,
+            _orchestrator);
     }
 
     [Fact]
