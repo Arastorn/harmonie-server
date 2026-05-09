@@ -37,7 +37,7 @@ public static class MentionValidationHelper
 
         if (missingIds.Count > 0)
         {
-            return MentionValidationResult.Failure(
+            return new MentionValidationResult.Failure(
                 ApplicationErrorCodes.Message.MentionedUserNotFound,
                 $"One or more mentioned users were not found: {string.Join(", ", missingIds)}");
         }
@@ -45,37 +45,25 @@ public static class MentionValidationHelper
         var validateResult = await validateMembershipAsync(userIds, context, ct);
         if (validateResult.IsFailure)
         {
-            return MentionValidationResult.Failure(
+            return new MentionValidationResult.Failure(
                 ApplicationErrorCodes.Message.MentionedUserNotMember,
                 validateResult.Error ?? "One or more mentioned users are not members of this scope");
         }
 
-        return MentionValidationResult.Success(userIds);
+        return new MentionValidationResult.Success(userIds);
     }
 }
 
 /// <summary>
-/// Internal result for mention validation. Avoids coupling to the HTTP-flavored
-/// <see cref="ApplicationResponse{T}"/> for a pure domain-logic helper.
+/// Discriminated union for mention validation results.
+/// Follows the same pattern as <see cref="AuthorizationResult{TContext}"/>
+/// and <see cref="FetchMessageResult{TContext}"/>.
 /// </summary>
-public sealed record MentionValidationResult
+public abstract record MentionValidationResult
 {
-    public bool IsSuccess { get; }
-    public UserId[]? Value { get; }
-    public string? ErrorCode { get; }
-    public string? ErrorMessage { get; }
+    private MentionValidationResult() { }
 
-    private MentionValidationResult(bool isSuccess, UserId[]? value, string? errorCode, string? errorMessage)
-    {
-        IsSuccess = isSuccess;
-        Value = value;
-        ErrorCode = errorCode;
-        ErrorMessage = errorMessage;
-    }
+    public sealed record Success(UserId[] Value) : MentionValidationResult;
 
-    public static MentionValidationResult Success(UserId[] value)
-        => new(true, value, null, null);
-
-    public static MentionValidationResult Failure(string errorCode, string errorMessage)
-        => new(false, null, errorCode, errorMessage);
+    public sealed record Failure(string ErrorCode, string ErrorMessage) : MentionValidationResult;
 }
