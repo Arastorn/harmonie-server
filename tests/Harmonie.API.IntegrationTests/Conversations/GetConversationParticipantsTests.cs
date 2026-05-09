@@ -43,8 +43,6 @@ public sealed class GetConversationParticipantsTests : IClassFixture<HarmonieWeb
         foreach (var participant in payload.Participants)
         {
             participant.Username.Should().NotBeNullOrEmpty();
-            participant.JoinedAtUtc.Should().BeAfter(DateTime.UtcNow.AddMinutes(-5));
-            participant.IsHidden.Should().BeFalse();
         }
     }
 

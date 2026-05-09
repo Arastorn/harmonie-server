@@ -1,6 +1,5 @@
 using Harmonie.Application.Common;
 using Harmonie.Application.Interfaces.Conversations;
-using Harmonie.Application.Interfaces.Users;
 using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.ValueObjects.Users;
 
@@ -10,14 +9,11 @@ public sealed class GetConversationParticipantsHandler
     : IAuthenticatedHandler<ConversationId, GetConversationParticipantsResponse>
 {
     private readonly IConversationRepository _conversationRepository;
-    private readonly IUserRepository _userRepository;
 
     public GetConversationParticipantsHandler(
-        IConversationRepository conversationRepository,
-        IUserRepository userRepository)
+        IConversationRepository conversationRepository)
     {
         _conversationRepository = conversationRepository;
-        _userRepository = userRepository;
     }
 
     public async Task<ApplicationResponse<GetConversationParticipantsResponse>> HandleAsync(
@@ -25,7 +21,7 @@ public sealed class GetConversationParticipantsHandler
         UserId currentUserId,
         CancellationToken cancellationToken = default)
     {
-        var access = await _conversationRepository.GetByIdWithAllParticipantsAsync(
+        var access = await _conversationRepository.GetParticipantsWithProfilesAsync(
             conversationId, currentUserId, cancellationToken);
 
         if (access is null)
@@ -42,25 +38,16 @@ public sealed class GetConversationParticipantsHandler
                 "You do not have access to this conversation");
         }
 
-        var userIds = access.AllParticipants.Select(p => p.UserId).ToArray();
-        var users = await _userRepository.GetManyByIdsAsync(userIds, cancellationToken);
-        var userById = users.ToDictionary(u => u.Id);
-
-        var dtos = access.AllParticipants
-            .Select(p =>
-            {
-                userById.TryGetValue(p.UserId, out var user);
-                return new ConversationParticipantDto(
-                    UserId: p.UserId.Value,
-                    Username: user?.Username.Value ?? "Unknown",
-                    DisplayName: user?.DisplayName,
-                    AvatarFileId: user?.AvatarFileId?.Value,
-                    AvatarColor: user?.Avatar?.Color,
-                    AvatarIcon: user?.Avatar?.Glyph,
-                    AvatarBg: user?.Avatar?.Bg,
-                    JoinedAtUtc: p.JoinedAtUtc,
-                    IsHidden: p.HiddenAtUtc.HasValue);
-            })
+        var dtos = access.Participants
+            .Select(p => new ConversationParticipantDto(
+                UserId: p.UserId,
+                Username: p.Username,
+                DisplayName: p.DisplayName,
+                AvatarFileId: p.AvatarFileId,
+                AvatarColor: p.AvatarColor,
+                AvatarIcon: p.AvatarIcon,
+                AvatarBg: p.AvatarBg,
+                JoinedAtUtc: p.JoinedAtUtc))
             .ToArray();
 
         return ApplicationResponse<GetConversationParticipantsResponse>.Ok(

@@ -11,5 +11,4 @@ public sealed record ConversationParticipantDto(
     string? AvatarColor,
     string? AvatarIcon,
     string? AvatarBg,
-    DateTime JoinedAtUtc,
-    bool IsHidden);
+    DateTime JoinedAtUtc);
