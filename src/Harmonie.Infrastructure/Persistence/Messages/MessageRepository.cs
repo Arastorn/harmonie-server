@@ -94,7 +94,11 @@ internal sealed class MessageRepository : IMessageRepository
                                   deleted_at_utc AS "DeletedAtUtc"
                            FROM messages
                            WHERE id = @MessageId
-                             AND deleted_at_utc IS NULL
+                             AND deleted_at_utc IS NULL;
+
+                           SELECT mentioned_user_id
+                           FROM message_mentions
+                           WHERE message_id = @MessageId;
                            """;
 
         var connection = await _dbSession.GetOpenConnectionAsync(cancellationToken);
@@ -104,11 +108,17 @@ internal sealed class MessageRepository : IMessageRepository
             transaction: _dbSession.Transaction,
             cancellationToken: cancellationToken);
 
-        var row = await connection.QuerySingleOrDefaultAsync<MessageRow>(command);
+        using var multi = await connection.QueryMultipleAsync(command);
+        var row = await multi.ReadSingleOrDefaultAsync<MessageRow>();
         if (row is null)
             return null;
 
-        return MessageRepositoryHelpers.MapToMessage(row);
+        var mentionRows = (await multi.ReadAsync<Guid>()).ToArray();
+        var mentionUserIds = mentionRows.Length > 0
+            ? mentionRows.Select(UserId.From).ToArray()
+            : Array.Empty<UserId>();
+
+        return MessageRepositoryHelpers.MapToMessage(row, mentionUserIds);
     }
 
     public async Task UpdateAsync(
@@ -288,6 +298,104 @@ internal sealed class MessageRepository : IMessageRepository
             cancellationToken: cancellationToken);
 
         return await connection.ExecuteAsync(command);
+    }
+
+    /// <summary>
+    /// Persist mention rows for a message. The <paramref name="mentionedUserIds"/> collection
+    /// must contain distinct IDs; duplicates will cause a unique-constraint violation on the
+    /// composite PK (message_id, mentioned_user_id). Callers must ensure distinctness.
+    /// Must be called inside the same transaction as the message insert.
+    /// </summary>
+    public async Task AddMentionsAsync(
+        MessageId messageId,
+        IReadOnlyCollection<UserId> mentionedUserIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (mentionedUserIds.Count == 0)
+            return;
+
+        const string sql = """
+                           INSERT INTO message_mentions (message_id, mentioned_user_id)
+                           SELECT @MessageId, unnest(@UserIds::uuid[])
+                           """;
+
+        var connection = await _dbSession.GetOpenConnectionAsync(cancellationToken);
+        var command = new CommandDefinition(
+            sql,
+            new
+            {
+                MessageId = messageId.Value,
+                UserIds = mentionedUserIds.Select(id => id.Value).ToArray()
+            },
+            transaction: _dbSession.Transaction,
+            cancellationToken: cancellationToken);
+
+        await connection.ExecuteAsync(command);
+    }
+
+    /// <remarks>
+    /// The CTE <c>WITH deleted AS (DELETE ...)</c> is always executed by PostgreSQL
+    /// even when <c>deleted</c> is not referenced in the main query (CTEs act as
+    /// optimization fences). The DELETE runs unconditionally; the INSERT is guarded
+    /// by <c>array_length</c> to skip when the array is empty.
+    /// </remarks>
+    public async Task ReplaceMentionsAsync(
+        MessageId messageId,
+        IReadOnlyCollection<UserId> mentionedUserIds,
+        CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+                           WITH deleted AS (
+                               DELETE FROM message_mentions
+                               WHERE message_id = @MessageId
+                           )
+                           INSERT INTO message_mentions (message_id, mentioned_user_id)
+                           SELECT @MessageId, unnest(@UserIds::uuid[])
+                           WHERE array_length(@UserIds::uuid[], 1) > 0
+                           """;
+
+        var connection = await _dbSession.GetOpenConnectionAsync(cancellationToken);
+        var command = new CommandDefinition(
+            sql,
+            new
+            {
+                MessageId = messageId.Value,
+                UserIds = mentionedUserIds.Select(id => id.Value).ToArray()
+            },
+            transaction: _dbSession.Transaction,
+            cancellationToken: cancellationToken);
+
+        await connection.ExecuteAsync(command);
+    }
+
+    public async Task<IReadOnlyDictionary<Guid, IReadOnlyList<Guid>>> GetMentionedUserIdsByMessageIdAsync(
+        IReadOnlyCollection<Guid> messageIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (messageIds.Count == 0)
+            return new Dictionary<Guid, IReadOnlyList<Guid>>();
+
+        const string sql = """
+                           SELECT message_id, mentioned_user_id
+                           FROM message_mentions
+                           WHERE message_id = ANY(@MessageIds)
+                           ORDER BY message_id
+                           """;
+
+        var connection = await _dbSession.GetOpenConnectionAsync(cancellationToken);
+        var command = new CommandDefinition(
+            sql,
+            new { MessageIds = messageIds.ToArray() },
+            transaction: _dbSession.Transaction,
+            cancellationToken: cancellationToken);
+
+        var rows = await connection.QueryAsync<(Guid messageId, Guid mentionedUserId)>(command);
+
+        return rows
+            .GroupBy(r => r.messageId)
+            .ToDictionary(
+                g => g.Key,
+                g => (IReadOnlyList<Guid>)g.Select(r => r.mentionedUserId).Distinct().ToArray());
     }
 
 }

@@ -2,7 +2,9 @@ using Harmonie.Application.Common;
 using Harmonie.Application.Common.Messages;
 using Harmonie.Application.Interfaces.Common;
 using Harmonie.Application.Interfaces.Messages;
+using Harmonie.Application.Interfaces.Users;
 using Harmonie.Application.Services;
+using Harmonie.Domain.Common;
 using Harmonie.Domain.Entities.Messages;
 using Harmonie.Domain.ValueObjects.Messages;
 using Harmonie.Domain.ValueObjects.Users;
@@ -19,26 +21,37 @@ public sealed class MessageSendOrchestrator
     private readonly IMessageRepository _messageRepository;
     private readonly IMessageAttachmentRepository _messageAttachmentRepository;
     private readonly MessageAttachmentResolver _attachmentResolver;
+    private readonly IUserRepository _userRepository;
     private readonly IUnitOfWork _unitOfWork;
 
     public MessageSendOrchestrator(
         IMessageRepository messageRepository,
         IMessageAttachmentRepository messageAttachmentRepository,
         MessageAttachmentResolver attachmentResolver,
+        IUserRepository userRepository,
         IUnitOfWork unitOfWork)
     {
         _messageRepository = messageRepository;
         _messageAttachmentRepository = messageAttachmentRepository;
         _attachmentResolver = attachmentResolver;
+        _userRepository = userRepository;
         _unitOfWork = unitOfWork;
     }
 
+    /// <remarks>
+    /// Mention membership is validated before the transaction opens.
+    /// There is a theoretical race window: if a user is removed from the guild/conversation
+    /// between validation and commit, a mention to a non-member may be persisted.
+    /// This is accepted as the window is narrow and the impact is non-blocking
+    /// (the mention is still a valid FK reference).
+    /// </remarks>
     public async Task<ApplicationResponse<MessageSendResult>> SendAsync<TContext>(
         ISendMessageScope<TContext> scope,
         MessageScope messageScope,
         string? rawContent,
         IReadOnlyList<Guid>? attachmentFileIds,
         Guid? replyToMessageId,
+        IReadOnlyList<Guid>? mentionedUserIds,
         UserId callerId,
         CancellationToken ct)
         where TContext : ScopeContext
@@ -107,12 +120,29 @@ public sealed class MessageSendOrchestrator
                 "Message must have content or at least one attachment");
         }
 
+        // ── Mention validation ──────────────────────────────────────────
+        UserId[]? mentionUserIds = null;
+        if (mentionedUserIds is { Count: > 0 })
+        {
+            var validated = await MentionValidationHelper.ValidateAsync(
+                mentionedUserIds,
+                _userRepository,
+                (ids, ct2) => scope.ValidateMentionedUsersAsync(ids, context, ct2),
+                ct);
+
+            if (validated is MentionValidationResult.Failure failure)
+                return ApplicationResponse<MessageSendResult>.Fail(failure.ErrorCode, failure.ErrorMessage);
+
+            mentionUserIds = ((MentionValidationResult.Success)validated).Value;
+        }
+
         // ── Domain message creation ─────────────────────────────────────
         var messageResult = Message.Create(
             messageScope,
             callerId,
             content,
-            replyToTargetId);
+            replyToTargetId,
+            mentionUserIds);
         if (messageResult.IsFailure || messageResult.Value is null)
         {
             return ApplicationResponse<MessageSendResult>.Fail(
@@ -146,6 +176,8 @@ public sealed class MessageSendOrchestrator
         await _messageRepository.AddAsync(messageResult.Value, ct);
         if (attachments.Count > 0)
             await _messageAttachmentRepository.AddRangeAsync(attachments, ct);
+        if (mentionUserIds is { Length: > 0 })
+            await _messageRepository.AddMentionsAsync(messageResult.Value.Id, mentionUserIds, ct);
         await scope.ApplyInTransactionSideEffectsAsync(context, ct);
         await transaction.CommitAsync(ct);
 
@@ -182,6 +214,9 @@ public sealed class MessageSendOrchestrator
             scope.ScheduleLinkPreviewResolution(context, messageResult.Value, urls, ct);
         }
 
+        // ── Mention DTO mapping ────────────────────────────────────────
+        var mentionDtos = mentionUserIds?.Select(id => id.Value).ToArray() ?? Array.Empty<Guid>();
+
         // ── Result ──────────────────────────────────────────────────────
         return ApplicationResponse<MessageSendResult>.Ok(new MessageSendResult(
             MessageId: messageResult.Value.Id.Value,
@@ -189,6 +224,7 @@ public sealed class MessageSendOrchestrator
             Content: messageResult.Value.Content?.Value,
             Attachments: attachmentDtos,
             ReplyTo: replyTo,
+            MentionedUserIds: mentionDtos,
             CreatedAtUtc: messageResult.Value.CreatedAtUtc));
     }
 }

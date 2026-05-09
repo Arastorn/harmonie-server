@@ -18,7 +18,7 @@ public static class SendMessageEndpoint
             .RequireAuthorization()
             .RequireRateLimiting("message-post")
             .WithSummary("Send a conversation message")
-            .WithDescription("Posts a message in a conversation where the authenticated user is a participant. Optional `attachmentFileIds` values must reference files previously uploaded with attachment purpose.")
+            .WithDescription("Posts a message in a conversation where the authenticated user is a participant. Optional `attachmentFileIds` values must reference files previously uploaded with attachment purpose. `mentionedUserIds` can be omitted or empty for no mentions; mentioned users must be conversation participants.")
             .Produces<SendMessageResponse>(StatusCodes.Status201Created)
             .Produces(StatusCodes.Status429TooManyRequests)
             .ProducesErrors(
@@ -28,7 +28,9 @@ public static class SendMessageEndpoint
                 ApplicationErrorCodes.Message.ContentEmpty,
                 ApplicationErrorCodes.Message.ContentTooLong,
                 ApplicationErrorCodes.Conversation.NotFound,
-                ApplicationErrorCodes.Conversation.AccessDenied);
+                ApplicationErrorCodes.Conversation.AccessDenied,
+                ApplicationErrorCodes.Message.MentionedUserNotFound,
+                ApplicationErrorCodes.Message.MentionedUserNotMember);
     }
 
     private static async Task<IResult> HandleAsync(
@@ -45,7 +47,7 @@ public static class SendMessageEndpoint
 
         var currentUserId = httpContext.GetRequiredAuthenticatedUserId();
 
-        var response = await handler.HandleAsync(new SendConversationMessageInput(conversationId, request.Content, request.AttachmentFileIds, request.ReplyToMessageId), currentUserId, cancellationToken);
+        var response = await handler.HandleAsync(new SendConversationMessageInput(conversationId, request.Content, request.AttachmentFileIds, request.ReplyToMessageId, request.MentionedUserIds), currentUserId, cancellationToken);
         return response.ToCreatedHttpResult(
             data => $"/api/conversations/{data.ConversationId}/messages/{data.MessageId}", httpContext);
     }

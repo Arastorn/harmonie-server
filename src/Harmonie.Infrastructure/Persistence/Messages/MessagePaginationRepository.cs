@@ -160,6 +160,16 @@ internal sealed class MessagePaginationRepository : IMessagePaginationRepository
                        ORDER BY t.created_at_utc DESC, t.id DESC
                        LIMIT @Take)
                    ORDER BY m.id;
+
+                   SELECT mm.message_id, mm.mentioned_user_id
+                   FROM message_mentions mm
+                   WHERE mm.message_id IN (
+                       SELECT id FROM messages
+                       WHERE channel_id = @ChannelId
+                         AND deleted_at_utc IS NULL
+                         {cursorFilter}
+                       ORDER BY created_at_utc DESC, id DESC
+                       LIMIT @Take);
                    """;
 
         var parameters = new DynamicParameters();
@@ -216,8 +226,21 @@ internal sealed class MessagePaginationRepository : IMessagePaginationRepository
                     r.IsDeleted,
                     r.DeletedAtUtc));
 
+        var mentionRows = await multi.ReadAsync<(Guid messageId, Guid mentionedUserId)>();
+        var mentionedUserIdsByMessageId = mentionRows
+            .GroupBy(r => r.messageId)
+            .ToDictionary(
+                g => g.Key,
+                g => (IReadOnlyList<Guid>)g.Select(r => r.mentionedUserId).Distinct().ToArray());
+
         var items = pageRows
-            .Select(row => MessageRepositoryHelpers.MapToMessage(row))
+            .Select(row =>
+            {
+                mentionedUserIdsByMessageId.TryGetValue(row.Id, out var mentionIds);
+                return MessageRepositoryHelpers.MapToMessage(
+                    row,
+                    mentionIds?.Select(UserId.From).ToArray());
+            })
             .OrderBy(x => x.CreatedAtUtc)
             .ThenBy(x => x.Id.Value)
             .ToArray();
@@ -239,7 +262,7 @@ internal sealed class MessagePaginationRepository : IMessagePaginationRepository
                 readStateRow.ReadAtUtc);
         }
 
-        return new MessagePage(items, nextCursor, reactionsByMessageId, attachmentsByMessageId, linkPreviewsByMessageId, pinnedMessageIds, replyPreviewsByTargetMessageId, lastReadState);
+        return new MessagePage(items, nextCursor, reactionsByMessageId, attachmentsByMessageId, linkPreviewsByMessageId, pinnedMessageIds, replyPreviewsByTargetMessageId, mentionedUserIdsByMessageId, lastReadState);
     }
 
     public async Task<MessagePage> GetConversationPageAsync(
@@ -381,6 +404,16 @@ internal sealed class MessagePaginationRepository : IMessagePaginationRepository
                        ORDER BY t.created_at_utc DESC, t.id DESC
                        LIMIT @Take)
                    ORDER BY m.id;
+
+                   SELECT mm.message_id, mm.mentioned_user_id
+                   FROM message_mentions mm
+                   WHERE mm.message_id IN (
+                       SELECT id FROM messages
+                       WHERE conversation_id = @ConversationId
+                         AND deleted_at_utc IS NULL
+                         {cursorFilter}
+                       ORDER BY created_at_utc DESC, id DESC
+                       LIMIT @Take);
                    """;
 
         var parameters = new DynamicParameters();
@@ -408,6 +441,7 @@ internal sealed class MessagePaginationRepository : IMessagePaginationRepository
         var linkPreviewRows = (await multi.ReadAsync<MessageLinkPreviewRow>()).ToArray();
         var pinnedRows = (await multi.ReadAsync<PinnedMessageIdRow>()).ToArray();
         var replyPreviewRows = (await multi.ReadAsync<ReplyPreviewRow>()).ToArray();
+        var mentionRows = await multi.ReadAsync<(Guid messageId, Guid mentionedUserId)>();
 
         var hasMore = rows.Length > limit;
         var pageRows = hasMore ? rows.Take(limit).ToArray() : rows;
@@ -437,8 +471,20 @@ internal sealed class MessagePaginationRepository : IMessagePaginationRepository
                     r.IsDeleted,
                     r.DeletedAtUtc));
 
+        var mentionedUserIdsByMessageId = mentionRows
+            .GroupBy(r => r.messageId)
+            .ToDictionary(
+                g => g.Key,
+                g => (IReadOnlyList<Guid>)g.Select(r => r.mentionedUserId).Distinct().ToArray());
+
         var items = pageRows
-            .Select(row => MessageRepositoryHelpers.MapToMessage(row))
+            .Select(row =>
+            {
+                mentionedUserIdsByMessageId.TryGetValue(row.Id, out var mentionIds);
+                return MessageRepositoryHelpers.MapToMessage(
+                    row,
+                    mentionIds?.Select(UserId.From).ToArray());
+            })
             .OrderBy(x => x.CreatedAtUtc)
             .ThenBy(x => x.Id.Value)
             .ToArray();
@@ -460,7 +506,7 @@ internal sealed class MessagePaginationRepository : IMessagePaginationRepository
                 readStateRow.ReadAtUtc);
         }
 
-        return new MessagePage(items, nextCursor, reactionsByMessageId, attachmentsByMessageId, linkPreviewsByMessageId, pinnedMessageIds, replyPreviewsByTargetMessageId, lastReadState);
+        return new MessagePage(items, nextCursor, reactionsByMessageId, attachmentsByMessageId, linkPreviewsByMessageId, pinnedMessageIds, replyPreviewsByTargetMessageId, mentionedUserIdsByMessageId, lastReadState);
     }
 
     private sealed class ReadStateRow

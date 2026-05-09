@@ -3,6 +3,7 @@ using Harmonie.Application.Common.Messages;
 using Harmonie.Application.Common.Uploads;
 using Harmonie.Application.Interfaces.Common;
 using Harmonie.Application.Interfaces.Messages;
+using Harmonie.Application.Interfaces.Users;
 using Harmonie.Domain.Entities.Messages;
 using Harmonie.Domain.ValueObjects.Messages;
 using Harmonie.Domain.ValueObjects.Uploads;
@@ -19,26 +20,34 @@ public sealed class MessageEditDeleteOrchestrator
 {
     private readonly IMessageRepository _messageRepository;
     private readonly IMessageAttachmentRepository _messageAttachmentRepository;
+    private readonly IUserRepository _userRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly UploadedFileCleanupService _uploadedFileCleanupService;
 
     public MessageEditDeleteOrchestrator(
         IMessageRepository messageRepository,
         IMessageAttachmentRepository messageAttachmentRepository,
+        IUserRepository userRepository,
         IUnitOfWork unitOfWork,
         UploadedFileCleanupService uploadedFileCleanupService)
     {
         _messageRepository = messageRepository;
         _messageAttachmentRepository = messageAttachmentRepository;
+        _userRepository = userRepository;
         _unitOfWork = unitOfWork;
         _uploadedFileCleanupService = uploadedFileCleanupService;
     }
 
+    /// <remarks>
+    /// Mention membership is validated before the transaction opens (same race window
+    /// as <see cref="MessageSendOrchestrator.SendAsync{TContext}"/>).
+    /// </remarks>
     public async Task<ApplicationResponse<MessageEditResult>> EditAsync<TContext>(
         IMessageEditDeleteScope<TContext> scope,
         MessageScope messageScope,
         MessageId messageId,
         string rawContent,
+        IReadOnlyList<Guid>? mentionedUserIds,
         UserId callerId,
         CancellationToken ct)
         where TContext : ScopeContext
@@ -91,21 +100,62 @@ public sealed class MessageEditDeleteOrchestrator
                 "Message edit succeeded but updated timestamp is missing");
         }
 
+        // ── Mention validation ──────────────────────────────────────────
+        // null = don't touch mentions (field absent, backward compat)
+        // []   = clear all mentions
+        // ids  = validate and replace
+        bool mentionsTouched = false;
+        if (mentionedUserIds is not null)
+        {
+            var validatedIds = Array.Empty<UserId>();
+            if (mentionedUserIds.Count > 0)
+            {
+                var validated = await MentionValidationHelper.ValidateAsync(
+                    mentionedUserIds,
+                    _userRepository,
+                    (ids, ct2) => scope.ValidateMentionedUsersAsync(ids, context, ct2),
+                    ct);
+
+                if (validated is MentionValidationResult.Failure editFailure)
+                    return ApplicationResponse<MessageEditResult>.Fail(editFailure.ErrorCode, editFailure.ErrorMessage);
+
+                validatedIds = ((MentionValidationResult.Success)validated).Value;
+            }
+
+            var replaceResult = message.ReplaceMentions(validatedIds);
+            if (replaceResult.IsFailure)
+            {
+                return ApplicationResponse<MessageEditResult>.Fail(
+                    ApplicationErrorCodes.Common.DomainRuleViolation,
+                    replaceResult.Error ?? "Unable to replace message mentions");
+            }
+
+            mentionsTouched = true;
+        }
+
         // ── Persist ─────────────────────────────────────────────────────
         await using var transaction = await _unitOfWork.BeginAsync(ct);
         await _messageRepository.UpdateAsync(message, ct);
+        if (mentionsTouched)
+            await _messageRepository.ReplaceMentionsAsync(message.Id, message.MentionedUserIds, ct);
         await transaction.CommitAsync(ct);
+
+        // ── Attachments for response ────────────────────────────────────
+        var attachments = await _messageAttachmentRepository.GetByMessageIdAsync(messageId, ct);
+
+        // ── Resolve mention IDs for response & notification ─────────────
+        // If mentions were touched, the entity is already up-to-date.
+        // If not, GetByIdAsync already hydrated them during the initial fetch.
+        var mentionIdsResponse = message.MentionedUserIds.Select(id => id.Value).ToArray();
 
         // ── Notify ──────────────────────────────────────────────────────
         await scope.NotifyMessageUpdatedAsync(
             context,
             message.Id,
             message.Content?.Value,
+            mentionIdsResponse,
             updatedAtUtc.Value,
             ct);
-
-        // ── Attachments for response ────────────────────────────────────
-        var attachments = await _messageAttachmentRepository.GetByMessageIdAsync(messageId, ct);
 
         // ── Result ──────────────────────────────────────────────────────
         return ApplicationResponse<MessageEditResult>.Ok(new MessageEditResult(
@@ -113,6 +163,7 @@ public sealed class MessageEditDeleteOrchestrator
             AuthorUserId: message.AuthorUserId.Value,
             Content: message.Content?.Value,
             Attachments: attachments.Select(MessageAttachmentDto.FromDomain).ToArray(),
+            MentionedUserIds: mentionIdsResponse,
             CreatedAtUtc: message.CreatedAtUtc,
             UpdatedAtUtc: updatedAtUtc));
     }

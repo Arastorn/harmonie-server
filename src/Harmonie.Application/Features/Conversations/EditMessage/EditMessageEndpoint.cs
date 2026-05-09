@@ -18,7 +18,7 @@ public static class EditMessageEndpoint
             .WithTags("Conversations")
             .RequireAuthorization()
             .WithSummary("Edit a conversation message")
-            .WithDescription("Updates the content of a conversation message. Only the message author can edit their own messages.")
+            .WithDescription("Updates the content of a conversation message. Only the message author can edit their own messages. Omit `mentionedUserIds` to leave mentions unchanged; pass an empty array to clear all mentions; pass IDs to replace the mention set.")
             .Produces<EditMessageResponse>(StatusCodes.Status200OK)
             .ProducesErrors(
                 ApplicationErrorCodes.Common.ValidationFailed,
@@ -29,7 +29,9 @@ public static class EditMessageEndpoint
                 ApplicationErrorCodes.Conversation.NotFound,
                 ApplicationErrorCodes.Conversation.AccessDenied,
                 ApplicationErrorCodes.Message.NotFound,
-                ApplicationErrorCodes.Message.EditForbidden);
+                ApplicationErrorCodes.Message.EditForbidden,
+                ApplicationErrorCodes.Message.MentionedUserNotFound,
+                ApplicationErrorCodes.Message.MentionedUserNotMember);
     }
 
     private static async Task<IResult> HandleAsync(
@@ -47,7 +49,7 @@ public static class EditMessageEndpoint
 
         var callerId = httpContext.GetRequiredAuthenticatedUserId();
 
-        var response = await handler.HandleAsync(new EditConversationMessageInput(conversationId, messageId, request.Content), callerId, cancellationToken);
+        var response = await handler.HandleAsync(new EditConversationMessageInput(conversationId, messageId, request.Content, request.MentionedUserIds), callerId, cancellationToken);
         return response.ToHttpResult(httpContext);
     }
 }

@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Harmonie.Application.Features.Conversations.EditMessage;
 
-public sealed record EditConversationMessageInput(ConversationId ConversationId, MessageId MessageId, string Content);
+public sealed record EditConversationMessageInput(ConversationId ConversationId, MessageId MessageId, string Content, IReadOnlyList<Guid>? MentionedUserIds = null);
 
 public sealed class EditMessageHandler : IAuthenticatedHandler<EditConversationMessageInput, EditMessageResponse>
 {
@@ -46,6 +46,7 @@ public sealed class EditMessageHandler : IAuthenticatedHandler<EditConversationM
             new MessageScope.Conversation(request.ConversationId),
             request.MessageId,
             request.Content,
+            request.MentionedUserIds,
             currentUserId,
             cancellationToken);
 
@@ -58,6 +59,7 @@ public sealed class EditMessageHandler : IAuthenticatedHandler<EditConversationM
             AuthorUserId: result.Data.AuthorUserId,
             Content: result.Data.Content,
             Attachments: result.Data.Attachments,
+            MentionedUserIds: result.Data.MentionedUserIds,
             CreatedAtUtc: result.Data.CreatedAtUtc,
             UpdatedAtUtc: result.Data.UpdatedAtUtc));
     }

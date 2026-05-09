@@ -1,4 +1,5 @@
 using Harmonie.Application.Common;
+using Harmonie.Domain.Common;
 using Harmonie.Domain.Entities.Messages;
 using Harmonie.Domain.ValueObjects.Messages;
 using Harmonie.Domain.ValueObjects.Users;
@@ -23,6 +24,15 @@ public interface IMessageEditDeleteScope<TContext> where TContext : ScopeContext
     bool CanDeleteOthersMessages(TContext context);
 
     /// <summary>
+    /// Validates that all mentioned user IDs are members/participants of the scope.
+    /// Returns a failure on the first invalid mention, or success.
+    /// </summary>
+    Task<Result> ValidateMentionedUsersAsync(
+        IReadOnlyCollection<UserId> userIds,
+        TContext context,
+        CancellationToken ct);
+
+    /// <summary>
     /// Notifies scope participants that a message was updated.
     /// Implementation must use best-effort notification (fire-and-forget).
     /// </summary>
@@ -30,6 +40,7 @@ public interface IMessageEditDeleteScope<TContext> where TContext : ScopeContext
         TContext context,
         MessageId messageId,
         string? content,
+        IReadOnlyList<Guid> mentionedUserIds,
         DateTime updatedAtUtc,
         CancellationToken ct);
 
@@ -52,6 +63,7 @@ public sealed record MessageEditResult(
     Guid AuthorUserId,
     string? Content,
     IReadOnlyList<MessageAttachmentDto> Attachments,
+    IReadOnlyList<Guid> MentionedUserIds,
     DateTime CreatedAtUtc,
     DateTime? UpdatedAtUtc);
 

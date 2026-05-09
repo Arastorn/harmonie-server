@@ -195,4 +195,105 @@ public sealed class MessageTests
         message.DeletedAtUtc.Should().NotBeNull();
         message.UpdatedAtUtc.Should().NotBeNull();
     }
+
+    [Fact]
+    public void Create_WithValidMentions_ShouldIncludeMentionedUserIds()
+    {
+        var userId = UserId.New();
+        var mentionA = UserId.New();
+        var mentionB = UserId.New();
+
+        var result = Message.Create(
+            new MessageScope.Channel(GuildChannelId.New()),
+            userId,
+            content: null,
+            mentionedUserIds: new[] { mentionA, mentionB });
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.MentionedUserIds.Should().BeEquivalentTo([mentionA, mentionB]);
+    }
+
+    [Fact]
+    public void Create_WithNoMentions_ShouldHaveEmptyCollection()
+    {
+        var result = Message.Create(
+            new MessageScope.Channel(GuildChannelId.New()),
+            UserId.New(),
+            content: null,
+            mentionedUserIds: null);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.MentionedUserIds.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Create_WithDuplicateMentionedUserIds_ShouldFail()
+    {
+        var duplicateId = UserId.New();
+
+        var result = Message.Create(
+            new MessageScope.Channel(GuildChannelId.New()),
+            UserId.New(),
+            content: null,
+            mentionedUserIds: new[] { duplicateId, duplicateId });
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Contain("distinct");
+    }
+
+    [Fact]
+    public void Create_WithMoreThanMaxMentions_ShouldFail()
+    {
+        var ids = Enumerable.Range(0, Message.MaxMentionedUsers + 1)
+            .Select(_ => UserId.New())
+            .ToArray();
+
+        var result = Message.Create(
+            new MessageScope.Channel(GuildChannelId.New()),
+            UserId.New(),
+            content: null,
+            mentionedUserIds: ids);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Contain(Message.MaxMentionedUsers.ToString());
+    }
+
+    [Fact]
+    public void Create_WithExactlyMaxMentions_ShouldSucceed()
+    {
+        var ids = Enumerable.Range(0, Message.MaxMentionedUsers)
+            .Select(_ => UserId.New())
+            .ToArray();
+
+        var result = Message.Create(
+            new MessageScope.Channel(GuildChannelId.New()),
+            UserId.New(),
+            content: null,
+            mentionedUserIds: ids);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.MentionedUserIds.Should().HaveCount(Message.MaxMentionedUsers);
+    }
+
+    [Fact]
+    public void Rehydrate_ShouldDefensiveCopyMentionedUserIds()
+    {
+        var mutableList = new List<UserId> { UserId.New(), UserId.New() };
+
+        var message = Message.Rehydrate(
+            MessageId.New(),
+            new MessageScope.Channel(GuildChannelId.New()),
+            UserId.New(),
+            replyToMessageId: null,
+            content: null,
+            DateTime.UtcNow,
+            updatedAtUtc: null,
+            deletedAtUtc: null,
+            mentionedUserIds: mutableList);
+
+        // Verify we got a copy, not the original mutable list
+        message.MentionedUserIds.Should().HaveCount(2);
+        mutableList.Clear();
+        message.MentionedUserIds.Should().HaveCount(2);
+    }
 }

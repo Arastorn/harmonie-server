@@ -18,7 +18,7 @@ public static class SendMessageEndpoint
             .RequireAuthorization()
             .RequireRateLimiting("message-post")
             .WithSummary("Send a message")
-            .WithDescription("Posts a message in a text channel. Optional `attachmentFileIds` values must reference files previously uploaded with attachment purpose.")
+            .WithDescription("Posts a message in a text channel. Optional `attachmentFileIds` values must reference files previously uploaded with attachment purpose. `mentionedUserIds` can be omitted or empty for no mentions; mentioned users must be guild members.")
             .Produces<SendMessageResponse>(StatusCodes.Status201Created)
             .Produces(StatusCodes.Status429TooManyRequests)
             .ProducesErrors(
@@ -30,7 +30,9 @@ public static class SendMessageEndpoint
                 ApplicationErrorCodes.Guild.AccessDenied,
                 ApplicationErrorCodes.Channel.NotFound,
                 ApplicationErrorCodes.Channel.NotText,
-                ApplicationErrorCodes.Channel.AccessDenied);
+                ApplicationErrorCodes.Channel.AccessDenied,
+                ApplicationErrorCodes.Message.MentionedUserNotFound,
+                ApplicationErrorCodes.Message.MentionedUserNotMember);
     }
 
     private static async Task<IResult> HandleAsync(
@@ -47,7 +49,7 @@ public static class SendMessageEndpoint
 
         var currentUserId = httpContext.GetRequiredAuthenticatedUserId();
 
-        var response = await handler.HandleAsync(new SendChannelMessageInput(channelId, request.Content, request.AttachmentFileIds, request.ReplyToMessageId), currentUserId, cancellationToken);
+        var response = await handler.HandleAsync(new SendChannelMessageInput(channelId, request.Content, request.AttachmentFileIds, request.ReplyToMessageId, request.MentionedUserIds), currentUserId, cancellationToken);
         return response.ToCreatedHttpResult(data => $"/api/channels/{data.ChannelId}/messages/{data.MessageId}", httpContext);
     }
 }

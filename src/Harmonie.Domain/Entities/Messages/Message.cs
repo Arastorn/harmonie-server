@@ -8,6 +8,8 @@ namespace Harmonie.Domain.Entities.Messages;
 
 public sealed class Message : Entity<MessageId>
 {
+    public const int MaxMentionedUsers = 50;
+
     public MessageScope Scope { get; private set; }
 
     public UserId AuthorUserId { get; private set; }
@@ -18,6 +20,8 @@ public sealed class Message : Entity<MessageId>
 
     public DateTime? DeletedAtUtc { get; private set; }
 
+    public IReadOnlyCollection<UserId> MentionedUserIds { get; private set; }
+
     private Message(
         MessageId id,
         MessageScope scope,
@@ -26,7 +30,8 @@ public sealed class Message : Entity<MessageId>
         MessageContent? content,
         DateTime createdAtUtc,
         DateTime? updatedAtUtc,
-        DateTime? deletedAtUtc)
+        DateTime? deletedAtUtc,
+        IReadOnlyCollection<UserId> mentionedUserIds)
     {
         Id = id;
         Scope = scope;
@@ -36,18 +41,25 @@ public sealed class Message : Entity<MessageId>
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
         DeletedAtUtc = deletedAtUtc;
+        MentionedUserIds = mentionedUserIds;
     }
 
     public static Result<Message> Create(
         MessageScope scope,
         UserId authorUserId,
         MessageContent? content,
-        MessageId? replyToMessageId = null)
+        MessageId? replyToMessageId = null,
+        IReadOnlyCollection<UserId>? mentionedUserIds = null)
     {
         if (scope is null)
             return Result.Failure<Message>("Message scope is required");
         if (authorUserId is null)
             return Result.Failure<Message>("Author user ID is required");
+
+        var mentions = mentionedUserIds ?? Array.Empty<UserId>();
+        var validationError = ValidateMentions(mentions);
+        if (validationError is not null)
+            return Result.Failure<Message>(validationError);
 
         return Result.Success(new Message(
             MessageId.New(),
@@ -57,7 +69,8 @@ public sealed class Message : Entity<MessageId>
             content,
             DateTime.UtcNow,
             updatedAtUtc: null,
-            deletedAtUtc: null));
+            deletedAtUtc: null,
+            mentionedUserIds: mentions.ToArray()));
     }
 
     public Result UpdateContent(MessageContent newContent)
@@ -65,6 +78,34 @@ public sealed class Message : Entity<MessageId>
         Content = newContent;
         MarkAsUpdated();
         return Result.Success();
+    }
+
+    /// <summary>
+    /// Replaces the mention set and marks the entity as updated.
+    /// Enforces domain invariants: distinct IDs, max count.
+    /// Pass null or empty to clear all mentions.
+    /// </summary>
+    public Result ReplaceMentions(IReadOnlyCollection<UserId>? mentionedUserIds)
+    {
+        var mentions = mentionedUserIds ?? Array.Empty<UserId>();
+        var validationError = ValidateMentions(mentions);
+        if (validationError is not null)
+            return Result.Failure(validationError);
+
+        MentionedUserIds = mentions.ToArray();
+        MarkAsUpdated();
+        return Result.Success();
+    }
+
+    private static string? ValidateMentions(IReadOnlyCollection<UserId> mentions)
+    {
+        if (mentions.Count > MaxMentionedUsers)
+            return $"A message can mention at most {MaxMentionedUsers} users";
+
+        if (new HashSet<UserId>(mentions).Count != mentions.Count)
+            return "Mentioned user IDs must be distinct";
+
+        return null;
     }
 
     public Result Delete()
@@ -85,7 +126,8 @@ public sealed class Message : Entity<MessageId>
         MessageContent? content,
         DateTime createdAtUtc,
         DateTime? updatedAtUtc,
-        DateTime? deletedAtUtc)
+        DateTime? deletedAtUtc,
+        IReadOnlyCollection<UserId>? mentionedUserIds = null)
     {
         ArgumentNullException.ThrowIfNull(id);
         ArgumentNullException.ThrowIfNull(scope);
@@ -99,6 +141,7 @@ public sealed class Message : Entity<MessageId>
             content,
             createdAtUtc,
             updatedAtUtc,
-            deletedAtUtc);
+            deletedAtUtc,
+            (mentionedUserIds is not null ? mentionedUserIds.ToArray() : Array.Empty<UserId>()));
     }
 }
