@@ -526,20 +526,12 @@ public sealed class MessageEditDeleteOrchestratorTests
         var uploadedFile = ApplicationTestBuilders.CreateUploadedFile(
             id: attachmentId, uploaderUserId: authorId, storageKey: "attachments/file.txt");
 
-        _messageAttachmentRepositoryMock
-            .Setup(x => x.DeleteAsync(messageId, attachmentId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
-
         _uploadedFileRepositoryMock
             .Setup(x => x.GetByIdAsync(attachmentId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(uploadedFile);
 
         _objectStorageServiceMock
             .Setup(x => x.DeleteIfExistsAsync(uploadedFile.StorageKey, It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-
-        _uploadedFileRepositoryMock
-            .Setup(x => x.DeleteAsync(attachmentId, It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         var callOrder = new List<string>();
@@ -552,8 +544,13 @@ public sealed class MessageEditDeleteOrchestratorTests
             .Callback(() => callOrder.Add("commit"))
             .Returns(Task.CompletedTask);
 
+        // Track transaction dispose to verify cleanup happens after the using block exits.
+        _transactionMock.As<IAsyncDisposable>()
+            .Setup(x => x.DisposeAsync())
+            .Callback(() => callOrder.Add("txDispose"))
+            .Returns(ValueTask.CompletedTask);
+
         // Track cleanup by watching DeleteAsync on the uploaded file repo.
-        // Since cleanup happens outside the transaction, it should be after commit.
         _uploadedFileRepositoryMock
             .Setup(x => x.DeleteAsync(attachmentId, It.IsAny<CancellationToken>()))
             .Callback(() => callOrder.Add("cleanup"))
@@ -562,6 +559,7 @@ public sealed class MessageEditDeleteOrchestratorTests
         await _orchestrator.DeleteAttachmentAsync(
             scope.Object, messageScope, messageId, attachmentId, authorId, TestContext.Current.CancellationToken);
 
-        callOrder.Should().Equal("deleteRef", "commit", "cleanup");
+        // Cleanup must happen outside the transaction: delete → commit → dispose → cleanup
+        callOrder.Should().Equal("deleteRef", "commit", "txDispose", "cleanup");
     }
 }
