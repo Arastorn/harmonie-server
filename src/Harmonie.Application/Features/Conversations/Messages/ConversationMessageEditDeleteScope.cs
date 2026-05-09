@@ -20,64 +20,68 @@ public sealed class ConversationMessageEditDeleteScope : IMessageEditDeleteScope
     public sealed record Context(
         ConversationId ConversationId,
         string? ConversationName,
-        ConversationType ConversationType) : ScopeContext;
+        ConversationType ConversationType,
+        IReadOnlyList<ConversationParticipant> AllParticipants) : ScopeContext;
 
     private readonly ConversationId _conversationId;
     private readonly IConversationRepository _conversationRepository;
-    private readonly IConversationParticipantRepository _participantRepository;
     private readonly IConversationMessageNotifier _conversationMessageNotifier;
     private readonly ILogger<ConversationMessageEditDeleteScope> _logger;
 
     public ConversationMessageEditDeleteScope(
         ConversationId conversationId,
         IConversationRepository conversationRepository,
-        IConversationParticipantRepository participantRepository,
         IConversationMessageNotifier conversationMessageNotifier,
         ILogger<ConversationMessageEditDeleteScope> logger)
     {
         _conversationId = conversationId;
         _conversationRepository = conversationRepository;
-        _participantRepository = participantRepository;
         _conversationMessageNotifier = conversationMessageNotifier;
         _logger = logger;
     }
 
     public async Task<AuthorizationResult<Context>> AuthorizeAsync(UserId caller, CancellationToken ct)
     {
-        var result = await ConversationScopeAuthorizer.AuthorizeAsync(_conversationRepository, _conversationId, caller, ct);
-        if (result is ConversationAuthResult.Denied denied)
-            return new AuthorizationResult<Context>.Denied(denied.Error);
+        var access = await _conversationRepository.GetByIdWithAllParticipantsAsync(_conversationId, caller, ct);
+        if (access is null)
+        {
+            return new AuthorizationResult<Context>.Denied(new ApplicationError(
+                ApplicationErrorCodes.Conversation.NotFound,
+                "Conversation was not found"));
+        }
+        if (access.CallerParticipant is null)
+        {
+            return new AuthorizationResult<Context>.Denied(new ApplicationError(
+                ApplicationErrorCodes.Conversation.AccessDenied,
+                "You do not have access to this conversation"));
+        }
 
-        var access = ((ConversationAuthResult.Authorized)result).Context;
         return new AuthorizationResult<Context>.Authorized(new Context(
             _conversationId,
             access.Conversation.Name,
-            access.Conversation.Type));
+            access.Conversation.Type,
+            access.AllParticipants));
     }
 
     // Conversations have no admin role; only the author can delete their own messages.
     public bool CanDeleteOthersMessages(Context context)
         => false;
 
-    public async Task<Result> ValidateMentionedUsersAsync(
+    public Task<Result> ValidateMentionedUsersAsync(
         IReadOnlyCollection<UserId> userIds,
         Context context,
         CancellationToken ct)
     {
-        if (userIds.Count == 0)
-            return Result.Success();
-
-        var participants = await _participantRepository.GetByConversationIdAsync(context.ConversationId, ct);
-        var participantIds = participants.Select(p => p.UserId).ToHashSet();
+        var participantIds = context.AllParticipants.Select(p => p.UserId).ToHashSet();
         foreach (var userId in userIds)
         {
             if (!participantIds.Contains(userId))
             {
-                return Result.Failure($"User {userId.Value} is not a participant of conversation {context.ConversationId.Value}");
+                return Task.FromResult(Result.Failure($"User {userId.Value} is not a participant of conversation {context.ConversationId.Value}"));
             }
         }
 
-        return Result.Success();
+        return Task.FromResult(Result.Success());
     }
 
     public async Task NotifyMessageUpdatedAsync(

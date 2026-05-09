@@ -14,20 +14,17 @@ public sealed record EditConversationMessageInput(ConversationId ConversationId,
 public sealed class EditMessageHandler : IAuthenticatedHandler<EditConversationMessageInput, EditMessageResponse>
 {
     private readonly IConversationRepository _conversationRepository;
-    private readonly IConversationParticipantRepository _participantRepository;
     private readonly IConversationMessageNotifier _conversationMessageNotifier;
     private readonly ILogger<ConversationMessageEditDeleteScope> _scopeLogger;
     private readonly MessageEditDeleteOrchestrator _orchestrator;
 
     public EditMessageHandler(
         IConversationRepository conversationRepository,
-        IConversationParticipantRepository participantRepository,
         IConversationMessageNotifier conversationMessageNotifier,
         ILogger<ConversationMessageEditDeleteScope> scopeLogger,
         MessageEditDeleteOrchestrator orchestrator)
     {
         _conversationRepository = conversationRepository;
-        _participantRepository = participantRepository;
         _conversationMessageNotifier = conversationMessageNotifier;
         _scopeLogger = scopeLogger;
         _orchestrator = orchestrator;
@@ -41,7 +38,6 @@ public sealed class EditMessageHandler : IAuthenticatedHandler<EditConversationM
         var scope = new ConversationMessageEditDeleteScope(
             request.ConversationId,
             _conversationRepository,
-            _participantRepository,
             _conversationMessageNotifier,
             _scopeLogger);
 

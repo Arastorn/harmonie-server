@@ -10,6 +10,7 @@ using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Application.Interfaces.Uploads;
 using Harmonie.Application.Interfaces.Users;
 using Harmonie.Application.Tests.Common;
+using Harmonie.Domain.Entities.Conversations;
 using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.ValueObjects.Messages;
 using Harmonie.Domain.ValueObjects.Uploads;
@@ -30,7 +31,6 @@ public sealed class DeleteConversationMessageAttachmentHandlerTests
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly Mock<IUnitOfWorkTransaction> _transactionMock;
     private readonly Mock<IUserRepository> _userRepositoryMock;
-    private readonly Mock<IConversationParticipantRepository> _participantRepositoryMock;
     private readonly MessageEditDeleteOrchestrator _orchestrator;
     private readonly DeleteMessageAttachmentHandler _handler;
 
@@ -42,7 +42,6 @@ public sealed class DeleteConversationMessageAttachmentHandlerTests
         _uploadedFileRepositoryMock = new Mock<IUploadedFileRepository>();
         _objectStorageServiceMock = new Mock<IObjectStorageService>();
         _userRepositoryMock = new Mock<IUserRepository>();
-        _participantRepositoryMock = new Mock<IConversationParticipantRepository>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _transactionMock = new Mock<IUnitOfWorkTransaction>();
 
@@ -62,7 +61,6 @@ public sealed class DeleteConversationMessageAttachmentHandlerTests
 
         _handler = new DeleteMessageAttachmentHandler(
             _conversationRepositoryMock.Object,
-            _participantRepositoryMock.Object,
             new Mock<IConversationMessageNotifier>().Object,
             NullLogger<ConversationMessageEditDeleteScope>.Instance,
             _orchestrator);
@@ -77,8 +75,8 @@ public sealed class DeleteConversationMessageAttachmentHandlerTests
         var callerId = UserId.New();
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversationId, It.IsAny<UserId>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((ConversationAccess?)null);
+            .Setup(x => x.GetByIdWithAllParticipantsAsync(conversationId, It.IsAny<UserId>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ConversationAccessWithAllParticipants?)null);
 
         var response = await _handler.HandleAsync(new DeleteConversationMessageAttachmentInput(conversationId, messageId, attachmentId), callerId, TestContext.Current.CancellationToken);
 
@@ -96,8 +94,8 @@ public sealed class DeleteConversationMessageAttachmentHandlerTests
         var conversation = ApplicationTestBuilders.CreateConversation(participantOne, participantTwo);
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, outsider, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ConversationAccess(conversation, Participant: null));
+            .Setup(x => x.GetByIdWithAllParticipantsAsync(conversation.Id, outsider, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConversationAccessWithAllParticipants(conversation, CallerParticipant: null, AllParticipants: Array.Empty<ConversationParticipant>(), CallerUsername: null, CallerDisplayName: null));
 
         var response = await _handler.HandleAsync(
             new DeleteConversationMessageAttachmentInput(conversation.Id, MessageId.New(), UploadedFileId.New()),
@@ -119,8 +117,8 @@ public sealed class DeleteConversationMessageAttachmentHandlerTests
         var message = ApplicationTestBuilders.CreateConversationMessage(conversation.Id, participantTwo, content: "hello");
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, participantOne, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ConversationAccess(conversation, Participant: ApplicationTestBuilders.CreateConversationParticipant(conversation.Id, participantOne)));
+            .Setup(x => x.GetByIdWithAllParticipantsAsync(conversation.Id, participantOne, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConversationAccessWithAllParticipants(conversation, CallerParticipant: ApplicationTestBuilders.CreateConversationParticipant(conversation.Id, participantOne), AllParticipants: Array.Empty<ConversationParticipant>(), CallerUsername: null, CallerDisplayName: null));
 
         _conversationMessageRepositoryMock
             .Setup(x => x.GetByIdAsync(message.Id, It.IsAny<CancellationToken>()))
@@ -143,8 +141,8 @@ public sealed class DeleteConversationMessageAttachmentHandlerTests
         var missingAttachmentId = UploadedFileId.New();
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, participantOne, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ConversationAccess(conversation, Participant: ApplicationTestBuilders.CreateConversationParticipant(conversation.Id, participantOne)));
+            .Setup(x => x.GetByIdWithAllParticipantsAsync(conversation.Id, participantOne, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConversationAccessWithAllParticipants(conversation, CallerParticipant: ApplicationTestBuilders.CreateConversationParticipant(conversation.Id, participantOne), AllParticipants: Array.Empty<ConversationParticipant>(), CallerUsername: null, CallerDisplayName: null));
 
         _conversationMessageRepositoryMock
             .Setup(x => x.GetByIdAsync(message.Id, It.IsAny<CancellationToken>()))
@@ -175,8 +173,8 @@ public sealed class DeleteConversationMessageAttachmentHandlerTests
         var uploadedFile = ApplicationTestBuilders.CreateUploadedFile(id: attachmentId, uploaderUserId: participantOne, fileName: "notes.txt", contentType: "text/plain", sizeBytes: 12, storageKey: "attachments/file.txt");
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, participantOne, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ConversationAccess(conversation, Participant: ApplicationTestBuilders.CreateConversationParticipant(conversation.Id, participantOne)));
+            .Setup(x => x.GetByIdWithAllParticipantsAsync(conversation.Id, participantOne, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConversationAccessWithAllParticipants(conversation, CallerParticipant: ApplicationTestBuilders.CreateConversationParticipant(conversation.Id, participantOne), AllParticipants: Array.Empty<ConversationParticipant>(), CallerUsername: null, CallerDisplayName: null));
 
         _conversationMessageRepositoryMock
             .Setup(x => x.GetByIdAsync(message.Id, It.IsAny<CancellationToken>()))

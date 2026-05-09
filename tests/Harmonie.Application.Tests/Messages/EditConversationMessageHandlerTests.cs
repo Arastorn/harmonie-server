@@ -10,6 +10,7 @@ using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Application.Interfaces.Uploads;
 using Harmonie.Application.Interfaces.Users;
 using Harmonie.Application.Tests.Common;
+using Harmonie.Domain.Entities.Conversations;
 using Harmonie.Domain.Entities.Messages;
 using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.ValueObjects.Messages;
@@ -26,7 +27,6 @@ public sealed class EditConversationMessageHandlerTests
     private readonly Mock<IMessageRepository> _directMessageRepositoryMock;
     private readonly Mock<IMessageAttachmentRepository> _messageAttachmentRepositoryMock;
     private readonly Mock<IUserRepository> _userRepositoryMock;
-    private readonly Mock<IConversationParticipantRepository> _participantRepositoryMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly Mock<IUnitOfWorkTransaction> _transactionMock;
     private readonly Mock<IConversationMessageNotifier> _directMessageNotifierMock;
@@ -39,7 +39,6 @@ public sealed class EditConversationMessageHandlerTests
         _directMessageRepositoryMock = new Mock<IMessageRepository>();
         _messageAttachmentRepositoryMock = new Mock<IMessageAttachmentRepository>();
         _userRepositoryMock = new Mock<IUserRepository>();
-        _participantRepositoryMock = new Mock<IConversationParticipantRepository>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _transactionMock = new Mock<IUnitOfWorkTransaction>();
         _directMessageNotifierMock = new Mock<IConversationMessageNotifier>();
@@ -73,7 +72,6 @@ public sealed class EditConversationMessageHandlerTests
 
         _handler = new EditMessageHandler(
             _conversationRepositoryMock.Object,
-            _participantRepositoryMock.Object,
             _directMessageNotifierMock.Object,
             NullLogger<ConversationMessageEditDeleteScope>.Instance,
             _orchestrator);
@@ -100,8 +98,8 @@ public sealed class EditConversationMessageHandlerTests
         var callerId = UserId.New();
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversationId, It.IsAny<UserId>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((ConversationAccess?)null);
+            .Setup(x => x.GetByIdWithAllParticipantsAsync(conversationId, It.IsAny<UserId>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ConversationAccessWithAllParticipants?)null);
 
         var response = await _handler.HandleAsync(
             new EditConversationMessageInput(conversationId, MessageId.New(), "updated content"),
@@ -123,8 +121,8 @@ public sealed class EditConversationMessageHandlerTests
         var conversation = ApplicationTestBuilders.CreateConversation(participantOne, participantTwo);
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, outsider, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ConversationAccess(conversation, Participant: null));
+            .Setup(x => x.GetByIdWithAllParticipantsAsync(conversation.Id, outsider, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConversationAccessWithAllParticipants(conversation, CallerParticipant: null, AllParticipants: Array.Empty<ConversationParticipant>(), CallerUsername: null, CallerDisplayName: null));
 
         var response = await _handler.HandleAsync(
             new EditConversationMessageInput(conversation.Id, MessageId.New(), "updated content"),
@@ -146,8 +144,8 @@ public sealed class EditConversationMessageHandlerTests
         var messageId = MessageId.New();
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, participantOne, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ConversationAccess(conversation, Participant: ApplicationTestBuilders.CreateConversationParticipant(conversation.Id, participantOne)));
+            .Setup(x => x.GetByIdWithAllParticipantsAsync(conversation.Id, participantOne, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConversationAccessWithAllParticipants(conversation, CallerParticipant: ApplicationTestBuilders.CreateConversationParticipant(conversation.Id, participantOne), AllParticipants: Array.Empty<ConversationParticipant>(), CallerUsername: null, CallerDisplayName: null));
 
         _directMessageRepositoryMock
             .Setup(x => x.GetByIdAsync(messageId, It.IsAny<CancellationToken>()))
@@ -174,8 +172,8 @@ public sealed class EditConversationMessageHandlerTests
         var messageFromOtherConversation = ApplicationTestBuilders.CreateConversationMessage(ConversationId.New(), participantOne);
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, participantOne, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ConversationAccess(conversation, Participant: ApplicationTestBuilders.CreateConversationParticipant(conversation.Id, participantOne)));
+            .Setup(x => x.GetByIdWithAllParticipantsAsync(conversation.Id, participantOne, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConversationAccessWithAllParticipants(conversation, CallerParticipant: ApplicationTestBuilders.CreateConversationParticipant(conversation.Id, participantOne), AllParticipants: Array.Empty<ConversationParticipant>(), CallerUsername: null, CallerDisplayName: null));
 
         _directMessageRepositoryMock
             .Setup(x => x.GetByIdAsync(messageId, It.IsAny<CancellationToken>()))
@@ -202,8 +200,8 @@ public sealed class EditConversationMessageHandlerTests
         var message = ApplicationTestBuilders.CreateConversationMessage(conversation.Id, participantTwo);
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, participantOne, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ConversationAccess(conversation, Participant: ApplicationTestBuilders.CreateConversationParticipant(conversation.Id, participantOne)));
+            .Setup(x => x.GetByIdWithAllParticipantsAsync(conversation.Id, participantOne, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConversationAccessWithAllParticipants(conversation, CallerParticipant: ApplicationTestBuilders.CreateConversationParticipant(conversation.Id, participantOne), AllParticipants: Array.Empty<ConversationParticipant>(), CallerUsername: null, CallerDisplayName: null));
 
         _directMessageRepositoryMock
             .Setup(x => x.GetByIdAsync(messageId, It.IsAny<CancellationToken>()))
@@ -230,8 +228,8 @@ public sealed class EditConversationMessageHandlerTests
         var message = ApplicationTestBuilders.CreateConversationMessage(conversation.Id, participantOne);
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, participantOne, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ConversationAccess(conversation, Participant: ApplicationTestBuilders.CreateConversationParticipant(conversation.Id, participantOne)));
+            .Setup(x => x.GetByIdWithAllParticipantsAsync(conversation.Id, participantOne, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConversationAccessWithAllParticipants(conversation, CallerParticipant: ApplicationTestBuilders.CreateConversationParticipant(conversation.Id, participantOne), AllParticipants: Array.Empty<ConversationParticipant>(), CallerUsername: null, CallerDisplayName: null));
 
         _directMessageRepositoryMock
             .Setup(x => x.GetByIdAsync(messageId, It.IsAny<CancellationToken>()))
@@ -261,8 +259,8 @@ public sealed class EditConversationMessageHandlerTests
         var message = ApplicationTestBuilders.CreateConversationMessage(conversation.Id, participantOne);
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, participantOne, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ConversationAccess(conversation, Participant: ApplicationTestBuilders.CreateConversationParticipant(conversation.Id, participantOne)));
+            .Setup(x => x.GetByIdWithAllParticipantsAsync(conversation.Id, participantOne, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConversationAccessWithAllParticipants(conversation, CallerParticipant: ApplicationTestBuilders.CreateConversationParticipant(conversation.Id, participantOne), AllParticipants: Array.Empty<ConversationParticipant>(), CallerUsername: null, CallerDisplayName: null));
 
         _directMessageRepositoryMock
             .Setup(x => x.GetByIdAsync(messageId, It.IsAny<CancellationToken>()))
@@ -305,8 +303,8 @@ public sealed class EditConversationMessageHandlerTests
         var message = ApplicationTestBuilders.CreateConversationMessage(conversation.Id, participantOne);
 
         _conversationRepositoryMock
-            .Setup(x => x.GetByIdWithParticipantCheckAsync(conversation.Id, participantOne, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ConversationAccess(conversation, Participant: ApplicationTestBuilders.CreateConversationParticipant(conversation.Id, participantOne)));
+            .Setup(x => x.GetByIdWithAllParticipantsAsync(conversation.Id, participantOne, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConversationAccessWithAllParticipants(conversation, CallerParticipant: ApplicationTestBuilders.CreateConversationParticipant(conversation.Id, participantOne), AllParticipants: Array.Empty<ConversationParticipant>(), CallerUsername: null, CallerDisplayName: null));
 
         _directMessageRepositoryMock
             .Setup(x => x.GetByIdAsync(messageId, It.IsAny<CancellationToken>()))
