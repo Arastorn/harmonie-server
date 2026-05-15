@@ -1,6 +1,7 @@
 using Harmonie.Application.Common;
 using Harmonie.Application.Common.Messages;
 using Harmonie.Application.Interfaces.Conversations;
+using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Domain.Common;
 using Harmonie.Domain.Entities.Conversations;
 using Harmonie.Domain.ValueObjects.Conversations;
@@ -15,8 +16,6 @@ namespace Harmonie.Application.Features.Conversations.Messages;
 /// </summary>
 public sealed class ConversationMessageEditDeleteScope : IMessageEditDeleteScope<ConversationMessageEditDeleteScope.Context>
 {
-    private static readonly TimeSpan NotificationTimeout = TimeSpan.FromSeconds(5);
-
     public sealed record Context(
         ConversationId ConversationId,
         string? ConversationName,
@@ -25,18 +24,18 @@ public sealed class ConversationMessageEditDeleteScope : IMessageEditDeleteScope
 
     private readonly ConversationId _conversationId;
     private readonly IConversationRepository _conversationRepository;
-    private readonly IConversationMessageNotifier _conversationMessageNotifier;
+    private readonly IMessageEventPublisher _messageEventPublisher;
     private readonly ILogger<ConversationMessageEditDeleteScope> _logger;
 
     public ConversationMessageEditDeleteScope(
         ConversationId conversationId,
         IConversationRepository conversationRepository,
-        IConversationMessageNotifier conversationMessageNotifier,
+        IMessageEventPublisher messageEventPublisher,
         ILogger<ConversationMessageEditDeleteScope> logger)
     {
         _conversationId = conversationId;
         _conversationRepository = conversationRepository;
-        _conversationMessageNotifier = conversationMessageNotifier;
+        _messageEventPublisher = messageEventPublisher;
         _logger = logger;
     }
 
@@ -92,22 +91,17 @@ public sealed class ConversationMessageEditDeleteScope : IMessageEditDeleteScope
         DateTime updatedAtUtc,
         CancellationToken ct)
     {
-        var notification = new ConversationMessageUpdatedNotification(
-            messageId,
-            context.ConversationId,
-            context.ConversationName,
-            context.ConversationType.ToString(),
-            content,
-            mentionedUserIds,
-            updatedAtUtc);
-
-        await BestEffortNotificationHelper.TryNotifyAsync(
-            token => _conversationMessageNotifier.NotifyMessageUpdatedAsync(notification, token),
-            NotificationTimeout,
-            _logger,
-            "EditConversationMessage notification failed (best-effort). MessageId={MessageId}, ConversationId={ConversationId}",
-            notification.MessageId,
-            notification.ConversationId);
+        await _messageEventPublisher.PublishUpdatedAsync(
+            new MessageUpdatedEventEnvelope(
+                messageId,
+                new MessageEventLocation.Conversation(
+                    context.ConversationId,
+                    context.ConversationName,
+                    context.ConversationType.ToString()),
+                content,
+                mentionedUserIds,
+                updatedAtUtc),
+            CancellationToken.None);
     }
 
     public async Task NotifyMessageDeletedAsync(
@@ -115,18 +109,13 @@ public sealed class ConversationMessageEditDeleteScope : IMessageEditDeleteScope
         MessageId messageId,
         CancellationToken ct)
     {
-        var notification = new ConversationMessageDeletedNotification(
-            messageId,
-            context.ConversationId,
-            context.ConversationName,
-            context.ConversationType.ToString());
-
-        await BestEffortNotificationHelper.TryNotifyAsync(
-            token => _conversationMessageNotifier.NotifyMessageDeletedAsync(notification, token),
-            NotificationTimeout,
-            _logger,
-            "DeleteConversationMessage notification failed (best-effort). MessageId={MessageId}, ConversationId={ConversationId}",
-            notification.MessageId,
-            notification.ConversationId);
+        await _messageEventPublisher.PublishDeletedAsync(
+            new MessageDeletedEventEnvelope(
+                messageId,
+                new MessageEventLocation.Conversation(
+                    context.ConversationId,
+                    context.ConversationName,
+                    context.ConversationType.ToString())),
+            CancellationToken.None);
     }
 }

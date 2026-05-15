@@ -1,6 +1,7 @@
 using Harmonie.Application.Common;
 using Harmonie.Application.Common.Messages;
 using Harmonie.Application.Interfaces.Channels;
+using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Application.Interfaces.Guilds;
 using Harmonie.Domain.Common;
 using Harmonie.Domain.Enums;
@@ -17,8 +18,6 @@ namespace Harmonie.Application.Features.Channels.Messages;
 /// </summary>
 public sealed class ChannelMessageEditDeleteScope : IMessageEditDeleteScope<ChannelMessageEditDeleteScope.Context>
 {
-    private static readonly TimeSpan NotificationTimeout = TimeSpan.FromSeconds(5);
-
     public sealed record Context(
         GuildChannelId ChannelId,
         string ChannelName,
@@ -29,20 +28,20 @@ public sealed class ChannelMessageEditDeleteScope : IMessageEditDeleteScope<Chan
     private readonly GuildChannelId _channelId;
     private readonly IGuildChannelRepository _guildChannelRepository;
     private readonly IGuildMemberRepository _guildMemberRepository;
-    private readonly ITextChannelNotifier _textChannelNotifier;
+    private readonly IMessageEventPublisher _messageEventPublisher;
     private readonly ILogger<ChannelMessageEditDeleteScope> _logger;
 
     public ChannelMessageEditDeleteScope(
         GuildChannelId channelId,
         IGuildChannelRepository guildChannelRepository,
         IGuildMemberRepository guildMemberRepository,
-        ITextChannelNotifier textChannelNotifier,
+        IMessageEventPublisher messageEventPublisher,
         ILogger<ChannelMessageEditDeleteScope> logger)
     {
         _channelId = channelId;
         _guildChannelRepository = guildChannelRepository;
         _guildMemberRepository = guildMemberRepository;
-        _textChannelNotifier = textChannelNotifier;
+        _messageEventPublisher = messageEventPublisher;
         _logger = logger;
     }
 
@@ -91,23 +90,18 @@ public sealed class ChannelMessageEditDeleteScope : IMessageEditDeleteScope<Chan
         DateTime updatedAtUtc,
         CancellationToken ct)
     {
-        var notification = new TextChannelMessageUpdatedNotification(
-            messageId,
-            context.ChannelId,
-            context.ChannelName,
-            context.GuildId,
-            context.GuildName,
-            content,
-            mentionedUserIds,
-            updatedAtUtc);
-
-        await BestEffortNotificationHelper.TryNotifyAsync(
-            token => _textChannelNotifier.NotifyMessageUpdatedAsync(notification, token),
-            NotificationTimeout,
-            _logger,
-            "EditMessage notification failed (best-effort). MessageId={MessageId}, ChannelId={ChannelId}",
-            notification.MessageId,
-            notification.ChannelId);
+        await _messageEventPublisher.PublishUpdatedAsync(
+            new MessageUpdatedEventEnvelope(
+                messageId,
+                new MessageEventLocation.Channel(
+                    context.ChannelId,
+                    context.ChannelName,
+                    context.GuildId,
+                    context.GuildName),
+                content,
+                mentionedUserIds,
+                updatedAtUtc),
+            CancellationToken.None);
     }
 
     public async Task NotifyMessageDeletedAsync(
@@ -115,19 +109,14 @@ public sealed class ChannelMessageEditDeleteScope : IMessageEditDeleteScope<Chan
         MessageId messageId,
         CancellationToken ct)
     {
-        var notification = new TextChannelMessageDeletedNotification(
-            messageId,
-            context.ChannelId,
-            context.ChannelName,
-            context.GuildId,
-            context.GuildName);
-
-        await BestEffortNotificationHelper.TryNotifyAsync(
-            token => _textChannelNotifier.NotifyMessageDeletedAsync(notification, token),
-            NotificationTimeout,
-            _logger,
-            "DeleteMessage notification failed (best-effort). MessageId={MessageId}, ChannelId={ChannelId}",
-            notification.MessageId,
-            notification.ChannelId);
+        await _messageEventPublisher.PublishDeletedAsync(
+            new MessageDeletedEventEnvelope(
+                messageId,
+                new MessageEventLocation.Channel(
+                    context.ChannelId,
+                    context.ChannelName,
+                    context.GuildId,
+                    context.GuildName)),
+            CancellationToken.None);
     }
 }

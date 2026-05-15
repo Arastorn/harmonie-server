@@ -1,8 +1,6 @@
 using System.Text.RegularExpressions;
 using Harmonie.Application.Common;
 using Harmonie.Application.Common.Messages;
-using Harmonie.Application.Interfaces.Channels;
-using Harmonie.Application.Interfaces.Conversations;
 using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Domain.Entities.Messages;
 using Harmonie.Domain.ValueObjects.Channels;
@@ -18,7 +16,6 @@ public sealed class LinkPreviewResolutionService
 {
     private static readonly TimeSpan PreviewCacheMaxAge = TimeSpan.FromHours(24);
     private static readonly TimeSpan ResolutionTimeout = TimeSpan.FromSeconds(10);
-    private static readonly TimeSpan NotificationTimeout = TimeSpan.FromSeconds(5);
     private static readonly Regex HrefRegex = new(
         @"href\s*=\s*[""'](https?://[^""'\s>]+)[""']",
         RegexOptions.IgnoreCase | RegexOptions.Compiled,
@@ -107,21 +104,18 @@ public sealed class LinkPreviewResolutionService
             using var scope = _serviceScopeFactory.CreateScope();
             var repo = scope.ServiceProvider.GetRequiredService<ILinkPreviewRepository>();
             var fetcher = scope.ServiceProvider.GetRequiredService<ILinkPreviewFetcher>();
-            var notifier = scope.ServiceProvider.GetRequiredService<ITextChannelNotifier>();
+            var publisher = scope.ServiceProvider.GetRequiredService<IMessageEventPublisher>();
 
             var previews = await ResolveAsync(messageId, urls, repo, fetcher, cts.Token);
 
             if (previews.Count > 0)
             {
-                await BestEffortNotificationHelper.TryNotifyAsync(
-                    token => notifier.NotifyMessagePreviewUpdatedAsync(
-                        new TextChannelMessagePreviewUpdatedNotification(messageId, channelId, channelName, guildId, guildName, previews),
-                        token),
-                    NotificationTimeout,
-                    _logger,
-                    "Link preview channel notification failed (best-effort). MessageId={MessageId}, ChannelId={ChannelId}",
-                    messageId,
-                    channelId);
+                await publisher.PublishPreviewUpdatedAsync(
+                    new MessagePreviewUpdatedEventEnvelope(
+                        messageId,
+                        new MessageEventLocation.Channel(channelId, channelName, guildId, guildName),
+                        previews),
+                    cts.Token);
             }
         }
         catch (Exception ex)
@@ -150,21 +144,18 @@ public sealed class LinkPreviewResolutionService
             using var scope = _serviceScopeFactory.CreateScope();
             var repo = scope.ServiceProvider.GetRequiredService<ILinkPreviewRepository>();
             var fetcher = scope.ServiceProvider.GetRequiredService<ILinkPreviewFetcher>();
-            var notifier = scope.ServiceProvider.GetRequiredService<IConversationMessageNotifier>();
+            var publisher = scope.ServiceProvider.GetRequiredService<IMessageEventPublisher>();
 
             var previews = await ResolveAsync(messageId, urls, repo, fetcher, cts.Token);
 
             if (previews.Count > 0)
             {
-                await BestEffortNotificationHelper.TryNotifyAsync(
-                    token => notifier.NotifyMessagePreviewUpdatedAsync(
-                        new ConversationMessagePreviewUpdatedNotification(messageId, conversationId, conversationName, conversationType, previews),
-                        token),
-                    NotificationTimeout,
-                    _logger,
-                    "Link preview conversation notification failed (best-effort). MessageId={MessageId}, ConversationId={ConversationId}",
-                    messageId,
-                    conversationId);
+                await publisher.PublishPreviewUpdatedAsync(
+                    new MessagePreviewUpdatedEventEnvelope(
+                        messageId,
+                        new MessageEventLocation.Conversation(conversationId, conversationName, conversationType),
+                        previews),
+                    cts.Token);
             }
         }
         catch (Exception ex)

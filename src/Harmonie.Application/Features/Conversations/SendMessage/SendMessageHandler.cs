@@ -1,6 +1,7 @@
 using Harmonie.Application.Common;
 using Harmonie.Application.Common.Messages;
 using Harmonie.Application.Interfaces.Conversations;
+using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Application.Services;
 using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.ValueObjects.Messages;
@@ -15,7 +16,7 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendConversationM
 {
     private readonly IConversationRepository _conversationRepository;
     private readonly IConversationParticipantRepository _participantRepository;
-    private readonly IConversationMessageNotifier _conversationMessageNotifier;
+    private readonly IMessageEventPublisher _messageEventPublisher;
     private readonly LinkPreviewResolutionService _linkPreviewService;
     private readonly ILogger<ConversationSendMessageScope> _scopeLogger;
     private readonly MessageSendOrchestrator _orchestrator;
@@ -23,14 +24,14 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendConversationM
     public SendMessageHandler(
         IConversationRepository conversationRepository,
         IConversationParticipantRepository participantRepository,
-        IConversationMessageNotifier conversationMessageNotifier,
+        IMessageEventPublisher messageEventPublisher,
         LinkPreviewResolutionService linkPreviewService,
         ILogger<ConversationSendMessageScope> scopeLogger,
         MessageSendOrchestrator orchestrator)
     {
         _conversationRepository = conversationRepository;
         _participantRepository = participantRepository;
-        _conversationMessageNotifier = conversationMessageNotifier;
+        _messageEventPublisher = messageEventPublisher;
         _linkPreviewService = linkPreviewService;
         _scopeLogger = scopeLogger;
         _orchestrator = orchestrator;
@@ -45,7 +46,7 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendConversationM
             request.ConversationId,
             _conversationRepository,
             _participantRepository,
-            _conversationMessageNotifier,
+            _messageEventPublisher,
             _linkPreviewService,
             _scopeLogger);
 

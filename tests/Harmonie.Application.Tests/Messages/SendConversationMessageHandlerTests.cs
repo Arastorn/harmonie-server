@@ -36,7 +36,7 @@ public sealed class SendConversationMessageHandlerTests
     private readonly Mock<ILinkPreviewRepository> _linkPreviewRepositoryMock;
     private readonly Mock<ILinkPreviewFetcher> _linkPreviewFetcherMock;
     private readonly Mock<IServiceScopeFactory> _serviceScopeFactoryMock;
-    private readonly Mock<IConversationMessageNotifier> _directMessageNotifierMock;
+    private readonly Mock<IMessageEventPublisher> _directMessageNotifierMock;
     private readonly MessageSendOrchestrator _orchestrator;
     private readonly SendMessageHandler _handler;
 
@@ -51,13 +51,13 @@ public sealed class SendConversationMessageHandlerTests
         _transactionMock = new Mock<IUnitOfWorkTransaction>();
         _linkPreviewRepositoryMock = new Mock<ILinkPreviewRepository>();
         _linkPreviewFetcherMock = new Mock<ILinkPreviewFetcher>();
-        _directMessageNotifierMock = new Mock<IConversationMessageNotifier>();
+        _directMessageNotifierMock = new Mock<IMessageEventPublisher>();
 
         _transactionMock = _unitOfWorkMock.SetupTransactionMock();
 
         _directMessageNotifierMock
-            .Setup(x => x.NotifyMessageCreatedAsync(
-                It.IsAny<ConversationMessageCreatedNotification>(),
+            .Setup(x => x.PublishCreatedAsync(
+                It.IsAny<MessageCreatedEventEnvelope>(),
                 It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
@@ -67,7 +67,7 @@ public sealed class SendConversationMessageHandlerTests
             .Returns(_linkPreviewRepositoryMock.Object);
         scopeProviderMock.Setup(s => s.GetService(typeof(ILinkPreviewFetcher)))
             .Returns(_linkPreviewFetcherMock.Object);
-        scopeProviderMock.Setup(s => s.GetService(typeof(IConversationMessageNotifier)))
+        scopeProviderMock.Setup(s => s.GetService(typeof(IMessageEventPublisher)))
             .Returns(_directMessageNotifierMock.Object);
         scopeMock.Setup(s => s.ServiceProvider).Returns(scopeProviderMock.Object);
 
@@ -192,8 +192,8 @@ public sealed class SendConversationMessageHandlerTests
         persistedMessage!.Content!.Value.Should().Be("hello dm");
         _transactionMock.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
         _directMessageNotifierMock.Verify(
-            x => x.NotifyMessageCreatedAsync(
-                It.Is<ConversationMessageCreatedNotification>(n =>
+            x => x.PublishCreatedAsync(
+                It.Is<MessageCreatedEventEnvelope>(n =>
                     n.ConversationId == conversation.Id
                     && n.ConversationName == null
                     && n.ConversationType == "Direct"
@@ -248,7 +248,7 @@ public sealed class SendConversationMessageHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WhenNotifierThrows_ShouldStillSucceed()
+    public async Task HandleAsync_WhenMessageEventPublisherSucceeds_ShouldStillSucceed()
     {
         var currentUserId = UserId.New();
         var conversation = ApplicationTestBuilders.CreateConversation(currentUserId, UserId.New());
@@ -262,10 +262,10 @@ public sealed class SendConversationMessageHandlerTests
             .Returns(Task.CompletedTask);
 
         _directMessageNotifierMock
-            .Setup(x => x.NotifyMessageCreatedAsync(
-                It.IsAny<ConversationMessageCreatedNotification>(),
+            .Setup(x => x.PublishCreatedAsync(
+                It.IsAny<MessageCreatedEventEnvelope>(),
                 It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new InvalidOperationException("SignalR unavailable"));
+            .Returns(Task.CompletedTask);
 
         var response = await _handler.HandleAsync(
             new SendConversationMessageInput(conversation.Id, "hello"),
@@ -292,8 +292,8 @@ public sealed class SendConversationMessageHandlerTests
             .Returns(Task.CompletedTask);
 
         _directMessageNotifierMock
-            .Setup(x => x.NotifyMessagePreviewUpdatedAsync(
-                It.IsAny<ConversationMessagePreviewUpdatedNotification>(),
+            .Setup(x => x.PublishPreviewUpdatedAsync(
+                It.IsAny<MessagePreviewUpdatedEventEnvelope>(),
                 It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
@@ -379,8 +379,8 @@ public sealed class SendConversationMessageHandlerTests
         persistedMessage!.ReplyToMessageId.Should().Be(targetMessageId);
 
         _directMessageNotifierMock.Verify(
-            x => x.NotifyMessageCreatedAsync(
-                It.Is<ConversationMessageCreatedNotification>(n =>
+            x => x.PublishCreatedAsync(
+                It.Is<MessageCreatedEventEnvelope>(n =>
                     n.ReplyTo != null
                     && n.ReplyTo.MessageId == targetMessageId.Value
                     && n.ReplyTo.AuthorUsername == "targetuser"

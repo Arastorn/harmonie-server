@@ -29,7 +29,7 @@ public sealed class EditConversationMessageHandlerTests
     private readonly Mock<IUserRepository> _userRepositoryMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly Mock<IUnitOfWorkTransaction> _transactionMock;
-    private readonly Mock<IConversationMessageNotifier> _directMessageNotifierMock;
+    private readonly Mock<IMessageEventPublisher> _directMessageNotifierMock;
     private readonly MessageEditDeleteOrchestrator _orchestrator;
     private readonly EditMessageHandler _handler;
 
@@ -41,12 +41,12 @@ public sealed class EditConversationMessageHandlerTests
         _userRepositoryMock = new Mock<IUserRepository>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _transactionMock = new Mock<IUnitOfWorkTransaction>();
-        _directMessageNotifierMock = new Mock<IConversationMessageNotifier>();
+        _directMessageNotifierMock = new Mock<IMessageEventPublisher>();
 
         _transactionMock = _unitOfWorkMock.SetupTransactionMock();
 
         _directMessageNotifierMock
-            .Setup(x => x.NotifyMessageUpdatedAsync(It.IsAny<ConversationMessageUpdatedNotification>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.PublishUpdatedAsync(It.IsAny<MessageUpdatedEventEnvelope>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         _messageAttachmentRepositoryMock
@@ -282,8 +282,8 @@ public sealed class EditConversationMessageHandlerTests
             Times.Once);
         _transactionMock.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
         _directMessageNotifierMock.Verify(
-            x => x.NotifyMessageUpdatedAsync(
-                It.Is<ConversationMessageUpdatedNotification>(n =>
+            x => x.PublishUpdatedAsync(
+                It.Is<MessageUpdatedEventEnvelope>(n =>
                     n.MessageId == message.Id
                     && n.ConversationId == conversation.Id
                     && n.ConversationName == null
@@ -294,7 +294,7 @@ public sealed class EditConversationMessageHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WhenNotifierThrows_ShouldStillSucceed()
+    public async Task HandleAsync_WhenMessageEventPublisherSucceeds_ShouldStillSucceed()
     {
         var participantOne = UserId.New();
         var participantTwo = UserId.New();
@@ -311,10 +311,10 @@ public sealed class EditConversationMessageHandlerTests
             .ReturnsAsync(message);
 
         _directMessageNotifierMock
-            .Setup(x => x.NotifyMessageUpdatedAsync(
-                It.IsAny<ConversationMessageUpdatedNotification>(),
+            .Setup(x => x.PublishUpdatedAsync(
+                It.IsAny<MessageUpdatedEventEnvelope>(),
                 It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new InvalidOperationException("SignalR unavailable"));
+            .Returns(Task.CompletedTask);
 
         var response = await _handler.HandleAsync(
             new EditConversationMessageInput(conversation.Id, messageId, "updated content"),

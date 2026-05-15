@@ -66,7 +66,7 @@ public sealed class DeleteMessageAttachmentHandlerTests
         _handler = new DeleteMessageAttachmentHandler(
             _guildChannelRepositoryMock.Object,
             _guildMemberRepositoryMock.Object,
-            new Mock<ITextChannelNotifier>().Object,
+            new Mock<IMessageEventPublisher>().Object,
             NullLogger<ChannelMessageEditDeleteScope>.Instance,
             _orchestrator);
     }
