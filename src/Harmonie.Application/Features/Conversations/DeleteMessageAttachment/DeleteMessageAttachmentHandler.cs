@@ -2,6 +2,7 @@ using Harmonie.Application.Common;
 using Harmonie.Application.Common.Messages;
 using Harmonie.Application.Features.Conversations.Messages;
 using Harmonie.Application.Interfaces.Conversations;
+using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.ValueObjects.Messages;
 using Harmonie.Domain.ValueObjects.Uploads;
@@ -15,18 +16,18 @@ public sealed record DeleteConversationMessageAttachmentInput(ConversationId Con
 public sealed class DeleteMessageAttachmentHandler : IAuthenticatedHandler<DeleteConversationMessageAttachmentInput, bool>
 {
     private readonly IConversationRepository _conversationRepository;
-    private readonly IConversationMessageNotifier _conversationMessageNotifier;
+    private readonly IMessageEventPublisher _messageEventPublisher;
     private readonly ILogger<ConversationMessageEditDeleteScope> _scopeLogger;
     private readonly MessageEditDeleteOrchestrator _orchestrator;
 
     public DeleteMessageAttachmentHandler(
         IConversationRepository conversationRepository,
-        IConversationMessageNotifier conversationMessageNotifier,
+        IMessageEventPublisher messageEventPublisher,
         ILogger<ConversationMessageEditDeleteScope> scopeLogger,
         MessageEditDeleteOrchestrator orchestrator)
     {
         _conversationRepository = conversationRepository;
-        _conversationMessageNotifier = conversationMessageNotifier;
+        _messageEventPublisher = messageEventPublisher;
         _scopeLogger = scopeLogger;
         _orchestrator = orchestrator;
     }
@@ -39,7 +40,7 @@ public sealed class DeleteMessageAttachmentHandler : IAuthenticatedHandler<Delet
         var scope = new ConversationMessageEditDeleteScope(
             request.ConversationId,
             _conversationRepository,
-            _conversationMessageNotifier,
+            _messageEventPublisher,
             _scopeLogger);
 
         return await _orchestrator.DeleteAttachmentAsync(

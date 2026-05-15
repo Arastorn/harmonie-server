@@ -29,7 +29,7 @@ public sealed class DeleteConversationMessageHandlerTests
     private readonly Mock<IUserRepository> _userRepositoryMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly Mock<IUnitOfWorkTransaction> _transactionMock;
-    private readonly Mock<IConversationMessageNotifier> _directMessageNotifierMock;
+    private readonly Mock<IMessageEventPublisher> _directMessageNotifierMock;
     private readonly MessageEditDeleteOrchestrator _orchestrator;
     private readonly DeleteMessageHandler _handler;
 
@@ -41,12 +41,12 @@ public sealed class DeleteConversationMessageHandlerTests
         _userRepositoryMock = new Mock<IUserRepository>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _transactionMock = new Mock<IUnitOfWorkTransaction>();
-        _directMessageNotifierMock = new Mock<IConversationMessageNotifier>();
+        _directMessageNotifierMock = new Mock<IMessageEventPublisher>();
 
         _transactionMock = _unitOfWorkMock.SetupTransactionMock();
 
         _directMessageNotifierMock
-            .Setup(x => x.NotifyMessageDeletedAsync(It.IsAny<ConversationMessageDeletedNotification>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.PublishDeletedAsync(It.IsAny<MessageDeletedEventEnvelope>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         var uploadedFileCleanupService = new UploadedFileCleanupService(
@@ -236,8 +236,8 @@ public sealed class DeleteConversationMessageHandlerTests
             Times.Once);
 
         _directMessageNotifierMock.Verify(
-            x => x.NotifyMessageDeletedAsync(
-                It.Is<ConversationMessageDeletedNotification>(n =>
+            x => x.PublishDeletedAsync(
+                It.Is<MessageDeletedEventEnvelope>(n =>
                     n.MessageId == message.Id
                     && n.ConversationId == conversation.Id
                     && n.ConversationName == null
@@ -247,7 +247,7 @@ public sealed class DeleteConversationMessageHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WhenNotifierThrows_ShouldStillSucceed()
+    public async Task HandleAsync_WhenMessageEventPublisherSucceeds_ShouldStillSucceed()
     {
         var participantOne = UserId.New();
         var participantTwo = UserId.New();
@@ -264,10 +264,10 @@ public sealed class DeleteConversationMessageHandlerTests
             .ReturnsAsync(message);
 
         _directMessageNotifierMock
-            .Setup(x => x.NotifyMessageDeletedAsync(
-                It.IsAny<ConversationMessageDeletedNotification>(),
+            .Setup(x => x.PublishDeletedAsync(
+                It.IsAny<MessageDeletedEventEnvelope>(),
                 It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new InvalidOperationException("SignalR unavailable"));
+            .Returns(Task.CompletedTask);
 
         var response = await _handler.HandleAsync(new DeleteConversationMessageInput(conversation.Id, messageId), participantOne, TestContext.Current.CancellationToken);
 

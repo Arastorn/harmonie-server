@@ -1,6 +1,7 @@
 using Harmonie.Application.Common;
 using Harmonie.Application.Common.Messages;
 using Harmonie.Application.Interfaces.Channels;
+using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Application.Interfaces.Guilds;
 using Harmonie.Application.Services;
 using Harmonie.Domain.ValueObjects.Channels;
@@ -16,7 +17,7 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendChannelMessag
 {
     private readonly IGuildChannelRepository _guildChannelRepository;
     private readonly IGuildMemberRepository _guildMemberRepository;
-    private readonly ITextChannelNotifier _textChannelNotifier;
+    private readonly IMessageEventPublisher _messageEventPublisher;
     private readonly LinkPreviewResolutionService _linkPreviewService;
     private readonly ILogger<ChannelSendMessageScope> _scopeLogger;
     private readonly MessageSendOrchestrator _orchestrator;
@@ -24,14 +25,14 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendChannelMessag
     public SendMessageHandler(
         IGuildChannelRepository guildChannelRepository,
         IGuildMemberRepository guildMemberRepository,
-        ITextChannelNotifier textChannelNotifier,
+        IMessageEventPublisher messageEventPublisher,
         LinkPreviewResolutionService linkPreviewService,
         ILogger<ChannelSendMessageScope> scopeLogger,
         MessageSendOrchestrator orchestrator)
     {
         _guildChannelRepository = guildChannelRepository;
         _guildMemberRepository = guildMemberRepository;
-        _textChannelNotifier = textChannelNotifier;
+        _messageEventPublisher = messageEventPublisher;
         _linkPreviewService = linkPreviewService;
         _scopeLogger = scopeLogger;
         _orchestrator = orchestrator;
@@ -46,7 +47,7 @@ public sealed class SendMessageHandler : IAuthenticatedHandler<SendChannelMessag
             request.ChannelId,
             _guildChannelRepository,
             _guildMemberRepository,
-            _textChannelNotifier,
+            _messageEventPublisher,
             _linkPreviewService,
             _scopeLogger);
 

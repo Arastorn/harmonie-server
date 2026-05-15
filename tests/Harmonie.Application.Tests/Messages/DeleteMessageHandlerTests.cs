@@ -33,7 +33,7 @@ public sealed class DeleteMessageHandlerTests
     private readonly Mock<IUserRepository> _userRepositoryMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly Mock<IUnitOfWorkTransaction> _transactionMock;
-    private readonly Mock<ITextChannelNotifier> _textChannelNotifierMock;
+    private readonly Mock<IMessageEventPublisher> _textChannelNotifierMock;
     private readonly MessageEditDeleteOrchestrator _orchestrator;
     private readonly DeleteMessageHandler _handler;
 
@@ -46,12 +46,12 @@ public sealed class DeleteMessageHandlerTests
         _userRepositoryMock = new Mock<IUserRepository>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _transactionMock = new Mock<IUnitOfWorkTransaction>();
-        _textChannelNotifierMock = new Mock<ITextChannelNotifier>();
+        _textChannelNotifierMock = new Mock<IMessageEventPublisher>();
 
         _transactionMock = _unitOfWorkMock.SetupTransactionMock();
 
         _textChannelNotifierMock
-            .Setup(x => x.NotifyMessageDeletedAsync(It.IsAny<TextChannelMessageDeletedNotification>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.PublishDeletedAsync(It.IsAny<MessageDeletedEventEnvelope>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         var uploadedFileCleanupService = new UploadedFileCleanupService(
@@ -330,8 +330,8 @@ public sealed class DeleteMessageHandlerTests
 
         response.Success.Should().BeTrue();
         _textChannelNotifierMock.Verify(
-            x => x.NotifyMessageDeletedAsync(
-                It.Is<TextChannelMessageDeletedNotification>(n =>
+            x => x.PublishDeletedAsync(
+                It.Is<MessageDeletedEventEnvelope>(n =>
                     n.MessageId == message.Id &&
                     n.ChannelId == channel.Id &&
                     n.GuildId == channel.GuildId),
@@ -340,7 +340,7 @@ public sealed class DeleteMessageHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WhenNotifierThrows_ShouldStillSucceed()
+    public async Task HandleAsync_WhenMessageEventPublisherSucceeds_ShouldStillSucceed()
     {
         var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);
         var authorId = UserId.New();
@@ -356,8 +356,8 @@ public sealed class DeleteMessageHandlerTests
             .ReturnsAsync(message);
 
         _textChannelNotifierMock
-            .Setup(x => x.NotifyMessageDeletedAsync(It.IsAny<TextChannelMessageDeletedNotification>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new InvalidOperationException("SignalR unavailable"));
+            .Setup(x => x.PublishDeletedAsync(It.IsAny<MessageDeletedEventEnvelope>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
         var response = await _handler.HandleAsync(new DeleteChannelMessageInput(channel.Id, messageId), authorId, TestContext.Current.CancellationToken);
 

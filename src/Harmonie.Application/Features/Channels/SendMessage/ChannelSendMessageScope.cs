@@ -2,6 +2,7 @@ using Harmonie.Application.Common;
 using Harmonie.Application.Common.Messages;
 using Harmonie.Application.Interfaces.Channels;
 using Harmonie.Application.Interfaces.Guilds;
+using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Application.Services;
 using Harmonie.Domain.Common;
 using Harmonie.Domain.Entities.Messages;
@@ -18,8 +19,6 @@ namespace Harmonie.Application.Features.Channels.SendMessage;
 /// </summary>
 public sealed class ChannelSendMessageScope : ISendMessageScope<ChannelSendMessageScope.Context>
 {
-    private static readonly TimeSpan NotificationTimeout = TimeSpan.FromSeconds(5);
-
     public sealed record Context(
         GuildChannelId ChannelId,
         string ChannelName,
@@ -31,7 +30,7 @@ public sealed class ChannelSendMessageScope : ISendMessageScope<ChannelSendMessa
     private readonly GuildChannelId _channelId;
     private readonly IGuildChannelRepository _guildChannelRepository;
     private readonly IGuildMemberRepository _guildMemberRepository;
-    private readonly ITextChannelNotifier _textChannelNotifier;
+    private readonly IMessageEventPublisher _messageEventPublisher;
     private readonly LinkPreviewResolutionService _linkPreviewService;
     private readonly ILogger<ChannelSendMessageScope> _logger;
 
@@ -39,14 +38,14 @@ public sealed class ChannelSendMessageScope : ISendMessageScope<ChannelSendMessa
         GuildChannelId channelId,
         IGuildChannelRepository guildChannelRepository,
         IGuildMemberRepository guildMemberRepository,
-        ITextChannelNotifier textChannelNotifier,
+        IMessageEventPublisher messageEventPublisher,
         LinkPreviewResolutionService linkPreviewService,
         ILogger<ChannelSendMessageScope> logger)
     {
         _channelId = channelId;
         _guildChannelRepository = guildChannelRepository;
         _guildMemberRepository = guildMemberRepository;
-        _textChannelNotifier = textChannelNotifier;
+        _messageEventPublisher = messageEventPublisher;
         _linkPreviewService = linkPreviewService;
         _logger = logger;
     }
@@ -95,28 +94,23 @@ public sealed class ChannelSendMessageScope : ISendMessageScope<ChannelSendMessa
         ReplyPreviewDto? replyTo,
         CancellationToken ct)
     {
-        var notification = new TextChannelMessageCreatedNotification(
-            message.Id,
-            context.ChannelId,
-            context.ChannelName,
-            context.GuildId,
-            context.GuildName,
-            message.AuthorUserId,
-            context.CallerUsername,
-            context.CallerDisplayName,
-            message.Content?.Value,
-            attachments,
-            replyTo,
-            message.MentionedUserIds.Select(id => id.Value).ToArray(),
-            message.CreatedAtUtc);
-
-        await BestEffortNotificationHelper.TryNotifyAsync(
-            token => _textChannelNotifier.NotifyMessageCreatedAsync(notification, token),
-            NotificationTimeout,
-            _logger,
-            "SendMessage notification failed (best-effort). MessageId={MessageId}, ChannelId={ChannelId}",
-            notification.MessageId,
-            notification.ChannelId);
+        await _messageEventPublisher.PublishCreatedAsync(
+            new MessageCreatedEventEnvelope(
+                message.Id,
+                new MessageEventLocation.Channel(
+                    context.ChannelId,
+                    context.ChannelName,
+                    context.GuildId,
+                    context.GuildName),
+                message.AuthorUserId,
+                context.CallerUsername,
+                context.CallerDisplayName,
+                message.Content?.Value,
+                attachments,
+                replyTo,
+                message.MentionedUserIds.Select(id => id.Value).ToArray(),
+                message.CreatedAtUtc),
+            CancellationToken.None);
     }
 
     public void ScheduleLinkPreviewResolution(
@@ -133,6 +127,6 @@ public sealed class ChannelSendMessageScope : ISendMessageScope<ChannelSendMessa
             context.GuildId,
             context.GuildName,
             urls,
-            ct);
+            CancellationToken.None);
     }
 }

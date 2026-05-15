@@ -61,7 +61,7 @@ public sealed class DeleteConversationMessageAttachmentHandlerTests
 
         _handler = new DeleteMessageAttachmentHandler(
             _conversationRepositoryMock.Object,
-            new Mock<IConversationMessageNotifier>().Object,
+            new Mock<IMessageEventPublisher>().Object,
             NullLogger<ConversationMessageEditDeleteScope>.Instance,
             _orchestrator);
     }

@@ -1,4 +1,3 @@
-using Harmonie.API.RealTime.Channels;
 using Harmonie.API.RealTime.Conversations;
 using Harmonie.API.RealTime.Guilds;
 using Harmonie.API.RealTime.Messages;

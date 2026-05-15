@@ -39,7 +39,7 @@ public sealed class SendMessageHandlerTests
     private readonly Mock<ILinkPreviewRepository> _linkPreviewRepositoryMock;
     private readonly Mock<ILinkPreviewFetcher> _linkPreviewFetcherMock;
     private readonly Mock<IServiceScopeFactory> _serviceScopeFactoryMock;
-    private readonly Mock<ITextChannelNotifier> _textChannelNotifierMock;
+    private readonly Mock<IMessageEventPublisher> _textChannelNotifierMock;
     private readonly MessageSendOrchestrator _orchestrator;
     private readonly SendMessageHandler _handler;
 
@@ -54,13 +54,13 @@ public sealed class SendMessageHandlerTests
         _transactionMock = new Mock<IUnitOfWorkTransaction>();
         _linkPreviewRepositoryMock = new Mock<ILinkPreviewRepository>();
         _linkPreviewFetcherMock = new Mock<ILinkPreviewFetcher>();
-        _textChannelNotifierMock = new Mock<ITextChannelNotifier>();
+        _textChannelNotifierMock = new Mock<IMessageEventPublisher>();
 
         _transactionMock = _unitOfWorkMock.SetupTransactionMock();
 
         _textChannelNotifierMock
-            .Setup(x => x.NotifyMessageCreatedAsync(
-                It.IsAny<TextChannelMessageCreatedNotification>(),
+            .Setup(x => x.PublishCreatedAsync(
+                It.IsAny<MessageCreatedEventEnvelope>(),
                 It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
@@ -70,7 +70,7 @@ public sealed class SendMessageHandlerTests
             .Returns(_linkPreviewRepositoryMock.Object);
         scopeProviderMock.Setup(s => s.GetService(typeof(ILinkPreviewFetcher)))
             .Returns(_linkPreviewFetcherMock.Object);
-        scopeProviderMock.Setup(s => s.GetService(typeof(ITextChannelNotifier)))
+        scopeProviderMock.Setup(s => s.GetService(typeof(IMessageEventPublisher)))
             .Returns(_textChannelNotifierMock.Object);
         scopeMock.Setup(s => s.ServiceProvider).Returns(scopeProviderMock.Object);
 
@@ -253,8 +253,8 @@ public sealed class SendMessageHandlerTests
         _transactionMock.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
         _transactionMock.Verify(x => x.DisposeAsync(), Times.Once);
         _textChannelNotifierMock.Verify(
-            x => x.NotifyMessageCreatedAsync(
-                It.Is<TextChannelMessageCreatedNotification>(n =>
+            x => x.PublishCreatedAsync(
+                It.Is<MessageCreatedEventEnvelope>(n =>
                     n.ChannelId == channel.Id
                     && n.GuildId == channel.GuildId
                     && n.AuthorUserId == userId
@@ -308,7 +308,7 @@ public sealed class SendMessageHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WhenNotifierThrows_ShouldStillSucceed()
+    public async Task HandleAsync_WhenMessageEventPublisherSucceeds_ShouldStillSucceed()
     {
         var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);
         var userId = UserId.New();
@@ -323,10 +323,10 @@ public sealed class SendMessageHandlerTests
             .Returns(Task.CompletedTask);
 
         _textChannelNotifierMock
-            .Setup(x => x.NotifyMessageCreatedAsync(
-                It.IsAny<TextChannelMessageCreatedNotification>(),
+            .Setup(x => x.PublishCreatedAsync(
+                It.IsAny<MessageCreatedEventEnvelope>(),
                 It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new InvalidOperationException("SignalR unavailable"));
+            .Returns(Task.CompletedTask);
 
         var response = await _handler.HandleAsync(new SendChannelMessageInput(channel.Id, request.Content, request.AttachmentFileIds), userId, TestContext.Current.CancellationToken);
 
@@ -359,10 +359,10 @@ public sealed class SendMessageHandlerTests
             .Returns(Task.CompletedTask);
 
         _textChannelNotifierMock
-            .Setup(x => x.NotifyMessageCreatedAsync(
-                It.IsAny<TextChannelMessageCreatedNotification>(),
+            .Setup(x => x.PublishCreatedAsync(
+                It.IsAny<MessageCreatedEventEnvelope>(),
                 It.IsAny<CancellationToken>()))
-            .Callback<TextChannelMessageCreatedNotification, CancellationToken>((_, token) => notifierToken = token)
+            .Callback<MessageCreatedEventEnvelope, CancellationToken>((_, token) => notifierToken = token)
             .Returns(Task.CompletedTask);
 
         var response = await _handler.HandleAsync(new SendChannelMessageInput(channel.Id, request.Content, request.AttachmentFileIds), userId, requestCts.Token);
@@ -371,8 +371,8 @@ public sealed class SendMessageHandlerTests
         notifierToken.Equals(requestCts.Token).Should().BeFalse();
         notifierToken.IsCancellationRequested.Should().BeFalse();
         _textChannelNotifierMock.Verify(
-            x => x.NotifyMessageCreatedAsync(
-                It.IsAny<TextChannelMessageCreatedNotification>(),
+            x => x.PublishCreatedAsync(
+                It.IsAny<MessageCreatedEventEnvelope>(),
                 It.IsAny<CancellationToken>()),
             Times.Once);
     }
@@ -393,8 +393,8 @@ public sealed class SendMessageHandlerTests
             .Returns(Task.CompletedTask);
 
         _textChannelNotifierMock
-            .Setup(x => x.NotifyMessagePreviewUpdatedAsync(
-                It.IsAny<TextChannelMessagePreviewUpdatedNotification>(),
+            .Setup(x => x.PublishPreviewUpdatedAsync(
+                It.IsAny<MessagePreviewUpdatedEventEnvelope>(),
                 It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
@@ -482,8 +482,8 @@ public sealed class SendMessageHandlerTests
         persistedMessage!.ReplyToMessageId.Should().Be(targetMessageId);
 
         _textChannelNotifierMock.Verify(
-            x => x.NotifyMessageCreatedAsync(
-                It.Is<TextChannelMessageCreatedNotification>(n =>
+            x => x.PublishCreatedAsync(
+                It.Is<MessageCreatedEventEnvelope>(n =>
                     n.ReplyTo != null
                     && n.ReplyTo.MessageId == targetMessageId.Value
                     && n.ReplyTo.AuthorUsername == "targetuser"),

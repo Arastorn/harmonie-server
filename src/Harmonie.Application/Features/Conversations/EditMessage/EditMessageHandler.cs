@@ -2,6 +2,7 @@ using Harmonie.Application.Common;
 using Harmonie.Application.Common.Messages;
 using Harmonie.Application.Features.Conversations.Messages;
 using Harmonie.Application.Interfaces.Conversations;
+using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Domain.ValueObjects.Conversations;
 using Harmonie.Domain.ValueObjects.Messages;
 using Harmonie.Domain.ValueObjects.Users;
@@ -14,18 +15,18 @@ public sealed record EditConversationMessageInput(ConversationId ConversationId,
 public sealed class EditMessageHandler : IAuthenticatedHandler<EditConversationMessageInput, EditMessageResponse>
 {
     private readonly IConversationRepository _conversationRepository;
-    private readonly IConversationMessageNotifier _conversationMessageNotifier;
+    private readonly IMessageEventPublisher _messageEventPublisher;
     private readonly ILogger<ConversationMessageEditDeleteScope> _scopeLogger;
     private readonly MessageEditDeleteOrchestrator _orchestrator;
 
     public EditMessageHandler(
         IConversationRepository conversationRepository,
-        IConversationMessageNotifier conversationMessageNotifier,
+        IMessageEventPublisher messageEventPublisher,
         ILogger<ConversationMessageEditDeleteScope> scopeLogger,
         MessageEditDeleteOrchestrator orchestrator)
     {
         _conversationRepository = conversationRepository;
-        _conversationMessageNotifier = conversationMessageNotifier;
+        _messageEventPublisher = messageEventPublisher;
         _scopeLogger = scopeLogger;
         _orchestrator = orchestrator;
     }
@@ -38,7 +39,7 @@ public sealed class EditMessageHandler : IAuthenticatedHandler<EditConversationM
         var scope = new ConversationMessageEditDeleteScope(
             request.ConversationId,
             _conversationRepository,
-            _conversationMessageNotifier,
+            _messageEventPublisher,
             _scopeLogger);
 
         var result = await _orchestrator.EditAsync(

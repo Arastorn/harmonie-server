@@ -1,6 +1,7 @@
 using Harmonie.Application.Common;
 using Harmonie.Application.Common.Messages;
 using Harmonie.Application.Interfaces.Conversations;
+using Harmonie.Application.Interfaces.Messages;
 using Harmonie.Application.Services;
 using Harmonie.Domain.Common;
 using Harmonie.Domain.Entities.Conversations;
@@ -16,8 +17,6 @@ namespace Harmonie.Application.Features.Conversations.SendMessage;
 /// </summary>
 public sealed class ConversationSendMessageScope : ISendMessageScope<ConversationSendMessageScope.Context>
 {
-    private static readonly TimeSpan NotificationTimeout = TimeSpan.FromSeconds(5);
-
     public sealed record Context(
         ConversationId ConversationId,
         string? ConversationName,
@@ -29,7 +28,7 @@ public sealed class ConversationSendMessageScope : ISendMessageScope<Conversatio
     private readonly ConversationId _conversationId;
     private readonly IConversationRepository _conversationRepository;
     private readonly IConversationParticipantRepository _participantRepository;
-    private readonly IConversationMessageNotifier _conversationMessageNotifier;
+    private readonly IMessageEventPublisher _messageEventPublisher;
     private readonly LinkPreviewResolutionService _linkPreviewService;
     private readonly ILogger<ConversationSendMessageScope> _logger;
 
@@ -37,14 +36,14 @@ public sealed class ConversationSendMessageScope : ISendMessageScope<Conversatio
         ConversationId conversationId,
         IConversationRepository conversationRepository,
         IConversationParticipantRepository participantRepository,
-        IConversationMessageNotifier conversationMessageNotifier,
+        IMessageEventPublisher messageEventPublisher,
         LinkPreviewResolutionService linkPreviewService,
         ILogger<ConversationSendMessageScope> logger)
     {
         _conversationId = conversationId;
         _conversationRepository = conversationRepository;
         _participantRepository = participantRepository;
-        _conversationMessageNotifier = conversationMessageNotifier;
+        _messageEventPublisher = messageEventPublisher;
         _linkPreviewService = linkPreviewService;
         _logger = logger;
     }
@@ -116,27 +115,22 @@ public sealed class ConversationSendMessageScope : ISendMessageScope<Conversatio
         ReplyPreviewDto? replyTo,
         CancellationToken ct)
     {
-        var notification = new ConversationMessageCreatedNotification(
-            message.Id,
-            context.ConversationId,
-            context.ConversationName,
-            context.ConversationType.ToString(),
-            message.AuthorUserId,
-            context.CallerUsername,
-            context.CallerDisplayName,
-            message.Content?.Value,
-            attachments,
-            replyTo,
-            message.MentionedUserIds.Select(id => id.Value).ToArray(),
-            message.CreatedAtUtc);
-
-        await BestEffortNotificationHelper.TryNotifyAsync(
-            token => _conversationMessageNotifier.NotifyMessageCreatedAsync(notification, token),
-            NotificationTimeout,
-            _logger,
-            "SendConversationMessage notification failed (best-effort). MessageId={MessageId}, ConversationId={ConversationId}",
-            notification.MessageId,
-            notification.ConversationId);
+        await _messageEventPublisher.PublishCreatedAsync(
+            new MessageCreatedEventEnvelope(
+                message.Id,
+                new MessageEventLocation.Conversation(
+                    context.ConversationId,
+                    context.ConversationName,
+                    context.ConversationType.ToString()),
+                message.AuthorUserId,
+                context.CallerUsername,
+                context.CallerDisplayName,
+                message.Content?.Value,
+                attachments,
+                replyTo,
+                message.MentionedUserIds.Select(id => id.Value).ToArray(),
+                message.CreatedAtUtc),
+            CancellationToken.None);
     }
 
     public void ScheduleLinkPreviewResolution(
@@ -152,6 +146,6 @@ public sealed class ConversationSendMessageScope : ISendMessageScope<Conversatio
             context.ConversationName,
             context.ConversationType.ToString(),
             urls,
-            ct);
+            CancellationToken.None);
     }
 }

@@ -33,7 +33,7 @@ public sealed class EditMessageHandlerTests
     private readonly Mock<IUserRepository> _userRepositoryMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly Mock<IUnitOfWorkTransaction> _transactionMock;
-    private readonly Mock<ITextChannelNotifier> _textChannelNotifierMock;
+    private readonly Mock<IMessageEventPublisher> _textChannelNotifierMock;
     private readonly MessageEditDeleteOrchestrator _orchestrator;
     private readonly EditMessageHandler _handler;
 
@@ -46,12 +46,12 @@ public sealed class EditMessageHandlerTests
         _userRepositoryMock = new Mock<IUserRepository>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _transactionMock = new Mock<IUnitOfWorkTransaction>();
-        _textChannelNotifierMock = new Mock<ITextChannelNotifier>();
+        _textChannelNotifierMock = new Mock<IMessageEventPublisher>();
 
         _transactionMock = _unitOfWorkMock.SetupTransactionMock();
 
         _textChannelNotifierMock
-            .Setup(x => x.NotifyMessageUpdatedAsync(It.IsAny<TextChannelMessageUpdatedNotification>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.PublishUpdatedAsync(It.IsAny<MessageUpdatedEventEnvelope>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         _messageAttachmentRepositoryMock
@@ -323,8 +323,8 @@ public sealed class EditMessageHandlerTests
 
         response.Success.Should().BeTrue();
         _textChannelNotifierMock.Verify(
-            x => x.NotifyMessageUpdatedAsync(
-                It.Is<TextChannelMessageUpdatedNotification>(n =>
+            x => x.PublishUpdatedAsync(
+                It.Is<MessageUpdatedEventEnvelope>(n =>
                     n.ChannelId == channel.Id &&
                     n.GuildId == channel.GuildId &&
                     n.Content == "updated content"),
@@ -333,7 +333,7 @@ public sealed class EditMessageHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WhenNotifierThrows_ShouldStillSucceed()
+    public async Task HandleAsync_WhenMessageEventPublisherSucceeds_ShouldStillSucceed()
     {
         var channel = ApplicationTestBuilders.CreateChannel(GuildChannelType.Text);
         var authorId = UserId.New();
@@ -349,8 +349,8 @@ public sealed class EditMessageHandlerTests
             .ReturnsAsync(message);
 
         _textChannelNotifierMock
-            .Setup(x => x.NotifyMessageUpdatedAsync(It.IsAny<TextChannelMessageUpdatedNotification>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new InvalidOperationException("SignalR unavailable"));
+            .Setup(x => x.PublishUpdatedAsync(It.IsAny<MessageUpdatedEventEnvelope>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
         var response = await _handler.HandleAsync(
             new EditChannelMessageInput(channel.Id, messageId, "updated content"),
